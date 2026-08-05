@@ -1,0 +1,106 @@
+:root {
+    --bg-primary: #0a0f1c;
+    --bg-secondary: #131b2f;
+    --bg-glass: rgba(19, 27, 47, 0.7);
+    --text-primary: #ffffff;
+    --text-secondary: #8b98b4;
+    --accent-primary: #00f2fe;
+    --accent-secondary: #4facfe;
+    --success: #00ff88;
+    --danger: #ff4b4b;
+    --border: rgba(255, 255, 255, 0.08);
+    
+    --font-ui: 'Inter', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+    --font-display: 'Outfit', sans-serif;
+}
+
+[data-theme="light"] {
+    --bg-primary: #f4f7f9;
+    --bg-secondary: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.8);
+    --text-primary: #0a0f1c;
+    --text-secondary: #5c6b89;
+    --accent-primary: #0284c7;
+    --accent-secondary: #38bdf8;
+    --success: #059669;
+    --danger: #dc2626;
+    --border: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: var(--font-ui);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    overflow-x: hidden;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo svg { width: 32px; height: 32px; }
+
+.header-actions { display: flex; gap: 0.5rem; }
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.2s ease;
+}
+
+.icon-btn:hover { background: var(--bg-secondary); }
+.icon-btn:active { transform: scale(0.9); }
+.icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+/* Main Container */
+main {
+    flex: 1;
+    padding: 1.5rem 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
