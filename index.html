@@ -6,6 +6,8 @@
     <title>MC Calc - Crypto PnL Calculator</title>
     <meta name="description" content="Track crypto market cap ROI, DCA entries/exits, and generate trading cards.">
     <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="shortcut icon" href="./favicon.svg">
     <meta name="theme-color" content="#0f172a">
     
     <!-- Google Fonts -->
@@ -356,7 +358,10 @@
     <div class="modal-overlay" id="add-trade-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="add-trade-title">Add Trade</h2>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <span id="add-trade-title-icon" style="display:flex; align-items:center;"></span>
+                    <h2 class="modal-title" id="add-trade-title">Add Trade</h2>
+                </div>
                 <span class="type-badge badge-entry" id="add-trade-type-badge">BUY</span>
             </div>
 
@@ -387,13 +392,6 @@
                 <label class="trade-form-label">Date</label>
                 <div class="input-wrapper">
                     <input type="date" id="trade-date-val" class="amount-input">
-                </div>
-            </div>
-
-            <div class="trade-form-group">
-                <label class="trade-form-label">Note (optional)</label>
-                <div class="input-wrapper">
-                    <input type="text" id="trade-note-val" class="amount-input" placeholder="e.g. Breakout entry">
                 </div>
             </div>
 

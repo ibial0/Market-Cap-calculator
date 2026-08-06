@@ -46,6 +46,12 @@ const calculate = () => {
     if (dcaInitActive && dcaInitRows.length > 0) {
         realInit = _calcDCAAvg(dcaInitRows);
         _updateDCAAvgDisplay('init-avg-val', realInit);
+        // Auto-sum all DCA entry amounts into the investment field
+        const totalDCAInv = dcaInitRows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+        if (totalDCAInv > 0) {
+            if (elInv) elInv.value = totalDCAInv;
+            inv = totalDCAInv;
+        }
     } else {
         const initVal = parseAmount(elInitMC?.value);
         realInit = initVal * State.initMul;

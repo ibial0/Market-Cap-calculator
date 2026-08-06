@@ -159,6 +159,10 @@
 }
 
 .token-analyze-btn.btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
     background: var(--bg-primary);
     border: 1px solid var(--border);
     color: var(--text-primary);
@@ -169,6 +173,8 @@
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+    line-height: 1;
+    text-align: center;
 }
 
 .token-analyze-btn.btn-sm:hover:not(:disabled) {
@@ -298,17 +304,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
     gap: 0.35rem;
     background: var(--bg-primary);
     border: 1px dashed var(--border);
     border-radius: 10px;
-    padding: 0.55rem;
+    padding: 0.55rem 0.4rem;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     color: var(--text-secondary);
     font-family: var(--font-ui);
+    line-height: 1;
 }
 
 .add-trade-btn.entry-btn:hover {
@@ -761,4 +769,14 @@
     font-size: 0.75rem;
     color: var(--text-secondary);
     margin-top: 0.15rem;
+}
+
+/* ── Clickable trade row (click to edit) ────── */
+.trade-row-clickable {
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.trade-row-clickable:hover {
+    background: rgba(0, 242, 254, 0.05);
+    border-left-width: 3px;
 }

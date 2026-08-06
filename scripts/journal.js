@@ -165,7 +165,8 @@ const renderTokenCard = (token) => {
             </div>
             <div class="token-card-actions">
                 <button class="token-analyze-btn btn-sm" data-id="${token.id}" ${!hasTrades ? 'disabled' : ''}>
-                    📊 Analysis
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Analysis
                 </button>
                 <button class="token-delete-btn icon-btn-sm" data-id="${token.id}" title="Delete Token">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.07a3 3 0 01-2.991 2.77H8.084a3 3 0 01-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.196 51.196 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452zm-.355 5.945a.75.75 0 10-1.5.058l.347 9a.75.75 0 101.499-.058l-.346-9zm5.48.058a.75.75 0 10-1.498-.058l-.347 9a.75.75 0 001.5.058l.345-9z"/></svg>
@@ -205,13 +206,56 @@ const renderTradeRow = (trade) => {
     const dateStr = trade.date ? `<span class="trade-date">${trade.date}</span>` : '';
 
     return `
-    <div class="trade-row ${isEntry ? 'trade-entry' : 'trade-exit'}" data-trade-id="${trade.id}">
+    <div class="trade-row ${isEntry ? 'trade-entry' : 'trade-exit'} trade-row-clickable" data-trade-id="${trade.id}" title="Click to edit">
         <span class="trade-type-badge ${isEntry ? 'badge-entry' : 'badge-exit'}">${isEntry ? 'BUY' : 'SELL'}</span>
         <span class="trade-mc">${formatNumber(trade.mc, 0)}${unitLabel}</span>
         <span class="trade-amount">$${formatNumber(trade.amount)}</span>
         ${dateStr}
         <button class="trade-delete-btn" data-trade-id="${trade.id}" title="Delete">×</button>
     </div>`;
+};
+
+const openTradeForEdit = (tradeId) => {
+    const tokens = getTokens();
+    let foundTrade = null;
+    let foundToken = null;
+    tokens.forEach(t => {
+        const tr = t.trades.find(tr => tr.id === tradeId);
+        if (tr) { foundTrade = tr; foundToken = t; }
+    });
+    if (!foundTrade || !foundToken) return;
+
+    _tradeModalTarget = { tokenId: foundToken.id, type: foundTrade.type, editTradeId: tradeId };
+    const modal = document.getElementById('add-trade-modal');
+    const title = document.getElementById('add-trade-title');
+    if (title) title.textContent = foundTrade.type === 'entry' ? 'Edit Buy Entry' : 'Edit Sell Exit';
+    const titleIcon = document.getElementById('add-trade-title-icon');
+    if (titleIcon) {
+        if (foundTrade.type === 'entry') {
+            titleIcon.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
+        } else {
+            titleIcon.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>`;
+        }
+    }
+    const badge = document.getElementById('add-trade-type-badge');
+    if (badge) {
+        badge.textContent = foundTrade.type === 'entry' ? 'BUY' : 'SELL';
+        badge.className = 'type-badge ' + (foundTrade.type === 'entry' ? 'badge-entry' : 'badge-exit');
+    }
+    // Pre-fill form
+    const mcEl = document.getElementById('trade-mc-val');
+    const unitEl = document.getElementById('trade-mc-unit');
+    const amtEl = document.getElementById('trade-amount-val');
+    const dateEl = document.getElementById('trade-date-val');
+    if (mcEl) mcEl.value = foundTrade.mc;
+    if (unitEl) unitEl.value = String(foundTrade.mcUnit);
+    if (amtEl) amtEl.value = foundTrade.amount;
+    if (dateEl) dateEl.value = foundTrade.date || '';
+    // Change confirm button text
+    const confirmBtn = document.getElementById('add-trade-confirm');
+    if (confirmBtn) confirmBtn.textContent = 'Save Changes';
+    if (modal) modal.classList.add('active');
+    setTimeout(() => { if (mcEl) mcEl.focus(); }, 50);
 };
 
 const bindTokenEvents = () => {
@@ -233,6 +277,16 @@ const bindTokenEvents = () => {
             });
             saveTokens(tokens);
             renderJournal();
+        });
+    });
+
+    // Click trade row to edit
+    document.querySelectorAll('.trade-row-clickable').forEach(row => {
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking the delete button
+            if (e.target.closest('.trade-delete-btn')) return;
+            const tradeId = row.dataset.tradeId;
+            openTradeForEdit(tradeId);
         });
     });
 
@@ -264,14 +318,23 @@ const openTradeModal = (tokenId, type) => {
     _tradeModalTarget = { tokenId, type };
     const modal = document.getElementById('add-trade-modal');
     const title = document.getElementById('add-trade-title');
-    if (title) title.textContent = type === 'entry' ? '📈 Add Buy Entry' : '📉 Add Sell Exit';
+    if (title) title.textContent = type === 'entry' ? 'Add Buy Entry' : 'Add Sell Exit';
+    // Set SVG icon in the modal header badge area instead
+    const titleIcon = document.getElementById('add-trade-title-icon');
+    if (titleIcon) {
+        if (type === 'entry') {
+            titleIcon.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
+        } else {
+            titleIcon.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>`;
+        }
+    }
     const badge = document.getElementById('add-trade-type-badge');
     if (badge) {
         badge.textContent = type === 'entry' ? 'BUY' : 'SELL';
         badge.className = 'type-badge ' + (type === 'entry' ? 'badge-entry' : 'badge-exit');
     }
     // Reset form
-    ['trade-mc-val','trade-amount-val','trade-date-val','trade-note-val'].forEach(id => {
+    ['trade-mc-val','trade-amount-val','trade-date-val'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -289,13 +352,21 @@ export const bindTradeModal = () => {
     const modal = document.getElementById('add-trade-modal');
 
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => modal && modal.classList.remove('active'));
+        cancelBtn.addEventListener('click', () => {
+            if (modal) modal.classList.remove('active');
+            if (confirmBtn) confirmBtn.textContent = 'Add Trade';
+        });
     }
     if (modal) {
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                const cb = document.getElementById('add-trade-confirm');
+                if (cb) cb.textContent = 'Add Trade';
+            }
         });
     }
+
 
     if (confirmBtn) {
         confirmBtn.addEventListener('click', () => {
@@ -304,7 +375,6 @@ export const bindTradeModal = () => {
             const mcUnit = document.getElementById('trade-mc-unit')?.value || '1000';
             const amount = document.getElementById('trade-amount-val')?.value;
             const date = document.getElementById('trade-date-val')?.value || '';
-            const note = document.getElementById('trade-note-val')?.value?.trim() || '';
 
             if (!mcVal || !amount || parseFloat(mcVal) <= 0 || parseFloat(amount) <= 0) {
                 alert('Please enter valid Market Cap and Amount values.');
@@ -315,18 +385,31 @@ export const bindTradeModal = () => {
             const token = tokens.find(t => t.id === _tradeModalTarget.tokenId);
             if (!token) return;
 
-            token.trades.push({
-                id: genId(),
-                type: _tradeModalTarget.type,
-                mc: parseFloat(mcVal),
-                mcUnit: parseFloat(mcUnit),
-                amount: parseFloat(amount),
-                date,
-                note,
-            });
+            if (_tradeModalTarget.editTradeId) {
+                // EDIT mode — update existing trade
+                const trade = token.trades.find(tr => tr.id === _tradeModalTarget.editTradeId);
+                if (trade) {
+                    trade.mc = parseFloat(mcVal);
+                    trade.mcUnit = parseFloat(mcUnit);
+                    trade.amount = parseFloat(amount);
+                    trade.date = date;
+                }
+            } else {
+                // ADD mode — push new trade
+                token.trades.push({
+                    id: genId(),
+                    type: _tradeModalTarget.type,
+                    mc: parseFloat(mcVal),
+                    mcUnit: parseFloat(mcUnit),
+                    amount: parseFloat(amount),
+                    date,
+                });
+            }
 
             saveTokens(tokens);
             modal.classList.remove('active');
+            // Reset confirm button text
+            confirmBtn.textContent = 'Add Trade';
             renderJournal();
         });
     }
@@ -371,7 +454,7 @@ const showAnalysis = (tokenId) => {
     <div class="analysis-pnl-section">
         <div class="analysis-row">
             <span class="analysis-label">Multiplier</span>
-            <span class="analysis-value" style="color:var(--accent-primary)">${dca.multiplier > 0 ? formatNumber(dca.multiplier, 2) + 'x' : '—'}</span>
+            <span class="analysis-value" style="color:${dca.multiplier >= 1 ? 'var(--success)' : dca.multiplier > 0 ? 'var(--danger)' : 'var(--text-secondary)'}">${dca.multiplier > 0 ? formatNumber(dca.multiplier, 2) + 'x' : '—'}</span>
         </div>
         <div class="analysis-row">
             <span class="analysis-label">Realized P&L</span>
@@ -381,14 +464,11 @@ const showAnalysis = (tokenId) => {
             <span class="analysis-label">ROI</span>
             <span class="analysis-value ${pnlClass}">${sign}${formatNumber(dca.roi, 2)}%</span>
         </div>
+        ${dca.holdAmount > 0 ? `
         <div class="analysis-row">
-            <span class="analysis-label">Still Holding</span>
-            <span class="analysis-value">$${formatNumber(Math.max(0, dca.holdAmount))}</span>
-        </div>
-        <div class="analysis-row">
-            <span class="analysis-label">Profit excl. Holdings</span>
-            <span class="analysis-value ${pnlClass}">${sign}$${formatNumber(Math.abs(dca.realizedPnL))}</span>
-        </div>
+            <span class="analysis-label">Remaining (not sold)</span>
+            <span class="analysis-value">$${formatNumber(dca.holdAmount)} invested</span>
+        </div>` : ''}
     </div>
 
     <div class="analysis-trades-breakdown">
