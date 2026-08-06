@@ -181,11 +181,11 @@ const renderTokenCard = (token) => {
 
         <div class="token-add-btns">
             <button class="add-trade-btn entry-btn" data-id="${token.id}" data-type="entry">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 Add Entry
             </button>
             <button class="add-trade-btn exit-btn" data-id="${token.id}" data-type="exit">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 Add Exit
             </button>
         </div>
