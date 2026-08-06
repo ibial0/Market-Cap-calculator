@@ -42,11 +42,8 @@
             <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme">
                 <svg viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" /></svg>
             </button>
-            <button class="icon-btn" id="settings-btn" aria-label="Settings">
-                <svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 00-2.282.819l-.922 1.597a1.875 1.875 0 00.432 2.385l.84.692c.097.078.16.208.16.336 0 .013-.005.09-.006.183a8.1 8.1 0 000 1.996c.002.094.005.17.006.183.002.128-.063.258-.16.336l-.84.692a1.875 1.875 0 00-.432 2.385l.922 1.597a1.875 1.875 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 002.28-.819l.923-1.597a1.875 1.875 0 00-.432-2.385l-.84-.692c-.095-.078-.159-.208-.159-.336a7.274 7.274 0 000-2.015c0-.128.064-.258.159-.336l.84-.692a1.875 1.875 0 00.432-2.385l-.923-1.597a1.875 1.875 0 00-2.28-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 00-1.85-1.567h-1.843zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" /></svg>
-            </button>
-            <!-- Profile Button -->
-            <button class="profile-btn" id="profile-btn" aria-label="Profile">
+            <!-- Profile Menu Button -->
+            <button class="profile-btn" id="profile-menu-btn" aria-label="Profile">
                 <img id="header-avatar" class="hidden" alt="Profile">
                 <div id="header-avatar-placeholder" class="profile-btn-placeholder">👤</div>
             </button>
@@ -224,6 +221,35 @@
     </div>
 
     <!-- ═══════════════════════════════════ MODALS ═══════════════════════════════════ -->
+
+    <!-- Profile Menu Modal -->
+    <div class="modal-overlay" id="profile-menu-overlay">
+        <div class="modal-content" style="max-width: 320px;">
+            <div class="modal-header">
+                <h2 class="modal-title">My Profile</h2>
+                <button class="close-btn" id="close-profile-menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:1.5rem; margin-top:0.5rem;">
+                <div class="profile-btn" style="width:72px; height:72px; margin-bottom:0.8rem; cursor:default;">
+                    <img id="menu-avatar" class="hidden" alt="Profile" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                    <div id="menu-avatar-placeholder" class="profile-btn-placeholder" style="width:72px; height:72px; font-size:2rem;">👤</div>
+                </div>
+                <div id="menu-user-name" style="font-family:var(--font-display); font-size:1.2rem; font-weight:800; color:var(--text-primary);">User</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                <button class="btn-outline" id="menu-edit-profile-btn" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.158 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.713zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z" /></svg>
+                    Edit Profile
+                </button>
+                <button class="btn-outline" id="menu-settings-btn" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 00-2.282.819l-.922 1.597a1.875 1.875 0 00.432 2.385l.84.692c.097.078.16.208.16.336 0 .013-.005.09-.006.183a8.1 8.1 0 000 1.996c.002.094.005.17.006.183.002.128-.063.258-.16.336l-.84.692a1.875 1.875 0 00-.432 2.385l.922 1.597a1.875 1.875 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 002.28-.819l.923-1.597a1.875 1.875 0 00-.432-2.385l-.84-.692c-.095-.078-.159-.208-.159-.336a7.274 7.274 0 000-2.015c0-.128.064-.258.159-.336l.84-.692a1.875 1.875 0 00.432-2.385l-.923-1.597a1.875 1.875 0 00-2.28-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 00-1.85-1.567h-1.843zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" /></svg>
+                    Settings
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settings-overlay">

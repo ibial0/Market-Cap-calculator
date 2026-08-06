@@ -1,4 +1,4 @@
-const CACHE_NAME = 'crypto-mc-calc-v2';
+const CACHE_NAME = 'crypto-mc-calc-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -34,6 +34,25 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   
+  // Network-first for HTML pages
+  if (event.request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for everything else (JS, CSS, Images)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

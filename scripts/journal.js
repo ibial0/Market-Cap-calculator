@@ -133,7 +133,14 @@ const renderJournal = () => {
     if (tokens.length === 0) {
         container.innerHTML = `
         <div class="journal-empty">
-            <div class="journal-empty-icon">📊</div>
+            <div class="journal-empty-icon">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-primary); opacity: 0.8;">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                    <path d="M12.5 14.5l2 2 4-4"></path>
+                </svg>
+            </div>
             <div class="journal-empty-title">No Trades Yet</div>
             <div class="journal-empty-sub">Click "+ New Token" to start tracking your trades</div>
         </div>`;

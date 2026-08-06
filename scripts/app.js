@@ -321,6 +321,25 @@ window.addEventListener('journal-generate-card', (e) => {
         elTargetMC.value = formatNumber(inK, 2);
         State.targetMul = 1000;
     }
+    
+    // Set investment amount
+    if (dca.totalEntryAmount > 0 && elInv) {
+        elInv.value = dca.totalEntryAmount;
+        State.inv = dca.totalEntryAmount;
+    }
+
+    // Turn off multi-entry/exit toggles to use the pre-filled average values
+    const dcaInitToggle = document.getElementById('dca-init-toggle');
+    if (dcaInitToggle && dcaInitToggle.checked) {
+        dcaInitToggle.checked = false;
+        dcaInitToggle.dispatchEvent(new Event('change'));
+    }
+    const dcaTargetToggle = document.getElementById('dca-target-toggle');
+    if (dcaTargetToggle && dcaTargetToggle.checked) {
+        dcaTargetToggle.checked = false;
+        dcaTargetToggle.dispatchEvent(new Event('change'));
+    }
+    
     calculate();
 });
 

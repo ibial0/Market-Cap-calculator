@@ -75,6 +75,7 @@
 .add-token-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     color: #0a0f1c;
