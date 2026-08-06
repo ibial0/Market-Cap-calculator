@@ -5,44 +5,74 @@ import { calculateROI } from '../calculator/core.js';
 import { CardEngine } from '../cards/engine.js';
 import { initTheme } from '../ui/theme.js';
 import { initModals } from '../ui/modals.js';
+import { initProfile } from '../ui/profile.js';
+import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 
-// DOM Elements
-const elInitMC = document.getElementById('initial-mc');
+// ═══════════════════════════════════════════════════════════
+//  DOM Elements
+// ═══════════════════════════════════════════════════════════
+const elInitMC   = document.getElementById('initial-mc');
 const elTargetMC = document.getElementById('target-mc');
-const elInv = document.getElementById('investment');
-
-const elToken = document.getElementById('token-name');
-const elUser = document.getElementById('user-name');
+const elInv      = document.getElementById('investment');
+const elToken    = document.getElementById('token-name');
 
 const resFinalValue = document.getElementById('res-final-value');
-const resFinalBdt = document.getElementById('res-final-bdt');
-const resProfit = document.getElementById('res-profit');
-const resProfitBdt = document.getElementById('res-profit-bdt');
-const resRoi = document.getElementById('res-roi');
+const resFinalBdt   = document.getElementById('res-final-bdt');
+const resProfit     = document.getElementById('res-profit');
+const resProfitBdt  = document.getElementById('res-profit-bdt');
+const resRoi        = document.getElementById('res-roi');
 const resMultiplier = document.getElementById('res-multiplier');
 
-// Init inputs
+// DCA state
+let dcaInitRows   = []; // [{mc, mcUnit, amount}]
+let dcaTargetRows = [];
+
+// ═══════════════════════════════════════════════════════════
+//  Init inputs from State
+// ═══════════════════════════════════════════════════════════
 if (elToken) elToken.value = State.tokenName;
-if (elUser) elUser.value = State.userName;
+_updateNamePreview();
 
+// ═══════════════════════════════════════════════════════════
+//  Core Calculate
+// ═══════════════════════════════════════════════════════════
 const calculate = () => {
-    State.initVal = parseAmount(elInitMC.value);
-    State.targetVal = parseAmount(elTargetMC.value);
-    State.inv = parseAmount(elInv.value);
+    const dcaInitActive   = document.getElementById('dca-init-toggle')?.checked;
+    const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
-    let realInit = State.initVal * State.initMul;
-    let realTarget = State.targetVal * State.targetMul;
+    let realInit, realTarget, inv;
+    inv = parseAmount(elInv?.value);
 
-    const result = calculateROI(realInit, realTarget, State.inv);
+    if (dcaInitActive && dcaInitRows.length > 0) {
+        realInit = _calcDCAAvg(dcaInitRows);
+        _updateDCAAvgDisplay('init-avg-val', realInit);
+    } else {
+        const initVal = parseAmount(elInitMC?.value);
+        realInit = initVal * State.initMul;
+    }
+
+    if (dcaTargetActive && dcaTargetRows.length > 0) {
+        realTarget = _calcDCAAvg(dcaTargetRows);
+        _updateDCAAvgDisplay('target-avg-val', realTarget);
+    } else {
+        const targetVal = parseAmount(elTargetMC?.value);
+        realTarget = targetVal * State.targetMul;
+    }
+
+    State.initVal   = realInit;
+    State.targetVal = realTarget;
+    State.inv       = inv;
+
+    const result = calculateROI(realInit, realTarget, inv);
 
     if (result.isValid) {
         resFinalValue.innerText = `$${formatNumber(result.finalValue)}`;
-        resProfit.innerText = `$${formatNumber(result.profit)}`;
-        resRoi.innerText = `${formatNumber(result.roi)}%`;
+        resProfit.innerText     = `$${formatNumber(result.profit)}`;
+        resRoi.innerText        = `${formatNumber(result.roi)}%`;
         resMultiplier.innerText = `${formatNumber(result.multiplier)}x`;
 
         resProfit.className = 'result-value ' + (result.profit >= 0 ? 'value-green' : 'value-red');
-        resRoi.className = 'result-value ' + (result.roi >= 0 ? 'value-green' : 'value-red');
+        resRoi.className    = 'result-value ' + (result.roi >= 0 ? 'value-green' : 'value-red');
         
         if (State.showBdt) {
             resFinalBdt.innerText = `৳ ${formatNumber(result.finalValue * State.bdtRate)}`;
@@ -56,17 +86,43 @@ const calculate = () => {
         }
     } else {
         resFinalValue.innerText = '$0.00';
-        resProfit.innerText = '$0.00';
-        resRoi.innerText = '0.00%';
+        resProfit.innerText     = '$0.00';
+        resRoi.innerText        = '0.00%';
         resMultiplier.innerText = '0.00x';
         resProfit.className = 'result-value';
-        resRoi.className = 'result-value';
+        resRoi.className    = 'result-value';
         resFinalBdt.classList.add('hidden');
         resProfitBdt.classList.add('hidden');
     }
 };
 
-// Handlers
+// ─── DCA Avg Calculation ──────────────────────────────────
+const _calcDCAAvg = (rows) => {
+    let totalWeight = 0, totalAmount = 0;
+    rows.forEach(r => {
+        const mc  = parseFloat(r.mc || 0) * parseFloat(r.unit || 1);
+        const amt = parseFloat(r.amount || 0);
+        if (mc > 0 && amt > 0) {
+            totalWeight += mc * amt;
+            totalAmount += amt;
+        }
+    });
+    return totalAmount > 0 ? totalWeight / totalAmount : 0;
+};
+
+const _updateDCAAvgDisplay = (elId, avgMC) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (avgMC <= 0) { el.textContent = '—'; return; }
+    if (avgMC >= 1e9) el.textContent = `$${(avgMC / 1e9).toFixed(2)}B`;
+    else if (avgMC >= 1e6) el.textContent = `$${(avgMC / 1e6).toFixed(2)}M`;
+    else if (avgMC >= 1e3) el.textContent = `$${(avgMC / 1e3).toFixed(2)}K`;
+    else el.textContent = `$${formatNumber(avgMC)}`;
+};
+
+// ═══════════════════════════════════════════════════════════
+//  Handlers
+// ═══════════════════════════════════════════════════════════
 const handleInput = () => calculate();
 const handleBlur = (e) => {
     let val = parseAmount(e.target.value);
@@ -91,14 +147,10 @@ if (elToken) {
         Storage.set('tokenName', State.tokenName); 
     });
 }
-if (elUser) {
-    elUser.addEventListener('input', e => { 
-        State.userName = e.target.value; 
-        Storage.set('userName', State.userName); 
-    });
-}
 
-// Multiplier Toggles
+// ═══════════════════════════════════════════════════════════
+//  Multiplier Toggles (single mode)
+// ═══════════════════════════════════════════════════════════
 const setupToggles = (groupId, stateKey) => {
     const btns = document.querySelectorAll(`#${groupId} .mul-btn`);
     btns.forEach(btn => {
@@ -113,33 +165,225 @@ const setupToggles = (groupId, stateKey) => {
 setupToggles('init-toggles', 'initMul');
 setupToggles('target-toggles', 'targetMul');
 
-// Initialize Theme & Modals
-initTheme();
-initModals(calculate);
+// ═══════════════════════════════════════════════════════════
+//  DCA Toggle Setup
+// ═══════════════════════════════════════════════════════════
+const setupDCAToggle = (toggleId, singleId, multiId, rowsContainerId, addBtnId, rows, avgContainerId) => {
+    const toggle   = document.getElementById(toggleId);
+    const single   = document.getElementById(singleId);
+    const multi    = document.getElementById(multiId);
+    const addBtn   = document.getElementById(addBtnId);
+    const avgCont  = document.getElementById(avgContainerId);
 
-// Service Worker
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    if (!toggle) return;
+
+    // Init with 2 empty rows
+    const addRow = () => {
+        const rowData = { mc: '', unit: '1000', amount: '' };
+        rows.push(rowData);
+        renderDCARows(rowsContainerId, rows, calculate);
+        calculate();
+    };
+
+    toggle.addEventListener('change', () => {
+        if (toggle.checked) {
+            single.classList.add('hidden');
+            multi.classList.remove('hidden');
+            if (rows.length === 0) { addRow(); addRow(); }
+            renderDCARows(rowsContainerId, rows, calculate);
+        } else {
+            single.classList.remove('hidden');
+            multi.classList.add('hidden');
+            rows.length = 0;
+        }
+        calculate();
+    });
+
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            addRow();
+        });
+    }
+};
+
+setupDCAToggle('dca-init-toggle', 'init-single', 'init-multi', 'init-dca-rows', 'add-init-dca-row', dcaInitRows, 'init-dca-avg');
+setupDCAToggle('dca-target-toggle', 'target-single', 'target-multi', 'target-dca-rows', 'add-target-dca-row', dcaTargetRows, 'target-dca-avg');
+
+// ─── Render DCA Rows ──────────────────────────────────────
+const renderDCARows = (containerId, rows, onChange) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = rows.map((row, i) => `
+    <div class="dca-entry-row">
+        <div class="input-wrapper">
+            <span class="prefix">$</span>
+            <input type="number" class="amount-input dca-mc-inp" data-index="${i}" placeholder="0" value="${row.mc}" inputmode="decimal" min="0">
+        </div>
+        <select class="mc-unit-select dca-unit-sel" data-index="${i}">
+            <option value="1000"    ${row.unit === '1000'       ? 'selected' : ''}>K</option>
+            <option value="1000000" ${row.unit === '1000000'    ? 'selected' : ''}>M</option>
+            <option value="1000000000" ${row.unit === '1000000000' ? 'selected' : ''}>B</option>
+        </select>
+        <div class="input-wrapper" style="max-width:90px;">
+            <span class="prefix">$</span>
+            <input type="number" class="amount-input dca-amt-inp" data-index="${i}" placeholder="0" value="${row.amount}" inputmode="decimal" min="0">
+        </div>
+        ${rows.length > 1 ? `<button class="dca-remove-btn" data-index="${i}">×</button>` : ''}
+    </div>`).join('');
+
+    // Bind events
+    container.querySelectorAll('.dca-mc-inp').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+            rows[parseInt(e.target.dataset.index)].mc = e.target.value;
+            onChange();
+        });
+    });
+    container.querySelectorAll('.dca-amt-inp').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+            rows[parseInt(e.target.dataset.index)].amount = e.target.value;
+            onChange();
+        });
+    });
+    container.querySelectorAll('.dca-unit-sel').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+            rows[parseInt(e.target.dataset.index)].unit = e.target.value;
+            onChange();
+        });
+    });
+    container.querySelectorAll('.dca-remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            rows.splice(idx, 1);
+            renderDCARows(containerId, rows, onChange);
+            onChange();
+        });
+    });
+};
+
+// ═══════════════════════════════════════════════════════════
+//  Show Name Toggle
+// ═══════════════════════════════════════════════════════════
+const showNameToggle = document.getElementById('show-name-toggle');
+if (showNameToggle) {
+    showNameToggle.checked = State.showUserName;
+    showNameToggle.addEventListener('change', (e) => {
+        State.showUserName = e.target.checked;
+        Storage.set('showUserName', State.showUserName);
     });
 }
 
-// Card Generation Logic
-let isGenerating = false;
+function _updateNamePreview() {
+    const previewEl = document.getElementById('card-name-preview-text');
+    if (!previewEl) return;
+    const name = Storage.get('userName', '');
+    if (name) {
+        previewEl.textContent = `"${name}" will appear on your card`;
+    } else {
+        previewEl.textContent = 'No name set — Go to Profile to set your name';
+    }
+}
 
-const generateBtn = document.getElementById('btn-generate');
+// ═══════════════════════════════════════════════════════════
+//  Tab Navigation
+// ═══════════════════════════════════════════════════════════
+const tabBtns   = document.querySelectorAll('.tab-btn');
+const tabPanels = document.querySelectorAll('.tab-panel');
+
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${target}`)?.classList.add('active');
+    });
+});
+
+// Switch to calculator tab from journal analysis
+window.addEventListener('journal-generate-card', (e) => {
+    const { token, dca } = e.detail;
+    // Switch to calculator
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabPanels.forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-tab="calculator"]')?.classList.add('active');
+    document.getElementById('tab-calculator')?.classList.add('active');
+    // Pre-fill token name
+    if (elToken) { elToken.value = token.tokenName; State.tokenName = token.tokenName; }
+    // Pre-fill with avg entry/exit if available
+    if (dca.avgEntryMC > 0 && elInitMC) {
+        const inK = dca.avgEntryMC / 1000;
+        elInitMC.value = formatNumber(inK, 2);
+        State.initMul = 1000;
+    }
+    if (dca.avgExitMC > 0 && elTargetMC) {
+        const inK = dca.avgExitMC / 1000;
+        elTargetMC.value = formatNumber(inK, 2);
+        State.targetMul = 1000;
+    }
+    calculate();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  Init subsystems
+// ═══════════════════════════════════════════════════════════
+initTheme();
+initModals(calculate);
+initProfile();
+initJournal();
+bindTradeModal();
+bindAnalysisModal();
+
+// Close new-token-cancel-x button
+const newTokenCancelX = document.getElementById('new-token-cancel-x');
+if (newTokenCancelX) {
+    newTokenCancelX.addEventListener('click', () => {
+        document.getElementById('new-token-modal')?.classList.remove('active');
+    });
+}
+
+// Update name preview when profile saved (listen to Storage change)
+document.getElementById('profile-save-btn')?.addEventListener('click', () => {
+    setTimeout(_updateNamePreview, 900);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  Service Worker
+// ═══════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Card Generation Logic
+// ═══════════════════════════════════════════════════════════
+let isGenerating = false;
+const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
 
 if (generateBtn) {
     generateBtn.addEventListener('click', async () => {
         if (isGenerating) return;
         
-        let initVal = parseAmount(elInitMC.value);
-        let targetVal = parseAmount(elTargetMC.value);
-        let inv = parseAmount(elInv.value);
-        
-        let realInit = initVal * State.initMul;
-        let realTarget = targetVal * State.targetMul;
+        const dcaInitActive   = document.getElementById('dca-init-toggle')?.checked;
+        const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
+
+        let realInit, realTarget;
+        const inv = parseAmount(elInv?.value);
+
+        if (dcaInitActive && dcaInitRows.length > 0) {
+            realInit = _calcDCAAvg(dcaInitRows);
+        } else {
+            realInit = parseAmount(elInitMC?.value) * State.initMul;
+        }
+
+        if (dcaTargetActive && dcaTargetRows.length > 0) {
+            realTarget = _calcDCAAvg(dcaTargetRows);
+        } else {
+            realTarget = parseAmount(elTargetMC?.value) * State.targetMul;
+        }
 
         if (realInit <= 0 || inv <= 0 || realTarget <= 0) {
             alert("Please enter valid positive numbers for Initial MC, Target MC, and Investment.");
@@ -147,10 +391,11 @@ if (generateBtn) {
         }
         
         const result = calculateROI(realInit, realTarget, inv);
+        const showName = document.getElementById('show-name-toggle')?.checked;
         
         let data = {
             tokenName: State.tokenName,
-            userName: State.userName,
+            userName: showName ? State.userName : '',
             initMC: realInit,
             targetMC: realTarget,
             inv: inv,
@@ -180,9 +425,9 @@ if (rerollBtn) {
 async function generateRender(data) {
     isGenerating = true;
     window.lastData = data;
-    const node = document.getElementById('card-node');
+    const node    = document.getElementById('card-node');
     const spinner = document.getElementById('preview-loading');
-    const img = document.getElementById('preview-img');
+    const img     = document.getElementById('preview-img');
     
     spinner.style.display = 'block';
     img.classList.remove('loaded');
@@ -196,7 +441,7 @@ async function generateRender(data) {
         if (typeof html2canvas === 'undefined') throw new Error("Library not loaded");
         
         const canvas = await html2canvas(node, {
-            scale: 1,
+            scale: 2,
             backgroundColor: null,
             useCORS: true,
             logging: false
@@ -219,14 +464,16 @@ async function generateRender(data) {
 const downloadBtn = document.getElementById('btn-download');
 if (downloadBtn) {
     downloadBtn.addEventListener('click', () => {
-        const imgSrc = document.getElementById('preview-img').src;
+        const imgSrc = document.getElementById('preview-img')?.src;
         if (!imgSrc) return;
         const link = document.createElement('a');
-        link.download = `mccalc-card-${Date.now()}.png`;
+        link.download = `mccalc-${State.tokenName || 'card'}-${Date.now()}.png`;
         link.href = imgSrc;
         link.click();
     });
 }
 
-// Initial calculation
+// ═══════════════════════════════════════════════════════════
+//  Initial calculation
+// ═══════════════════════════════════════════════════════════
 calculate();

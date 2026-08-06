@@ -9,6 +9,8 @@ export const State = {
     
     tokenName: Storage.get('tokenName', ''),
     userName: Storage.get('userName', ''),
+    userLogo: Storage.get('userLogo', null),
+    showUserName: Storage.get('showUserName', true),
     
     bdtRate: Storage.get('bdtRate', 115),
     showBdt: Storage.get('showBdt', false),
