@@ -4,27 +4,12 @@
 //  NOTHING outside this file should define positions.
 // ═══════════════════════════════════════════════════════════
 
+// ── Dimensions & Safe Zones ─────────────────────────────────
+// No more character/text split. The entire canvas is available
+// to the renderer, minus the safe margin on the edges.
 export const CARD_W = 1600;
 export const CARD_H = 900;
-export const SAFE_MARGIN = 48;
-
-// ── Safe Zones ────────────────────────────────────────────
-// Character art is ONLY allowed inside CHAR_ZONE.
-// Text is ONLY allowed inside TEXT_ZONE.
-// These two zones do NOT overlap — enforced structurally.
-export const CHAR_ZONE = {
-    x: SAFE_MARGIN,
-    y: SAFE_MARGIN,
-    w: Math.floor(CARD_W * 0.38),   // left 38% of card
-    h: CARD_H - SAFE_MARGIN * 2,
-};
-
-export const TEXT_ZONE = {
-    x: Math.floor(CARD_W * 0.38) + SAFE_MARGIN,
-    y: SAFE_MARGIN,
-    w: CARD_W - Math.floor(CARD_W * 0.38) - SAFE_MARGIN * 2,
-    h: CARD_H - SAFE_MARGIN * 2,
-};
+export const SAFE_MARGIN = 64;
 
 // ── Named Anchor Slots ────────────────────────────────────
 // Each slot lives inside TEXT_ZONE. Positions are % of TEXT_ZONE.
