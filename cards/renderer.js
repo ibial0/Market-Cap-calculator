@@ -1,105 +1,122 @@
 // ═══════════════════════════════════════════════════════════
-//  LAYERED HTML COMPOSITOR & LAYOUT ENGINE
+//  RENDERER — Structured HTML/CSS Compositor
+//  This file owns ALL layout math. Themes own ONLY visuals.
 // ═══════════════════════════════════════════════════════════
-import { SAFE_MARGIN, CARD_W, CARD_H, TEXT_SCALE } from './config.js';
+import {
+    CARD_W, CARD_H, SAFE_MARGIN,
+    CHAR_ZONE, TEXT_ZONE, TEXT_SCALE,
+} from './config.js';
 
-/** Auto-scale token name font size based on length */
+// ── Font size helpers ─────────────────────────────────────
+
 export function tokenFontSize(name) {
     const len = (name || '').length;
-    for (const bp of TEXT_SCALE.tokenName.breakpoints) {
-        if (len <= bp.len) return bp.size;
+    const bp = TEXT_SCALE.tokenName.breakpoints;
+    for (const b of bp) {
+        if (len <= b.len) return b.size;
     }
     return TEXT_SCALE.tokenName.min;
 }
 
-/** Auto-scale hero number font size based on string length */
 export function heroFontSize(str) {
     const len = (str || '').length;
-    if (len <= 4) return TEXT_SCALE.heroNumber.max;
-    if (len <= 6) return 132;
-    if (len <= 8) return 110;
-    if (len <= 10) return 92;
+    const bp = TEXT_SCALE.heroNumber.breakpoints;
+    for (const b of bp) {
+        if (len <= b.len) return b.size;
+    }
     return TEXT_SCALE.heroNumber.min;
 }
 
-/** Format number with K/M/B suffix */
-export function fmtNum(val, rate) {
-    rate = rate || 1;
+/** Format large numbers: 1234567 → "1.23M" */
+export function fmtNum(val, rate = 1) {
     const v = val * rate;
     if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
     if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
-    if (v >= 1e3) return (v / 1e3).toFixed(2) + 'K';
+    if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
     return v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
+// ── Main composer ─────────────────────────────────────────
+
 /**
- * Compose the full card HTML from theme layers
- * @param {object} params
- * @param {object} params.theme - Theme module
- * @param {object} params.data - Trade data
- * @param {object} params.tier - { id, def }
- * @param {object} params.combo - { bgVariant, charVariant, accentIdx, detailIdx }
- * @param {object} params.randomizer - Randomizer instance for pick()
- * @returns {string} Complete card HTML
+ * Build complete card HTML from theme + data.
+ * Returns a self-contained HTML string.
+ * The outer container is exactly CARD_W × CARD_H.
  */
 export function composeCard({ theme, data, tier, combo, randomizer }) {
     const d = data;
     const isProfit = d.profit >= 0;
     const sym = d.showBdt ? '৳' : '$';
-    const rate = d.showBdt ? d.bdtRate : 1;
+    const rate = d.showBdt ? (d.bdtRate || 1) : 1;
 
-    // Resolve palette from theme
-    const palette = theme.getPalette(tier.id, combo.accentIdx, isProfit);
+    // ── Resolve palette & typography ─────────────────────
+    const pal  = theme.getPalette(tier.id, combo.accentIdx, isProfit);
     const typo = theme.getTypography();
     const emotion = randomizer.pick(tier.def.emotions);
 
-    // Pre-format all data strings
-    const tok = d.tokenName || 'CRYPTO';
-    const usr = d.userName || '';
-    const mul = d.multiplier.toFixed(2) + 'X';
-    const roi = (isProfit ? '+' : '') + d.roi.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%';
+    // ── Pre-format every data string ─────────────────────
+    const tok  = (d.tokenName || 'CRYPTO').toUpperCase();
+    const usr  = d.userName  || '';
+    const mul  = d.multiplier.toFixed(2) + 'x';
+    const roi  = (isProfit ? '+' : '') + d.roi.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%';
     const pStr = (isProfit ? '+' : '-') + sym + fmtNum(Math.abs(d.profit), rate);
-    const inv = sym + fmtNum(d.inv, rate);
-    const fin = sym + fmtNum(d.finalValue, rate);
-    const ent = sym + fmtNum(d.initMC, rate);
-    const ext = sym + fmtNum(d.targetMC, rate);
+    const inv  = sym + fmtNum(d.inv, rate);
+    const fin  = sym + fmtNum(d.finalValue, rate);
+    const ent  = sym + fmtNum(d.initMC, rate);
+    const ext  = sym + fmtNum(d.targetMC, rate);
 
-    const profitColor = isProfit ? palette.positive : palette.negative;
-    const tokSz = tokenFontSize(tok);
-    const mulSz = heroFontSize(mul);
-    const roiSz = heroFontSize(roi);
+    const profitColor = isProfit ? pal.positive : pal.negative;
+    const tokSz  = tokenFontSize(tok);
+    const mulSz  = heroFontSize(mul);
 
-    // Build data object for theme renderers
-    const cardData = {
+    // ── Card data bundle passed to theme renderLayout ─────
+    const cd = {
         tok, usr, mul, roi, pStr, inv, fin, ent, ext,
-        isProfit, profitColor, tokSz, mulSz, roiSz,
-        sym, rate, emotion, tierId: tier.id, tierLabel: tier.def.label,
+        isProfit, profitColor, tokSz, mulSz,
+        sym, rate, emotion,
+        tierId:    tier.id,
+        tierLabel: tier.def.label,
         tierBadge: tier.def.badge,
     };
 
-    // ── Layer 1: Background ──
-    const bgLayer = theme.renderBackground(palette, tier.id, combo.bgVariant);
+    // ── Build layers ─────────────────────────────────────
+    // Layer 0: background (fills full card, position:absolute)
+    const bgLayer = theme.renderBackground(pal, tier.id, combo.bgVariant);
 
-    // ── Layer 2: Character (optional) ──
+    // Layer 1: character (only inside CHAR_ZONE, position:absolute)
     let charLayer = '';
     if (theme.hasCharacter) {
-        charLayer = theme.renderCharacter(palette, emotion, isProfit, combo.charVariant);
+        charLayer = _wrapCharZone(
+            theme.renderCharacter(pal, emotion, isProfit, combo.charVariant)
+        );
     }
 
-    // ── Layer 3: Effects / Decorations ──
-    const fxLayer = theme.renderEffects(palette, tier.id, combo.detailIdx);
+    // Layer 2: effects/overlays (position:absolute, full card)
+    const fxLayer = theme.renderEffects
+        ? theme.renderEffects(pal, tier.id, combo.detailIdx)
+        : '';
 
-    // ── Layer 4: UI / Data ──
-    const layout = theme.pickLayout ? theme.pickLayout(tier.id, isProfit, randomizer) : 'default';
-    const uiLayer = renderUILayer(theme, palette, typo, cardData, layout);
+    // Layer 3: UI / text data (only inside TEXT_ZONE, position:absolute)
+    const uiLayer = _wrapTextZone(
+        _renderUI(theme, pal, typo, cd)
+    );
 
-    // ── Badge ──
-    const badge = renderBadge(tier, isProfit, palette, typo);
+    // ── Border / container style ──────────────────────────
+    const borderStyle = theme.getBorder
+        ? theme.getBorder(pal)
+        : `border-radius:20px;border:1px solid ${pal.accent}30;`;
 
-    // ── Compose all layers ──
-    const borderStyle = theme.getBorder ? theme.getBorder(palette) : `border-radius:20px;border:2px solid ${palette.accent}30;`;
-
-    return `<div style="width:${CARD_W}px;height:${CARD_H}px;position:relative;overflow:hidden;box-sizing:border-box;font-family:${typo.body};color:${palette.text};background:${palette.bg};${borderStyle}">
+    return `<div id="card-root" style="
+        width:${CARD_W}px;
+        height:${CARD_H}px;
+        position:relative;
+        overflow:hidden;
+        box-sizing:border-box;
+        font-family:${typo.body};
+        color:${pal.text};
+        background:${pal.bg};
+        ${borderStyle}
+    ">
         ${bgLayer}
         ${charLayer}
         ${fxLayer}
@@ -107,61 +124,215 @@ export function composeCard({ theme, data, tier, combo, randomizer }) {
     </div>`;
 }
 
-/** Render the primary UI/text layer */
-function renderUILayer(theme, pal, typo, cd, layout) {
-    const S = SAFE_MARGIN;
-    const { tok, usr, mul, roi, pStr, inv, fin, ent, ext, isProfit, profitColor, tokSz, mulSz, roiSz, tierBadge } = cd;
+// ── Zone wrappers ─────────────────────────────────────────
 
-    // ── Build reusable elements ──
-    const tokEl = (extra = '') => `<div style="font-size:${tokSz}px;font-family:${typo.display};font-weight:${typo.displayWeight || 900};letter-spacing:-0.02em;color:${pal.accent};line-height:1.1;overflow-wrap:break-word;max-width:100%;filter:drop-shadow(0 0 18px ${pal.glow || 'transparent'});${extra}">${tok}</div>`;
-
-    const heroNum = (n, sz, color, extra = '') => `<div style="font-size:${sz}px;font-family:${typo.display};font-weight:900;color:${color || profitColor};line-height:1;word-break:break-all;filter:drop-shadow(0 0 22px ${pal.glow || 'transparent'});${extra}">${n}</div>`;
-
-    const subNum = (n, sz, extra = '') => `<div style="font-size:${sz || 52}px;font-family:${typo.mono || typo.body};font-weight:700;color:${pal.text};opacity:0.72;line-height:1.15;${extra}">${n}</div>`;
-
-    const usrEl = () => usr ? `<div style="font-size:28px;font-family:${typo.body};font-weight:600;color:${pal.text};opacity:0.65;white-space:nowrap;">${usr}</div>` : '';
-
-    const lbl = (t) => `<div style="font-size:${TEXT_SCALE.label.size}px;font-family:${typo.body};color:${pal.text};opacity:0.5;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">${t}</div>`;
-
-    const val = (v, color) => `<div style="font-size:32px;font-family:${typo.mono || typo.body};font-weight:700;color:${color || pal.text};line-height:1.1;overflow-wrap:break-word;">${v}</div>`;
-
-    const cell = (l, v, c) => `<div>${lbl(l)}${val(v, c)}</div>`;
-
-    const badge = (isProfit && tierBadge) ? `<div style="display:inline-flex;align-items:center;padding:10px 28px;background:${pal.accent};color:#000;border-radius:50px;font-size:20px;font-weight:800;font-family:${typo.display};letter-spacing:3px;white-space:nowrap;box-shadow:0 0 28px ${pal.glow || 'transparent'};">${tierBadge}</div>` : '';
-
-    const dataGrid = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
-        ${cell('Entry MC', ent)}${cell('Exit MC', ext)}${cell('Investment', inv)}${cell('Current Value', fin, profitColor)}
-    </div>`;
-
-    const dataPills = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        ${[['Entry MC', ent], ['Exit MC', ext], ['Investment', inv], ['Current Value', fin, profitColor]].map(([l, v, c]) =>
-        `<div style="background:${pal.accent}0c;border:1px solid ${pal.accent}20;border-radius:14px;padding:18px 24px;">${lbl(l)}${val(v, c)}</div>`
-    ).join('')}
-    </div>`;
-
-    // ── Apply theme-specific layout override if available ──
-    if (theme.renderLayout) {
-        return theme.renderLayout({ S, tokEl, heroNum, subNum, usrEl, lbl, val, cell, badge, dataGrid, dataPills, cd, pal, typo, layout });
-    }
-
-    // ── Default Layout: cinematic_split ──
-    return `<div style="position:relative;z-index:10;width:100%;height:100%;padding:${S}px;display:flex;flex-direction:column;justify-content:space-between;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
-            ${tokEl('max-width:60%;')}
-            <div style="text-align:right;">${badge}${usr ? `<div style="margin-top:10px;">${usrEl()}</div>` : ''}</div>
-        </div>
-        <div>
-            ${heroNum(mul, mulSz)}
-            ${subNum(roi + ' ROI', 50)}
-        </div>
-        <div>
-            ${dataGrid}
-        </div>
-    </div>`;
+/**
+ * Wrap character art inside the CHAR_ZONE absolutely.
+ * Character art is clipped to this box — it CANNOT bleed into TEXT_ZONE.
+ */
+function _wrapCharZone(innerHTML) {
+    if (!innerHTML) return '';
+    return `<div style="
+        position:absolute;
+        left:${CHAR_ZONE.x}px;
+        top:${CHAR_ZONE.y}px;
+        width:${CHAR_ZONE.w}px;
+        height:${CHAR_ZONE.h}px;
+        overflow:hidden;
+        pointer-events:none;
+        z-index:5;
+    ">${innerHTML}</div>`;
 }
 
-/** Render tier badge */
-function renderBadge(tier, isProfit, pal, typo) {
-    if (!isProfit) return '';
-    return `<div style="display:inline-flex;align-items:center;padding:10px 28px;background:${pal.accent};color:#000;border-radius:50px;font-size:20px;font-weight:800;font-family:${typo.display};letter-spacing:3px;white-space:nowrap;">${tier.def.badge}</div>`;
+/**
+ * Wrap UI text inside the TEXT_ZONE absolutely.
+ * Text CANNOT bleed into CHAR_ZONE.
+ */
+function _wrapTextZone(innerHTML) {
+    return `<div style="
+        position:absolute;
+        left:${TEXT_ZONE.x}px;
+        top:${TEXT_ZONE.y}px;
+        width:${TEXT_ZONE.w}px;
+        height:${TEXT_ZONE.h}px;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        box-sizing:border-box;
+        pointer-events:none;
+        z-index:10;
+    ">${innerHTML}</div>`;
+}
+
+// ── UI renderer ───────────────────────────────────────────
+
+/**
+ * Render the text/data UI layer.
+ * If the theme provides renderLayout(), delegate to it.
+ * Otherwise use the default structured layout.
+ *
+ * Themes that provide renderLayout() receive:
+ *   { cd, pal, typo, W, H, S }
+ * where W/H are TEXT_ZONE dimensions and S is SAFE_MARGIN.
+ * The theme must NOT use absolute pixel positions from the full card.
+ */
+function _renderUI(theme, pal, typo, cd) {
+    const W = TEXT_ZONE.w;
+    const H = TEXT_ZONE.h;
+    const S = 32; // inner padding within the text zone
+
+    if (theme.renderLayout) {
+        return theme.renderLayout({ cd, pal, typo, W, H, S });
+    }
+    return _defaultLayout({ cd, pal, typo, W, H, S });
+}
+
+/**
+ * Default layout — used as fallback and as the reference design.
+ * Three rows: top (token+user), center (hero numbers), bottom (data grid).
+ */
+function _defaultLayout({ cd, pal, typo, W, H, S }) {
+    const {
+        tok, usr, mul, roi, pStr, inv, fin, ent, ext,
+        isProfit, profitColor, tokSz, mulSz, tierBadge,
+    } = cd;
+    const ac = pal.accent;
+    const TS = TEXT_SCALE;
+
+    // ── Helper builders ───────────────────────────────────
+    const lbl = (t) => `
+        <div style="
+            font-size:${TS.dataLabel.size}px;
+            font-family:${typo.body};
+            color:${pal.text};
+            opacity:0.45;
+            font-weight:500;
+            letter-spacing:2.5px;
+            text-transform:uppercase;
+            margin-bottom:6px;
+            white-space:nowrap;
+        ">${t}</div>`;
+
+    const dval = (v, c) => `
+        <div style="
+            font-size:${TS.dataValue.size}px;
+            font-family:${typo.mono || typo.body};
+            font-weight:700;
+            color:${c || pal.text};
+            line-height:1.1;
+            white-space:nowrap;
+        ">${v}</div>`;
+
+    const cell = (label, value, color) => `
+        <div style="flex:1;min-width:0;">
+            ${lbl(label)}${dval(value, color)}
+        </div>`;
+
+    // ── Badge ─────────────────────────────────────────────
+    const badge = (isProfit && tierBadge) ? `
+        <div style="
+            display:inline-flex;
+            align-items:center;
+            padding:7px 20px;
+            background:${ac}18;
+            border:1px solid ${ac}35;
+            color:${ac};
+            border-radius:50px;
+            font-size:${TS.badge.size}px;
+            font-weight:700;
+            font-family:${typo.display || typo.body};
+            letter-spacing:2.5px;
+            white-space:nowrap;
+        ">${tierBadge}</div>` : '';
+
+    // ── Username ──────────────────────────────────────────
+    const usrEl = usr ? `
+        <div style="
+            font-size:${TS.username.size}px;
+            font-family:${typo.body};
+            font-weight:500;
+            color:${pal.text};
+            opacity:0.5;
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            max-width:100%;
+            margin-top:${badge ? 10 : 0}px;
+        ">${usr}</div>` : '';
+
+    // ── ROW 1: Token name + user/badge ────────────────────
+    const row1 = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+            <div style="flex:1;min-width:0;overflow:hidden;">
+                <div style="
+                    font-size:${tokSz}px;
+                    font-family:${typo.display || typo.body};
+                    font-weight:${typo.displayWeight || 900};
+                    color:${ac};
+                    line-height:1.05;
+                    letter-spacing:-0.02em;
+                    overflow:hidden;
+                    text-overflow:ellipsis;
+                    white-space:nowrap;
+                ">${tok}</div>
+            </div>
+            <div style="flex-shrink:0;text-align:right;">
+                ${badge}
+                ${usrEl}
+            </div>
+        </div>`;
+
+    // ── ROW 2: Hero multiplier + ROI % ────────────────────
+    const row2 = `
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:${S}px 0;">
+            <div style="
+                font-size:${mulSz}px;
+                font-family:${typo.display || typo.body};
+                font-weight:900;
+                color:${profitColor};
+                line-height:1;
+                letter-spacing:-0.03em;
+                white-space:nowrap;
+                overflow:hidden;
+                text-overflow:clip;
+            ">${mul}</div>
+            <div style="
+                font-size:${TS.roiPercent.size}px;
+                font-family:${typo.mono || typo.body};
+                font-weight:700;
+                color:${pal.text};
+                opacity:0.65;
+                margin-top:12px;
+                white-space:nowrap;
+            ">${roi}</div>
+        </div>`;
+
+    // ── ROW 3: Data grid ──────────────────────────────────
+    const row3 = `
+        <div style="
+            display:flex;
+            gap:0;
+            border-top:1px solid ${ac}18;
+            padding-top:${S}px;
+        ">
+            ${cell('Entry MC',   ent)}
+            ${cell('Exit MC',    ext)}
+            ${cell('Invested',   inv)}
+            ${cell('P/L',        pStr, profitColor)}
+        </div>`;
+
+    return `
+        <div style="
+            width:100%;
+            height:100%;
+            display:flex;
+            flex-direction:column;
+            justify-content:space-between;
+            padding:${S}px;
+            box-sizing:border-box;
+        ">
+            ${row1}
+            ${row2}
+            ${row3}
+        </div>`;
 }

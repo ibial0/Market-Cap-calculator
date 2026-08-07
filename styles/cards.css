@@ -53,7 +53,7 @@
 .card-node {
     width: 1600px;
     height: 900px;
-    background: #0a0f1c;
+    background: transparent;
     position: relative;
     overflow: hidden;
     box-sizing: border-box;

@@ -453,36 +453,63 @@ async function generateRender(data) {
     const node    = document.getElementById('card-node');
     const spinner = document.getElementById('preview-loading');
     const img     = document.getElementById('preview-img');
-    
+
     spinner.style.display = 'block';
     img.classList.remove('loaded');
-    
+
+    // 1. Inject card HTML
     let engine = new CardEngine(data);
     node.innerHTML = engine.buildHTML();
-    
-    await new Promise(r => setTimeout(r, 100));
-    
+
     try {
-        if (typeof html2canvas === 'undefined') throw new Error("Library not loaded");
-        
+        if (typeof html2canvas === 'undefined') throw new Error("html2canvas not loaded");
+
+        // 2. Wait for ALL fonts to finish loading (real event, not setTimeout)
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+
+        // 3. Wait for every <img> inside the card node to fully load
+        const imgs = Array.from(node.querySelectorAll('img'));
+        if (imgs.length > 0) {
+            await Promise.all(imgs.map(el => {
+                if (el.complete && el.naturalWidth > 0) return Promise.resolve();
+                return new Promise((res, rej) => {
+                    el.onload  = res;
+                    el.onerror = res; // Don't block on broken images — just skip
+                    // Safety timeout: 8s per image max
+                    setTimeout(res, 8000);
+                });
+            }));
+        }
+
+        // 4. One rAF to let the browser paint before we snapshot
+        await new Promise(r => requestAnimationFrame(r));
+
+        // 5. Capture
         const canvas = await html2canvas(node, {
             scale: 2,
             backgroundColor: null,
             useCORS: true,
-            logging: false
+            allowTaint: false,
+            logging: false,
+            // Force html2canvas to use the node's exact size
+            width:  node.offsetWidth,
+            height: node.offsetHeight,
         });
-        
+
         img.src = canvas.toDataURL('image/png', 1.0);
         img.onload = () => {
             img.classList.add('loaded');
             spinner.style.display = 'none';
             isGenerating = false;
         };
+
     } catch (err) {
         console.error("Render failed:", err);
         spinner.style.display = 'none';
         isGenerating = false;
-        alert("Failed to render card. Please try again.");
+        alert("Card render failed. Please try again.");
     }
 }
 
