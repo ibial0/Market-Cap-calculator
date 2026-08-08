@@ -1,104 +1,121 @@
 // ═══════════════════════════════════════════════════════════
-//  THEME: TERMINAL (Replacing Pixel Art)
-//  Hacker command line style, pure monospace, ASCII borders.
-//  No characters.
+//  THEME: NEON GLOW (Pixel Art slot)
+//  Vibrant, high-energy neon aesthetic. Deep dark background
+//  with intense glowing borders and bright text.
 // ═══════════════════════════════════════════════════════════
 
 const PALETTES = [
-    { bg: '#050505', text: '#00ff00', accent: '#00ff00', positive: '#00ff00', negative: '#ff0000' }, // Matrix Green
-    { bg: '#050510', text: '#00e5ff', accent: '#00e5ff', positive: '#00e5ff', negative: '#ff0055' }, // Cyan
-    { bg: '#100500', text: '#ffaa00', accent: '#ffaa00', positive: '#ffaa00', negative: '#ff0000' }, // Amber
-    { bg: '#000000', text: '#ffffff', accent: '#ffffff', positive: '#ffffff', negative: '#ff0000' }, // Pure B&W
+    { bg: '#080012', text: '#ffffff', accent: '#d946ef', positive: '#22d3ee', negative: '#ef4444' }, // Magenta / Cyan
+    { bg: '#000812', text: '#ffffff', accent: '#3b82f6', positive: '#10b981', negative: '#f43f5e' }, // Blue / Emerald
+    { bg: '#120008', text: '#ffffff', accent: '#f43f5e', positive: '#eab308', negative: '#64748b' }, // Rose / Gold
 ];
 
 export default {
-    id: 'pixel_art', // Keeping ID same for config compatibility
-    name: 'Terminal',
+    id: 'pixel_art',
+    name: 'Neon Glow',
     hasCharacter: false,
-    bgVariants:     1,
-    charVariants:   1,
-    accentVariants: PALETTES.length,
-    detailVariants: 1,
+    bgVariants: 3, charVariants: 1, accentVariants: PALETTES.length, detailVariants: 1,
 
-    getPalette(tierId, accentIdx) {
-        return { ...PALETTES[accentIdx % PALETTES.length] };
-    },
-
+    getPalette(tierId, accentIdx) { return { ...PALETTES[accentIdx % PALETTES.length] }; },
     getTypography() {
         return {
-            display:       "'Courier New', 'Roboto Mono', monospace",
-            displayWeight: 700,
-            body:          "'Courier New', 'Roboto Mono', monospace",
-            mono:          "'Courier New', 'Roboto Mono', monospace",
+            display: "'Outfit', sans-serif", displayWeight: 900,
+            body: "'Inter', sans-serif", mono: "'Roboto Mono', monospace",
         };
     },
 
-    renderBackground(pal) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position:absolute;inset:0;pointer-events:none;">
+    renderBackground(pal, tierId, variant) {
+        const W = 1600, H = 900;
+        
+        let grid = '';
+        if (variant === 0) {
+            // Isometric dotted grid
+            for(let x=-H; x<W; x+=40) {
+                for(let y=0; y<H; y+=40) {
+                    grid += `<circle cx="${x + y/2}" cy="${y}" r="1.5" fill="${pal.accent}" opacity="0.15"/>`;
+                }
+            }
+        } else if (variant === 1) {
+            // Hexagon mesh
+            for(let x=0; x<W+50; x+=86.6) {
+                for(let y=0; y<H+50; y+=75) {
+                    const offset = (y/75)%2===0 ? 0 : 43.3;
+                    grid += `<polygon points="${x+offset},${y-25} ${x+43.3+offset},${y} ${x+43.3+offset},${y+50} ${x+offset},${y+75} ${x-43.3+offset},${y+50} ${x-43.3+offset},${y}" fill="none" stroke="${pal.accent}" stroke-width="1" opacity="0.1"/>`;
+                }
+            }
+        } else {
+            // Concentric rings
+            grid = `
+                <circle cx="50%" cy="50%" r="20%" fill="none" stroke="${pal.accent}" stroke-width="1" stroke-dasharray="10 10" opacity="0.2"/>
+                <circle cx="50%" cy="50%" r="35%" fill="none" stroke="${pal.accent}" stroke-width="1" opacity="0.1"/>
+                <circle cx="50%" cy="50%" r="50%" fill="none" stroke="${pal.accent}" stroke-width="1" stroke-dasharray="5 20" opacity="0.1"/>
+            `;
+        }
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"
+            style="position:absolute;inset:0;pointer-events:none;">
             <rect width="100%" height="100%" fill="${pal.bg}"/>
+            <!-- Soft radial glow behind everything -->
+            <radialGradient id="neonGlow" cx="50%" cy="50%" r="60%">
+                <stop offset="0%" stop-color="${pal.accent}" stop-opacity="0.15"/>
+                <stop offset="100%" stop-color="${pal.bg}" stop-opacity="0"/>
+            </radialGradient>
+            <rect width="100%" height="100%" fill="url(#neonGlow)"/>
+            ${grid}
         </svg>`;
     },
 
-    renderEffects() {
-        // Subtle scanlines
-        return `<div style="position:absolute;inset:0;pointer-events:none;z-index:20;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.1) 0px,rgba(0,0,0,0.1) 1px,transparent 1px,transparent 3px);"></div>`;
-    },
-
-    getBorder(pal) {
-        return `border: 2px solid ${pal.accent}; padding: 12px;`;
+    renderEffects() { return ''; },
+    
+    getBorder(pal) { 
+        return `border-radius:24px; border: 2px solid ${pal.accent}; 
+                box-shadow: 0 0 30px ${pal.accent}40, inset 0 0 30px ${pal.accent}40;`; 
     },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
         const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
-        const ac = pal.accent;
 
-        const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        const prefix = `root@system:~#`;
+        const lbl = (t) => `<div style="font-size:12px;font-family:${typo.body};color:${pal.accent};
+            font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;opacity:0.8;">${t}</div>`;
+        const dval = (v, c) => `<div style="font-size:36px;font-family:${typo.mono};font-weight:700;
+            color:${c || pal.text};letter-spacing:-1px;">${v}</div>`;
 
-        const pad = (str, len) => (str + ' '.repeat(50)).substring(0, len);
-        const line = (label, val, c) => `
-            <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
-                <span style="opacity:0.7;">${label.padEnd(20, '.')}</span>
-                <span style="color:${c || pal.text}; font-weight:700;">${val}</span>
-            </div>`;
+        return `<div style="width:100%;height:100%;display:flex;flex-direction:column;
+            justify-content:space-between;padding:${S+20}px;box-sizing:border-box;">
 
-        return `<div style="border:1px solid ${ac}; height:100%; box-sizing:border-box; padding:40px; display:flex; flex-direction:column; justify-content:space-between;">
-            
-            <!-- Terminal Header -->
-            <div>
-                <div style="font-size:20px; margin-bottom:12px;">${prefix} ./analyze_trade --token ${tok} ${usr ? '--user ' + usr : ''}</div>
-                <div style="font-size:20px; opacity:0.7; margin-bottom:40px;">[${dateStr}] Initializing protocol... OK</div>
-                
-                <div style="font-size:${tokSz}px; font-weight:700; border-bottom:2px dashed ${ac}50; padding-bottom:16px; margin-bottom:32px;">
-                    > TARGET_ASSET: ${tok}
+            <!-- TOP -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div style="border-left: 4px solid ${pal.accent}; padding-left: 20px;">
+                    <div style="font-size:${Math.min(tokSz, 80)}px;font-family:${typo.display};
+                        font-weight:900;color:${pal.text};line-height:1;letter-spacing:0.02em;
+                        text-shadow: 0 0 20px ${pal.accent}80;">${tok}</div>
+                    ${usr ? `<div style="font-size:20px;font-family:${typo.mono};color:${pal.accent};margin-top:12px;">@${usr}</div>` : ''}
                 </div>
+                ${tierBadge ? `<div style="font-size:16px;font-weight:800;color:${pal.bg};
+                    background:${pal.accent};padding:8px 24px;border-radius:4px;
+                    box-shadow: 0 0 20px ${pal.accent}80;letter-spacing:2px;transform:skewX(-10deg);">
+                    <span style="display:block;transform:skewX(10deg);">${tierBadge}</span>
+                </div>` : ''}
             </div>
 
-            <!-- Huge ASCII-style Numbers -->
-            <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
-                <div style="font-size:24px; opacity:0.7; margin-bottom:12px;">> CALC_MULTIPLIER:</div>
-                <div style="font-size:${mulSz + 20}px; font-weight:700; color:${profitColor}; line-height:1;">${mul}</div>
-                <div style="font-size:40px; margin-top:16px; opacity:0.9;">> CALC_ROI: ${roi}</div>
-                ${tierBadge ? `<div style="font-size:24px; margin-top:32px; background:${ac}; color:${pal.bg}; display:inline-block; padding:4px 16px;">STATUS: ${tierBadge}</div>` : ''}
+            <!-- CENTER -->
+            <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                <div style="font-size:${Math.min(mulSz + 30, 200)}px;font-family:${typo.display};
+                    font-weight:900;color:${profitColor};line-height:0.9;
+                    text-shadow: 0 0 60px ${profitColor}60, 0 0 10px ${profitColor}90;">${mul}</div>
+                <div style="font-size:42px;font-family:${typo.mono};font-weight:700;
+                    color:${pal.text};margin-top:24px;text-shadow: 0 0 15px rgba(255,255,255,0.5);">${roi} ROI</div>
             </div>
 
-            <!-- Terminal Data Grid -->
-            <div style="display:flex; gap:64px; border-top:2px dashed ${ac}50; padding-top:40px; font-size:28px;">
-                <div style="flex:1;">
-                    ${line('> ENTRY_MCAP', ent)}
-                    ${line('> EXIT_MCAP', ext)}
-                </div>
-                <div style="flex:1;">
-                    ${line('> INV_AMOUNT', inv)}
-                    ${line('> NET_PROFIT', pStr, profitColor)}
-                </div>
+            <!-- BOTTOM -->
+            <div style="display:flex;justify-content:space-between;background:rgba(0,0,0,0.4);
+                border-top:1px solid ${pal.accent}60;padding:40px;border-radius:16px;
+                backdrop-filter:blur(10px);">
+                <div style="text-align:left;">${lbl('Entry Cap')}${dval(ent)}</div>
+                <div style="text-align:left;">${lbl('Exit Cap')}${dval(ext)}</div>
+                <div style="text-align:left;">${lbl('Invested')}${dval(inv)}</div>
+                <div style="text-align:right;">${lbl('Net Profit')}${dval(pStr, profitColor)}</div>
             </div>
-
-            <!-- Blinking Cursor at bottom -->
-            <div style="margin-top:24px; font-size:24px;">
-                ${prefix} <span style="animation:blink 1s step-end infinite; display:inline-block; width:14px; height:24px; background:${ac}; vertical-align:bottom;"></span>
-            </div>
-            <style>@keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:0; } }</style>
         </div>`;
     },
 };

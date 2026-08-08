@@ -1,136 +1,142 @@
 // ═══════════════════════════════════════════════════════════
-//  THEME: CYBERPUNK HUD
-//  High-tech targeting UI, neon borders, dark grid, centered
-//  holographic layout. No characters.
+//  THEME: LUXURY GOLD (Cyberpunk slot)
+//  Ultra-premium dark card. Think Black Amex, Bloomberg terminal,
+//  private wealth management. Deep charcoal + brushed gold.
+//  No character. Full-width centered layout.
 // ═══════════════════════════════════════════════════════════
 
 const PALETTES = [
-    { bg: '#030508', text: '#e0f2fe', accent: '#00f2fe', positive: '#00ff66', negative: '#ff003c' },
-    { bg: '#06020a', text: '#fae8ff', accent: '#ff00ff', positive: '#00ff66', negative: '#ff003c' },
-    { bg: '#02050a', text: '#e0e7ff', accent: '#8b5cf6', positive: '#00ff66', negative: '#ff003c' },
-    { bg: '#050505', text: '#fef9c3', accent: '#fde047', positive: '#00ff66', negative: '#ff003c' },
+    { bg:'#0b0b0b', text:'#f5f0e8', accent:'#c9a84c', positive:'#d4b896', negative:'#c0392b',
+      panelBg:'rgba(28,22,14,0.95)', lineColor:'rgba(201,168,76,0.25)' },  // Classic Gold
+    { bg:'#080c10', text:'#e8f4f0', accent:'#7ec8e3', positive:'#7ec8e3', negative:'#e05a5a',
+      panelBg:'rgba(10,18,26,0.95)', lineColor:'rgba(126,200,227,0.2)' },  // Platinum Blue
+    { bg:'#100808', text:'#f5ebe8', accent:'#c0392b', positive:'#e8a090', negative:'#7f8c8d',
+      panelBg:'rgba(26,10,8,0.95)', lineColor:'rgba(192,57,43,0.2)' },     // Crimson Executive
 ];
 
 export default {
     id: 'cyberpunk',
-    name: 'Cyber HUD',
+    name: 'Luxury Gold',
     hasCharacter: false,
-    bgVariants:     3,
-    charVariants:   1,
-    accentVariants: PALETTES.length,
-    detailVariants: 1,
+    bgVariants: 3, charVariants: 1, accentVariants: PALETTES.length, detailVariants: 1,
 
-    getPalette(tierId, accentIdx) {
-        return { ...PALETTES[accentIdx % PALETTES.length] };
-    },
-
+    getPalette(tierId, accentIdx) { return { ...PALETTES[accentIdx % PALETTES.length] }; },
     getTypography() {
         return {
-            display:       "'Space Grotesk', sans-serif",
-            displayWeight: 700,
-            body:          "'Inter', sans-serif",
-            mono:          "'Roboto Mono', monospace",
+            display: "'Inter', sans-serif", displayWeight: 800,
+            body: "'Inter', sans-serif", mono: "'Roboto Mono', monospace",
         };
     },
 
     renderBackground(pal, tierId, variant) {
         const W = 1600, H = 900;
         const ac = pal.accent;
-        let deco = '';
 
-        if (variant === 0) {
-            // Radar / Crosshairs
-            deco = `
-                <circle cx="800" cy="450" r="300" fill="none" stroke="${ac}" stroke-width="1" stroke-dasharray="4 12" opacity="0.3"/>
-                <circle cx="800" cy="450" r="600" fill="none" stroke="${ac}" stroke-width="1" opacity="0.1"/>
-                <line x1="800" y1="0" x2="800" y2="900" stroke="${ac}" stroke-width="1" opacity="0.2"/>
-                <line x1="0" y1="450" x2="1600" y2="450" stroke="${ac}" stroke-width="1" opacity="0.2"/>
-            `;
-        } else if (variant === 1) {
-            // Perspective Grid
-            let lines = '';
-            for (let i = -800; i <= 2400; i += 80) {
-                lines += `<line x1="800" y1="450" x2="${i}" y2="900" stroke="${ac}" stroke-width="1.5" opacity="0.2"/>`;
-            }
-            for (let y = 450; y <= 900; y += 40) {
-                lines += `<line x1="0" y1="${y}" x2="1600" y2="${y}" stroke="${ac}" stroke-width="1" opacity="0.2"/>`;
-            }
-            deco = `<rect x="0" y="450" width="1600" height="450" fill="${ac}" opacity="0.05"/>${lines}
-                    <line x1="0" y1="450" x2="1600" y2="450" stroke="${ac}" stroke-width="2" opacity="0.5"/>`;
-        } else {
-            // Hex Grid
-            let hex = '';
-            for (let x = 0; x < W; x += 44) {
-                for (let y = 0; y < H; y += 44) {
-                    hex += `<polygon points="${x},${y} ${x+10},${y-17} ${x+30},${y-17} ${x+40},${y} ${x+30},${y+17} ${x+10},${y+17}" fill="none" stroke="${ac}" stroke-width="0.5" opacity="0.15"/>`;
-                }
-            }
-            deco = hex;
+        // Subtle diagonal texture lines (brushed metal effect)
+        let lines = '';
+        for (let i = -H; i < W + H; i += 18) {
+            lines += `<line x1="${i}" y1="0" x2="${i + H}" y2="${H}" stroke="${ac}" stroke-width="0.4" opacity="0.06"/>`;
         }
 
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position:absolute;inset:0;pointer-events:none;">
+        // Gold accent shapes
+        const deco = variant === 0
+            ? `<rect x="0" y="${H*0.5}" width="${W}" height="1" fill="${ac}" opacity="0.2"/>
+               <rect x="0" y="${H*0.5+2}" width="${W}" height="1" fill="${ac}" opacity="0.1"/>
+               <circle cx="${W}" cy="0" r="600" fill="none" stroke="${ac}" stroke-width="1.5" opacity="0.08"/>
+               <circle cx="${W}" cy="0" r="700" fill="none" stroke="${ac}" stroke-width="0.8" opacity="0.05"/>`
+            : variant === 1
+            ? `<rect x="0" y="0" width="${W}" height="${H*0.03}" fill="${ac}" opacity="0.15"/>
+               <rect x="0" y="${H-H*0.03}" width="${W}" height="${H*0.03}" fill="${ac}" opacity="0.15"/>
+               <line x1="${W*0.5}" y1="0" x2="${W*0.5}" y2="${H}" stroke="${ac}" stroke-width="1" opacity="0.06"/>`
+            : `<rect x="0" y="${H*0.72}" width="${W}" height="1" fill="${ac}" opacity="0.2"/>
+               <polygon points="0,0 ${W*0.5},0 0,${H*0.45}" fill="${ac}" opacity="0.02"/>`;
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"
+            style="position:absolute;inset:0;pointer-events:none;">
             <rect width="100%" height="100%" fill="${pal.bg}"/>
+            ${lines}
             ${deco}
+            <!-- Edge vignette -->
+            <rect width="100%" height="100%" fill="url(#lvignette)"/>
+            <defs>
+                <radialGradient id="lvignette" cx="50%" cy="50%" r="70%">
+                    <stop offset="30%" stop-color="transparent"/>
+                    <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+                </radialGradient>
+            </defs>
         </svg>`;
     },
 
-    renderEffects() {
-        return `<div style="position:absolute;inset:0;pointer-events:none;z-index:15;background:linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.2) 50%);background-size:100% 4px;mix-blend-mode:overlay;"></div>`;
-    },
+    renderEffects() { return ''; },
 
     getBorder(pal) {
-        return `border: 2px solid ${pal.accent}; box-shadow: 0 0 30px ${pal.accent}40, inset 0 0 30px ${pal.accent}40;`;
+        return `border-radius:20px;
+            border-top:1px solid ${pal.accent}60;
+            border-left:1px solid ${pal.accent}40;
+            border-right:1px solid ${pal.accent}20;
+            border-bottom:1px solid ${pal.accent}10;
+            box-shadow:0 0 0 1px rgba(0,0,0,0.8), 0 40px 80px rgba(0,0,0,0.7);`;
     },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
         const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
         const ac = pal.accent;
+        const P = 72; // generous padding for luxury feel
 
-        const lbl = (t) => `<div style="font-size:12px; font-family:${typo.mono}; color:${ac}; opacity:0.8; letter-spacing:3px; margin-bottom:8px;">[${t}]</div>`;
-        const dval = (v, c) => `<div style="font-size:28px; font-family:${typo.mono}; font-weight:700; color:${c || pal.text};">${v}</div>`;
+        const lbl = (t) => `<div style="font-size:13px;font-family:${typo.body};color:${ac};
+            opacity:0.65;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+            margin-bottom:10px;">${t}</div>`;
+        const dval = (v, c) => `<div style="font-size:38px;font-family:${typo.mono};font-weight:700;
+            color:${c || pal.text};letter-spacing:-0.5px;white-space:nowrap;">${v}</div>`;
 
-        return `<div style="padding:${S}px; height:100%; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
-            
-            <!-- Corner Brackets -->
-            <div style="position:absolute; top:32px; left:32px; width:40px; height:40px; border-top:4px solid ${ac}; border-left:4px solid ${ac};"></div>
-            <div style="position:absolute; top:32px; right:32px; width:40px; height:40px; border-top:4px solid ${ac}; border-right:4px solid ${ac};"></div>
-            <div style="position:absolute; bottom:32px; left:32px; width:40px; height:40px; border-bottom:4px solid ${ac}; border-left:4px solid ${ac};"></div>
-            <div style="position:absolute; bottom:32px; right:32px; width:40px; height:40px; border-bottom:4px solid ${ac}; border-right:4px solid ${ac};"></div>
+        // Gold divider line
+        const divider = `<div style="height:1px;background:linear-gradient(90deg,transparent,${ac}60,transparent);margin:0;"></div>`;
 
-            <!-- Top Row -->
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:0 32px; margin-top:20px;">
-                <div style="display:flex; align-items:center; gap:16px;">
-                    <div style="background:${ac}; color:${pal.bg}; padding:4px 12px; font-family:${typo.mono}; font-weight:700; font-size:14px; letter-spacing:2px;">SYS.LOG</div>
-                    <div style="font-size:24px; font-family:${typo.mono}; color:${pal.text}; opacity:0.7;">${usr ? 'USER::' + usr : 'ANON_SESSION'}</div>
+        return `<div style="width:100%;height:100%;display:flex;flex-direction:column;
+            justify-content:space-between;padding:${P}px ${P+16}px;box-sizing:border-box;">
+
+            <!-- TOP: Identity row -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:${ac};letter-spacing:5px;
+                        text-transform:uppercase;opacity:0.7;margin-bottom:20px;">Private Trade Statement</div>
+                    <div style="font-size:${Math.min(tokSz + 18, 90)}px;font-family:${typo.display};
+                        font-weight:${typo.displayWeight};color:${pal.text};line-height:1;
+                        letter-spacing:-0.03em;">${tok}</div>
                 </div>
-                ${tierBadge ? `<div style="border:1px solid ${ac}; color:${ac}; padding:6px 20px; font-family:${typo.mono}; font-size:16px; font-weight:700; letter-spacing:4px; box-shadow:0 0 10px ${ac}40;">${tierBadge}</div>` : ''}
+                <div style="text-align:right;margin-top:6px;">
+                    ${tierBadge ? `<div style="font-size:14px;font-weight:700;color:${ac};
+                        letter-spacing:4px;border:1px solid ${ac}50;padding:8px 22px;
+                        margin-bottom:14px;display:inline-block;">${tierBadge}</div>` : ''}
+                    ${usr ? `<div style="font-size:22px;color:${pal.text};opacity:0.45;display:block;margin-top:${tierBadge ? '10px' : '0'};">@${usr}</div>` : ''}
+                </div>
             </div>
 
-            <!-- Center Data -->
-            <div style="text-align:center; position:relative;">
-                <div style="font-size:${tokSz + 20}px; font-family:${typo.display}; font-weight:700; color:${pal.text}; letter-spacing:0.1em; text-transform:uppercase;">${tok}</div>
-                <div style="font-size:${mulSz + 20}px; font-family:${typo.display}; font-weight:700; color:${profitColor}; line-height:1; margin-top:24px; text-shadow:0 0 40px ${profitColor}60;">${mul}</div>
-                <div style="font-size:40px; font-family:${typo.mono}; font-weight:700; color:${pal.bg}; background:${profitColor}; display:inline-block; padding:4px 20px; margin-top:24px; clip-path:polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);">${roi}</div>
+            ${divider}
+
+            <!-- CENTER: Giant hero number, left-aligned -->
+            <div style="flex:1;display:flex;align-items:center;gap:80px;padding:${P*0.6}px 0;">
+                <div>
+                    <div style="font-size:${Math.min(mulSz + 48, 220)}px;font-family:${typo.display};
+                        font-weight:900;color:${profitColor};line-height:0.9;
+                        letter-spacing:-0.05em;">${mul}</div>
+                </div>
+                <div style="border-left:2px solid ${ac}25;padding-left:60px;">
+                    <div style="font-size:56px;font-family:${typo.mono};font-weight:700;
+                        color:${pal.text};opacity:0.85;white-space:nowrap;">${roi}</div>
+                    <div style="font-size:26px;font-family:${typo.body};color:${ac};
+                        opacity:0.55;letter-spacing:2px;text-transform:uppercase;margin-top:10px;">Return on Investment</div>
+                </div>
             </div>
 
-            <!-- Bottom Data Boxes -->
-            <div style="display:flex; justify-content:space-between; gap:24px; padding:0 24px; margin-bottom:20px;">
-                <div style="flex:1; background:rgba(0,0,0,0.6); border:1px solid ${ac}40; padding:24px; text-align:center; backdrop-filter:blur(10px);">
-                    ${lbl('ENTRY')}
-                    ${dval(ent)}
-                </div>
-                <div style="flex:1; background:rgba(0,0,0,0.6); border:1px solid ${ac}40; padding:24px; text-align:center; backdrop-filter:blur(10px);">
-                    ${lbl('EXIT')}
-                    ${dval(ext)}
-                </div>
-                <div style="flex:1; background:rgba(0,0,0,0.6); border:1px solid ${ac}40; padding:24px; text-align:center; backdrop-filter:blur(10px);">
-                    ${lbl('INVEST')}
-                    ${dval(inv)}
-                </div>
-                <div style="flex:1; background:rgba(0,0,0,0.6); border:1px solid ${profitColor}80; padding:24px; text-align:center; backdrop-filter:blur(10px); box-shadow:0 0 20px ${profitColor}20;">
-                    ${lbl('YIELD')}
-                    ${dval(pStr, profitColor)}
-                </div>
+            ${divider}
+
+            <!-- BOTTOM: Data row -->
+            <div style="display:flex;gap:0;padding-top:36px;">
+                <div style="flex:1;">${lbl('Entry Cap')}${dval(ent)}</div>
+                <div style="flex:1;">${lbl('Exit Cap')}${dval(ext)}</div>
+                <div style="flex:1;">${lbl('Invested')}${dval(inv)}</div>
+                <div style="flex:1;">${lbl('Net Profit')}${dval(pStr, profitColor)}</div>
             </div>
         </div>`;
     },

@@ -1,125 +1,112 @@
 // ═══════════════════════════════════════════════════════════
-//  THEME: SYNTHWAVE / NEON RETRO (Replacing Comic)
-//  80s outrun aesthetic: perspective grid, neon sun, 
-//  vibrant sunset colors.
+//  THEME: SUNRISE GOLD (Comic slot)
+//  Warm, energetic, bright aesthetic. Deep red to golden
+//  yellow gradients, evoking a rising sun or massive win.
 // ═══════════════════════════════════════════════════════════
 
 const PALETTES = [
-    { bg: '#0b001a', text: '#ffffff', accent: '#ff00ff', positive: '#00ffff', negative: '#ff0055' }, // Outrun Purple
-    { bg: '#000b18', text: '#ffffff', accent: '#ff007f', positive: '#00ffcc', negative: '#ff3300' }, // Cyber Sunset
-    { bg: '#1a0000', text: '#ffffff', accent: '#ffaa00', positive: '#00ff88', negative: '#ff0000' }, // Blood Dragon
-    { bg: '#001a1a', text: '#ffffff', accent: '#00ffcc', positive: '#ff00ff', negative: '#ff0055' }, // Miami Vice
+    { bg: '#3a0ca3', text: '#ffffff', accent: '#fca311', positive: '#00ff88', negative: '#ff0055', grad: ['#d90429', '#ff5400', '#ffbd00'] }, // Crimson to Gold
+    { bg: '#14213d', text: '#ffffff', accent: '#fca311', positive: '#00ff88', negative: '#ff0055', grad: ['#f72585', '#b5179e', '#4cc9f0'] }, // Cyber Sunrise
+    { bg: '#2b061e', text: '#ffffff', accent: '#ffd166', positive: '#06d6a0', negative: '#ef476f', grad: ['#8338ec', '#ff006e', '#ffbe0b'] }, // Purple to Yellow
 ];
 
 export default {
-    id: 'comic', // Keep ID same for config compatibility
-    name: 'Synthwave',
+    id: 'comic',
+    name: 'Sunrise Gold',
     hasCharacter: false,
-    bgVariants:     3,
-    charVariants:   1,
-    accentVariants: PALETTES.length,
-    detailVariants: 1,
+    bgVariants: 3, charVariants: 1, accentVariants: PALETTES.length, detailVariants: 1,
 
-    getPalette(tierId, accentIdx) {
-        return { ...PALETTES[accentIdx % PALETTES.length] };
-    },
-
+    getPalette(tierId, accentIdx) { return { ...PALETTES[accentIdx % PALETTES.length] }; },
     getTypography() {
         return {
-            display:       "'Outfit', sans-serif",
-            displayWeight: 900,
-            body:          "'Inter', sans-serif",
-            mono:          "'Roboto Mono', monospace",
+            display: "'Outfit', sans-serif", displayWeight: 900,
+            body: "'Inter', sans-serif", mono: "'Roboto Mono', monospace",
         };
     },
 
     renderBackground(pal, tierId, variant) {
-        const W = 1600, H = 900;
-        
-        // Sun
-        let sun = `<defs><linearGradient id="sunGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffff00"/><stop offset="100%" stop-color="#ff00ff"/></linearGradient></defs>
-                   <circle cx="800" cy="500" r="300" fill="url(#sunGrad)" opacity="0.8"/>`;
-                   
-        // Slice the sun with dark lines
-        for(let i=0; i<10; i++) {
-            const h = 4 + i*2;
-            const y = 500 + i*30;
-            if (y < 800) {
-                sun += `<rect x="400" y="${y}" width="800" height="${h}" fill="${pal.bg}"/>`;
-            }
+        const c = pal.grad;
+        let deco = '';
+
+        if (variant === 0) {
+            // Smooth angular split
+            deco = `<polygon points="0,900 1600,0 1600,900" fill="url(#sunriseGrad)" opacity="0.8"/>`;
+        } else if (variant === 1) {
+            // Massive rising sun
+            deco = `
+                <circle cx="800" cy="1100" r="800" fill="url(#sunriseGrad)" opacity="0.9"/>
+                <circle cx="800" cy="1100" r="850" fill="none" stroke="${c[1]}" stroke-width="2" opacity="0.3"/>
+            `;
+        } else {
+            // Fluid waves
+            deco = `
+                <path d="M0,600 Q400,400 800,700 T1600,500 L1600,900 L0,900 Z" fill="${c[0]}" opacity="0.7"/>
+                <path d="M0,700 Q400,550 800,800 T1600,600 L1600,900 L0,900 Z" fill="${c[1]}" opacity="0.8"/>
+                <path d="M0,850 Q400,750 800,900 T1600,800 L1600,900 L0,900 Z" fill="${c[2]}" opacity="0.9"/>
+            `;
         }
 
-        // Perspective Grid (Floor)
-        let grid = `<rect x="0" y="600" width="1600" height="300" fill="${pal.bg}"/>`;
-        for (let i = -1600; i <= 3200; i += 120) {
-            grid += `<line x1="800" y1="600" x2="${i}" y2="900" stroke="${pal.accent}" stroke-width="2" opacity="0.5"/>`;
-        }
-        for (let i = 0; i < 15; i++) {
-            const y = 600 + Math.pow(i, 2.2) * 1.5;
-            if (y < 900) {
-                grid += `<line x1="0" y1="${y}" x2="1600" y2="${y}" stroke="${pal.accent}" stroke-width="2" opacity="0.5"/>`;
-            }
-        }
-        grid += `<line x1="0" y1="600" x2="1600" y2="600" stroke="${pal.positive}" stroke-width="4" opacity="0.8"/>`;
-        grid += `<line x1="0" y1="600" x2="1600" y2="600" stroke="#fff" stroke-width="1" opacity="0.9"/>`;
-
-        // Stars
-        let stars = '';
-        for(let i=0; i<100; i++) {
-            const x = (i * 87) % 1600;
-            const y = (i * 33) % 600;
-            stars += `<circle cx="${x}" cy="${y}" r="${(i%3)/2+0.5}" fill="#fff" opacity="${0.2 + (i%5)*0.1}"/>`;
-        }
-
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position:absolute;inset:0;pointer-events:none;">
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"
+            style="position:absolute;inset:0;pointer-events:none;">
+            <defs>
+                <linearGradient id="sunriseGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="${c[0]}"/>
+                    <stop offset="50%" stop-color="${c[1]}"/>
+                    <stop offset="100%" stop-color="${c[2]}"/>
+                </linearGradient>
+            </defs>
             <rect width="100%" height="100%" fill="${pal.bg}"/>
-            ${stars}
-            ${sun}
-            ${grid}
+            ${deco}
+            <rect width="100%" height="100%" fill="url(#sunriseGrad)" opacity="0.15"/>
         </svg>`;
     },
 
-    renderEffects() {
-        return `<div style="position:absolute;inset:0;pointer-events:none;z-index:20;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 2px,transparent 2px,transparent 4px);"></div>`;
-    },
-
-    getBorder(pal) {
-        return `border: 4px solid ${pal.accent}; box-shadow: inset 0 0 40px ${pal.accent}, 0 0 40px ${pal.accent}; border-radius: 16px;`;
-    },
+    renderEffects() { return ''; },
+    
+    getBorder(pal) { return `border:0;`; },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
         const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
 
-        const lbl = (t) => `<div style="font-size:14px; font-family:${typo.body}; font-weight:700; color:${pal.accent}; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; text-shadow:0 0 10px ${pal.accent};">${t}</div>`;
-        const dval = (v, c) => `<div style="font-size:36px; font-family:${typo.display}; font-weight:900; color:${c || '#fff'}; letter-spacing:1px; text-shadow:2px 2px 0px #000;">${v}</div>`;
+        const lbl = (t) => `<div style="font-size:13px;font-family:${typo.body};color:rgba(255,255,255,0.7);
+            font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">${t}</div>`;
+        const dval = (v, c) => `<div style="font-size:36px;font-family:${typo.display};font-weight:800;
+            color:${c || '#fff'};letter-spacing:0px;">${v}</div>`;
 
-        return `<div style="padding:${S+20}px; height:100%; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
-            
-            <!-- Top Bar -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div style="background:rgba(0,0,0,0.5); padding:16px 32px; border:2px solid ${pal.accent}; border-radius:8px; backdrop-filter:blur(4px);">
-                    <div style="font-size:14px; font-weight:700; color:${pal.positive}; letter-spacing:4px; margin-bottom:8px;">// SYS_TRADE</div>
-                    <div style="font-size:${tokSz}px; font-family:${typo.display}; font-weight:900; color:#fff; line-height:1; text-transform:uppercase; text-shadow:0 0 20px ${pal.accent}, 4px 4px 0 #000; font-style:italic;">${tok}</div>
-                    ${usr ? `<div style="font-size:24px; color:#fff; opacity:0.8; margin-top:8px;">@${usr}</div>` : ''}
+        return `<div style="width:100%;height:100%;display:flex;flex-direction:column;
+            justify-content:space-between;padding:${S+20}px;box-sizing:border-box;">
+
+            <!-- TOP -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                    <div style="font-size:${Math.min(tokSz, 80)}px;font-family:${typo.display};
+                        font-weight:900;color:#fff;line-height:1;letter-spacing:-0.03em;
+                        text-shadow: 0 4px 10px rgba(0,0,0,0.3);">${tok}</div>
+                    ${usr ? `<div style="font-size:22px;color:rgba(255,255,255,0.8);margin-top:8px;">@${usr}</div>` : ''}
                 </div>
-                
-                ${tierBadge ? `<div style="font-size:20px; font-weight:900; font-style:italic; letter-spacing:2px; background:${pal.positive}; color:#000; padding:12px 32px; transform:skewX(-15deg); box-shadow:8px 8px 0px ${pal.accent};">
-                    <span style="display:block; transform:skewX(15deg);">${tierBadge}</span>
-                </div>` : ''}
+                ${tierBadge ? `<div style="font-size:16px;font-weight:800;color:${pal.bg};
+                    background:#fff;padding:12px 30px;border-radius:50px;
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.2);letter-spacing:2px;">${tierBadge}</div>` : ''}
             </div>
 
-            <!-- Center Giant Hero -->
-            <div style="text-align:center; transform:skewX(-5deg); margin-top:-60px;">
-                <div style="font-size:${Math.min(mulSz + 60, 240)}px; font-family:${typo.display}; font-weight:900; color:${profitColor}; line-height:0.9; text-shadow: 0 0 60px ${profitColor}, 6px 6px 0px #000; font-style:italic;">${mul}</div>
-                <div style="font-size:52px; font-family:${typo.display}; font-weight:900; color:#fff; margin-top:8px; text-shadow:4px 4px 0px #000; font-style:italic;">${roi} ROI</div>
+            <!-- CENTER -->
+            <div style="text-align:center; flex:1; display:flex; flex-direction:column; justify-content:center;">
+                <div style="font-size:${Math.min(mulSz + 40, 220)}px;font-family:${typo.display};
+                    font-weight:900;color:${isProfit ? '#fff' : pal.negative};line-height:0.9;
+                    text-shadow: 0 10px 40px rgba(0,0,0,0.4);">${mul}</div>
+                <div style="font-size:48px;font-family:${typo.mono};font-weight:600;
+                    color:rgba(255,255,255,0.9);margin-top:20px;
+                    text-shadow: 0 4px 10px rgba(0,0,0,0.2);">${roi} ROI</div>
             </div>
 
-            <!-- Bottom Data Panel -->
-            <div style="display:flex; justify-content:space-between; background:rgba(0,0,0,0.7); border-top:4px solid ${pal.positive}; padding:32px 48px; border-radius:12px; backdrop-filter:blur(8px);">
+            <!-- BOTTOM -->
+            <div style="display:flex;justify-content:space-between;background:rgba(0,0,0,0.3);
+                border-top:2px solid rgba(255,255,255,0.2);padding:40px;border-radius:24px;
+                backdrop-filter:blur(10px);box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
                 <div style="text-align:left;">${lbl('Entry Cap')}${dval(ent)}</div>
                 <div style="text-align:left;">${lbl('Exit Cap')}${dval(ext)}</div>
                 <div style="text-align:left;">${lbl('Invested')}${dval(inv)}</div>
-                <div style="text-align:right;">${lbl('Net Profit')}${dval(pStr, profitColor)}</div>
+                <div style="text-align:right;">${lbl('Net Profit')}${dval(pStr, isProfit ? '#fff' : pal.negative)}</div>
             </div>
         </div>`;
     },
