@@ -25,6 +25,7 @@ const logoutBtn  = document.getElementById('logout-btn');
 const authError  = document.getElementById('auth-error');
 const designsGrid= document.getElementById('designs-grid');
 const filterBar  = document.getElementById('filter-bar');
+const sidebarFilter = document.getElementById('sidebar-status-filter');
 const createBtn  = document.getElementById('create-design-btn');
 
 // Editor modal
@@ -219,23 +220,23 @@ function renderFilterBar() {
         });
     });
 
+    sidebarFilter.innerHTML = `
+        <button class="filter-tab ${currentFilter.status === 'all'      ? 'active' : ''}" data-status="all">
+            All Designs <span class="count-badge">${total}</span>
+        </button>
+        <button class="filter-tab ${currentFilter.status === 'active'   ? 'active' : ''}" data-status="active">
+            Active <span class="count-badge">${active}</span>
+        </button>
+        <button class="filter-tab ${currentFilter.status === 'inactive' ? 'active' : ''}" data-status="inactive">
+            Inactive <span class="count-badge">${inactive}</span>
+        </button>
+    `;
+
     filterBar.innerHTML = `
-        <div class="filter-row">
-            <span class="filter-row-label">Status:</span>
-            <button class="filter-tab ${currentFilter.status === 'all'      ? 'active' : ''}" data-status="all">
-                All <span class="count-badge">${total}</span>
-            </button>
-            <button class="filter-tab ${currentFilter.status === 'active'   ? 'active' : ''}" data-status="active">
-                Active <span class="count-badge">${active}</span>
-            </button>
-            <button class="filter-tab ${currentFilter.status === 'inactive' ? 'active' : ''}" data-status="inactive">
-                Inactive <span class="count-badge">${inactive}</span>
-            </button>
-        </div>
         <div class="filter-row">
             <span class="filter-row-label">Performance:</span>
             <button class="filter-tab ${currentFilter.tier === 'all' ? 'active' : ''}" data-tier="all">
-                All
+                All Tiers
             </button>
             ${TIER_ORDER.map(tid => {
                 const def = TIER_DEFS[tid];
@@ -248,7 +249,7 @@ function renderFilterBar() {
     `;
 
     // Status filter clicks
-    filterBar.querySelectorAll('[data-status]').forEach(btn => {
+    sidebarFilter.querySelectorAll('[data-status]').forEach(btn => {
         btn.addEventListener('click', () => {
             currentFilter.status = btn.dataset.status;
             renderFilterBar();
@@ -422,8 +423,17 @@ function openEditor(id) {
     editBorder.value         = fd ? (fd.getBorder         || "return '';") : "return '';";
     editLayout.value         = fd ? (fd.renderLayout      || "return '';") : "return '';";
 
-    // Show delete button only for non-pure-builtin
-    if (design._type === 'custom' || design._type === 'overridden') {
+    // Show/hide Theme Logic section and delete button
+    const isBuiltin = design._type === 'builtin' || design._type === 'overridden';
+    const logicSection = document.getElementById('theme-logic-section');
+    
+    if (isBuiltin) {
+        logicSection.classList.add('hidden');
+    } else {
+        logicSection.classList.remove('hidden');
+    }
+
+    if (!isBuiltin || design._type === 'overridden') {
         delBtn.classList.remove('hidden');
         deleteHint.style.display = design._type === 'overridden' ? 'block' : 'none';
         delBtn.textContent = design._type === 'overridden' ? 'Remove Override (Restore Original)' : 'Delete Custom Design';
@@ -457,6 +467,9 @@ function openNewDesignEditor() {
     editBorder.value         = "return 'border-radius:24px;border:1px solid ' + pal.accent + '30;';";
     editLayout.value         = "const { tok, usr, mul, roi, pStr, inv, ent, ext, profitColor, tokSz, mulSz } = cd;\nreturn `<div style=\"padding:${S}px;display:flex;flex-direction:column;justify-content:space-between;height:100%;box-sizing:border-box;\">\n  <div style=\"font-size:${tokSz}px;font-weight:900;color:${pal.accent};\">${tok}</div>\n  <div>\n    <div style=\"font-size:${mulSz}px;font-weight:900;color:${profitColor};\">${mul}</div>\n    <div style=\"font-size:48px;opacity:0.7;\">${roi} ROI</div>\n  </div>\n  <div style=\"display:flex;justify-content:space-between;\">\n    <div><div style=\"opacity:0.5;font-size:16px;\">ENTRY</div><div style=\"font-size:32px;\">${ent}</div></div>\n    <div><div style=\"opacity:0.5;font-size:16px;\">EXIT</div><div style=\"font-size:32px;\">${ext}</div></div>\n    <div><div style=\"opacity:0.5;font-size:16px;\">INVESTED</div><div style=\"font-size:32px;\">${inv}</div></div>\n    <div><div style=\"opacity:0.5;font-size:16px;\">PROFIT</div><div style=\"font-size:32px;color:${profitColor};\">${pStr}</div></div>\n  </div>\n</div>\`;";
 
+    const logicSection = document.getElementById('theme-logic-section');
+    logicSection.classList.remove('hidden');
+
     delBtn.classList.add('hidden');
     deleteHint.style.display = 'none';
     editorModal.style.display = 'flex';
@@ -487,20 +500,26 @@ saveBtn.addEventListener('click', async () => {
     // Derive tiers from tag
     const tiers = _tiersFromTag(tagValue);
 
+    const logicSection = document.getElementById('theme-logic-section');
+    const includeLogic = !logicSection.classList.contains('hidden');
+
     const data = {
         name:            editName.value.trim() || id,
         isActive:        editActive.checked,
         category:        editCategory.value,
         tag:             tagValue,
         tiers,
-        palettes:        editPal.value,
-        typography:      editTypo.value,
-        renderBackground:editBg.value,
-        renderEffects:   editFx.value,
-        getBorder:       editBorder.value,
-        renderLayout:    editLayout.value,
         updatedAt:       new Date().toISOString(),
     };
+
+    if (includeLogic) {
+        data.palettes = editPal.value;
+        data.typography = editTypo.value;
+        data.renderBackground = editBg.value;
+        data.renderEffects = editFx.value;
+        data.getBorder = editBorder.value;
+        data.renderLayout = editLayout.value;
+    }
 
     try {
         await setDoc(doc(db, 'card_designs', id), data, { merge: true });
@@ -565,18 +584,30 @@ refreshPrvBtn.addEventListener('click', updateEditorPreview);
 
 function updateEditorPreview() {
     try {
-        const fd = {
-            id:              editId.value,
-            name:            editName.value,
-            palettes:        editPal.value,
-            typography:      editTypo.value,
-            renderBackground:editBg.value,
-            renderEffects:   editFx.value,
-            getBorder:       editBorder.value,
-            renderLayout:    editLayout.value,
-        };
-        const theme = _buildThemeFromFirestore(fd);
-        const html  = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: fd.id }, randomizer: MOCK_RNG });
+        const id = editId.value;
+        const design = allDesigns.find(d => d.id === id);
+        const logicSection = document.getElementById('theme-logic-section');
+        const includeLogic = !logicSection.classList.contains('hidden');
+
+        let theme;
+        if (!includeLogic && design && design._builtinTheme) {
+            // For built-in themes where logic is hidden, use the actual built-in theme for preview
+            theme = design._builtinTheme;
+        } else {
+            const fd = {
+                id:              id,
+                name:            editName.value,
+                palettes:        editPal.value,
+                typography:      editTypo.value,
+                renderBackground:editBg.value,
+                renderEffects:   editFx.value,
+                getBorder:       editBorder.value,
+                renderLayout:    editLayout.value,
+            };
+            theme = _buildThemeFromFirestore(fd);
+        }
+        
+        const html  = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: id }, randomizer: MOCK_RNG });
 
         const node = document.getElementById('card-node');
         node.innerHTML = html;

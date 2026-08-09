@@ -218,6 +218,19 @@ body.admin-body {
 
 .sidebar-footer { padding-top: 20px; border-top: 1px solid var(--adm-border); }
 
+.sidebar-filter-box {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--adm-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sidebar-filter-box .filter-tab {
+    width: 100%;
+    justify-content: space-between;
+}
+
 .btn-logout {
     display: flex; align-items: center; gap: 10px;
     width: 100%; padding: 11px 14px;
@@ -233,6 +246,8 @@ body.admin-body {
     flex: 1; display: flex; flex-direction: column;
     overflow-y: auto; overflow-x: hidden;
     background: var(--adm-bg);
+    max-width: none !important; /* Override base.css */
+    margin: 0 !important;
 }
 
 /* Sticky Content Header */
