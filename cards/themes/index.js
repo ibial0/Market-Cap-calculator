@@ -25,12 +25,19 @@ import { THEME_TIER_MATRIX } from '../config.js';
 
 export async function loadCustomThemes() {
     try {
-        const q = query(collection(db, "card_designs"), where("isActive", "==", true));
+        const q = query(collection(db, "card_designs"));
         const querySnapshot = await getDocs(q);
         
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             
+            // If the design is explicitly marked as inactive, remove it from THEMES
+            // This safely disables built-in themes if they are overridden in Firestore
+            if (data.isActive === false) {
+                delete THEMES[doc.id];
+                return;
+            }
+
             // Build the theme object dynamically
             const theme = {
                 id: doc.id,
