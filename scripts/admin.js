@@ -56,11 +56,20 @@ loginBtn.addEventListener('click', async () => {
         await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
         authError.classList.add('hidden');
     } catch (e) {
-        authError.textContent = "Invalid email or password.";
+        console.error("Login failed:", e);
+        authError.textContent = e.message || "Invalid email or password.";
         authError.classList.remove('hidden');
     } finally {
         loginBtn.textContent = 'Access Dashboard';
     }
+});
+
+// Add Enter key support
+passInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loginBtn.click();
+});
+emailInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') passInput.focus();
 });
 
 logoutBtn.addEventListener('click', () => signOut(auth));
