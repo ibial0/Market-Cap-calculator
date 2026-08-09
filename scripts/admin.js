@@ -253,7 +253,7 @@ function renderGrid() {
             const scaler = c.querySelector('.design-thumb-scaler');
             if(scaler) {
                 const scale = c.clientWidth / 1600;
-                scaler.style.transform = \`scale(\${scale})\`;
+                scaler.style.transform = 'scale(' + scale + ')';
             }
         });
     }
