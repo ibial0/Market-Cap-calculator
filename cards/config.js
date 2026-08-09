@@ -5,26 +5,17 @@
 // ═══════════════════════════════════════════════════════════
 
 // ── Dimensions & Safe Zones ─────────────────────────────────
-// No more character/text split. The entire canvas is available
-// to the renderer, minus the safe margin on the edges.
 export const CARD_W = 1600;
 export const CARD_H = 900;
 export const SAFE_MARGIN = 64;
 
 // ── Named Anchor Slots ────────────────────────────────────
-// Each slot lives inside TEXT_ZONE. Positions are % of TEXT_ZONE.
-// Themes change colors/fonts — they do NOT change these anchors.
 export const SLOTS = {
-    // Row 1 (top): token name LEFT, username RIGHT
     token_name: { row: 'top',    align: 'left'  },
     username:   { row: 'top',    align: 'right' },
     tier_badge: { row: 'top',    align: 'right', below: 'username' },
-
-    // Row 2 (center): hero numbers
     pnl_multiple: { row: 'center', align: 'left' },
     pnl_percent:  { row: 'center', align: 'left', below: 'pnl_multiple' },
-
-    // Row 3 (bottom): data grid — 4 cells
     entry_mc:     { row: 'bottom', col: 0 },
     exit_mc:      { row: 'bottom', col: 1 },
     investment:   { row: 'bottom', col: 2 },
@@ -36,7 +27,6 @@ export const TEXT_SCALE = {
     tokenName: {
         max: 80,
         min: 36,
-        // Map token name char count → font size
         breakpoints: [
             { len: 4,  size: 80 },
             { len: 6,  size: 72 },
@@ -49,7 +39,6 @@ export const TEXT_SCALE = {
     heroNumber: {
         max: 140,
         min: 60,
-        // Map string length → font size
         breakpoints: [
             { len: 4,  size: 140 },
             { len: 5,  size: 120 },
@@ -68,22 +57,36 @@ export const TEXT_SCALE = {
 };
 
 // ── Tier Definitions ──────────────────────────────────────
+// minMul / maxMul are used by the category filtering system.
+// A multiplier of 1.00 = break-even. Below 1.00 = loss.
 export const TIER_DEFS = {
-    mega_win:    { label: 'MEGA WIN',    badge: 'MEGA WIN',   emotions: ['euphoric','triumphant','legendary'], colorTemp: 'hot_gold' },
-    big_win:     { label: 'BIG WIN',     badge: 'BIG WIN',    emotions: ['confident','celebrating','proud'],   colorTemp: 'warm_vibrant' },
-    solid_win:   { label: 'SOLID WIN',   badge: 'SOLID WIN',  emotions: ['content','satisfied','calm'],        colorTemp: 'warm_neutral' },
-    micro_win:   { label: 'MICRO WIN',   badge: 'GREEN',      emotions: ['playful','ironic','smug'],           colorTemp: 'neutral' },
-    small_loss:  { label: 'SMALL LOSS',  badge: 'MINOR LOSS', emotions: ['shrug','wry','dark_humor'],          colorTemp: 'cool' },
-    medium_loss: { label: 'MEDIUM LOSS', badge: 'LOSS',       emotions: ['somber','dramatic','moody'],         colorTemp: 'cool_desat' },
-    rekt:        { label: 'REKT',        badge: 'REKT',       emotions: ['devastated','tragicomic','broken'],  colorTemp: 'cold_stormy' },
+    legendary:   { label: 'LEGENDARY',   badge: 'LEGENDARY',  tag: 'Legendary',   minMul: 10,   maxMul: Infinity, emotions: ['legendary','euphoric','transcendent'],          colorTemp: 'ultra_gold'    },
+    mega_win:    { label: 'MEGA WIN',    badge: 'MEGA WIN',   tag: 'Mega Win',    minMul: 5,    maxMul: 9.99,     emotions: ['euphoric','triumphant','legendary'],            colorTemp: 'hot_gold'      },
+    big_win:     { label: 'BIG WIN',     badge: 'BIG WIN',    tag: 'Big Win',     minMul: 3,    maxMul: 4.99,     emotions: ['confident','celebrating','proud'],             colorTemp: 'warm_vibrant'  },
+    solid_win:   { label: 'GOOD WIN',    badge: 'GOOD WIN',   tag: 'Good Win',    minMul: 1.5,  maxMul: 2.99,     emotions: ['content','satisfied','calm'],                  colorTemp: 'warm_neutral'  },
+    micro_win:   { label: 'SMALL WIN',   badge: 'SMALL WIN',  tag: 'Small Win',   minMul: 1.0,  maxMul: 1.49,     emotions: ['playful','ironic','smug'],                     colorTemp: 'neutral'       },
+    small_loss:  { label: 'SMALL LOSS',  badge: 'SMALL LOSS', tag: 'Small Loss',  minMul: 0.5,  maxMul: 0.99,     emotions: ['shrug','wry','dark_humor'],                    colorTemp: 'cool'          },
+    medium_loss: { label: 'HEAVY LOSS',  badge: 'LOSS',       tag: 'Heavy Loss',  minMul: 0,    maxMul: 0.49,     emotions: ['somber','dramatic','moody'],                   colorTemp: 'cool_desat'    },
+    rekt:        { label: 'REKT',        badge: 'REKT',       tag: 'Loss',        minMul: -Infinity, maxMul: 0,   emotions: ['devastated','tragicomic','broken'],            colorTemp: 'cold_stormy'   },
 };
 
+// ── Performance Tier Order (for UI display) ───────────────
+export const TIER_ORDER = ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'];
+
 // ── Theme / Tier Compatibility Matrix ─────────────────────
+// This is the authoritative list of which tiers a theme supports.
+// Designs best suited for high-energy wins should NOT appear for losses.
 export const THEME_TIER_MATRIX = {
-    cyberpunk:     ['mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    anime:         ['mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    pixel_art:     ['mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    comic:         ['mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    minimal:       ['mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    glassmorphism: ['mega_win','big_win','solid_win','micro_win','small_loss'],
+    // Luxury Gold — premium, works for all positive tiers
+    cyberpunk:     ['legendary','mega_win','big_win','solid_win','micro_win'],
+    // Anime (Ghibli Cats) — emotional range covers everything
+    anime:         ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
+    // Neon Glow — high-energy, best for wins
+    pixel_art:     ['legendary','mega_win','big_win','solid_win'],
+    // Comic / Sunrise Gold — warm energy, positive trades
+    comic:         ['legendary','mega_win','big_win','solid_win','micro_win'],
+    // Crystal Clean — minimal/neutral, good for all
+    minimal:       ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
+    // Aurora Glassmorphism — ethereal, best for positive trades
+    glassmorphism: ['legendary','mega_win','big_win','solid_win','micro_win','small_loss'],
 };
