@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC Calc - Admin Design Gallery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;700;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles/index.css">
+    <link rel="stylesheet" href="./styles/admin.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+</head>
+<body>
+    <header>
+        <div class="logo">MC Calc Admin</div>
+        <div class="header-actions">
+            <button id="logout-btn" class="btn-secondary hidden">Logout</button>
+            <a href="index.html" class="btn-primary">App</a>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <!-- Auth View -->
+        <div id="auth-view" class="glass-panel admin-panel">
+            <h2>Admin Login</h2>
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="admin-email" class="text-input" placeholder="admin@example.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="admin-pass" class="text-input">
+            </div>
+            <button id="login-btn" class="btn-primary w-full">Login</button>
+            <p id="auth-error" class="error-text hidden"></p>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden">
+            <div class="dashboard-header">
+                <h2>Card Design Gallery</h2>
+                <button id="create-design-btn" class="btn-primary">+ New Design</button>
+            </div>
+            
+            <div id="designs-grid" class="designs-grid">
+                <!-- Designs will be injected here -->
+            </div>
+        </div>
+
+        <!-- Editor Modal -->
+        <div class="modal-overlay hidden" id="editor-modal">
+            <div class="modal-content admin-editor">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="editor-title">Edit Design</h2>
+                    <button class="close-btn" id="close-editor">X</button>
+                </div>
+                
+                <div class="editor-layout">
+                    <div class="editor-form">
+                        <input type="hidden" id="edit-id">
+                        
+                        <div class="input-group">
+                            <label>Design Name</label>
+                            <input type="text" id="edit-name" class="text-input">
+                        </div>
+
+                        <div class="form-row">
+                            <label class="dca-toggle-label">
+                                <span class="dca-toggle-text">Active</span>
+                                <input type="checkbox" id="edit-active" class="dca-chk">
+                                <span class="toggle-switch-mini"></span>
+                            </label>
+                            <label class="dca-toggle-label">
+                                <span class="dca-toggle-text">Has Character</span>
+                                <input type="checkbox" id="edit-character" class="dca-chk">
+                                <span class="toggle-switch-mini"></span>
+                            </label>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Palettes (JSON Array)</label>
+                            <textarea id="edit-palettes" class="code-input" rows="4">[{}]</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Typography (JSON Object)</label>
+                            <textarea id="edit-typography" class="code-input" rows="3">{}</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>renderBackground(pal, tierId, variant) { ... }</label>
+                            <textarea id="edit-bg" class="code-input" rows="6">return '';</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>renderEffects(pal, tierId, detailIdx) { ... }</label>
+                            <textarea id="edit-fx" class="code-input" rows="3">return '';</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>getBorder(pal) { ... }</label>
+                            <textarea id="edit-border" class="code-input" rows="2">return '';</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>renderLayout({ cd, pal, typo, W, H, S }) { ... }</label>
+                            <textarea id="edit-layout" class="code-input" rows="10">return '';</textarea>
+                        </div>
+                        
+                        <div class="editor-actions">
+                            <button id="save-design-btn" class="btn-primary">Save Design</button>
+                            <button id="delete-design-btn" class="btn-danger hidden">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-preview">
+                        <h3>Live Preview</h3>
+                        <div id="preview-container">
+                            <div id="card-node" class="card-node"></div>
+                        </div>
+                        <button id="refresh-preview-btn" class="btn-secondary w-full" style="margin-top:16px;">Refresh Preview</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="./scripts/admin.js"></script>
+</body>
+</html>

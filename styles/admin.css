@@ -1,0 +1,137 @@
+/* admin.css */
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.admin-main {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.admin-panel {
+    max-width: 400px;
+    margin: 100px auto;
+    padding: 30px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.designs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.design-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.design-card h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+}
+
+.design-status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    align-self: flex-start;
+}
+.status-active { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.status-inactive { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.design-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+/* Modal and Editor */
+.admin-editor {
+    max-width: 1200px;
+    width: 95%;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-layout {
+    display: flex;
+    gap: 30px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.editor-form {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.editor-preview {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+#preview-container {
+    width: 100%;
+    /* Keep aspect ratio of 1600x900 */
+    aspect-ratio: 16/9;
+    position: relative;
+    transform-origin: top left;
+}
+
+.code-input {
+    width: 100%;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    resize: vertical;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-danger:hover {
+    background: #dc2626;
+}
