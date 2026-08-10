@@ -2,15 +2,18 @@
 //  ADMIN DASHBOARD — Complete Implementation
 //  All buttons functional. Full CRUD. Filter system. Preview modal.
 // ═══════════════════════════════════════════════════════════
-import { auth, db } from '../config/firebase.js';
+import { auth, db, storage } from '../config/firebase.js';
 import {
     signInWithEmailAndPassword,
     onAuthStateChanged,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-    collection, getDocs, doc, setDoc, deleteDoc
+    collection, getDocs, doc, setDoc, deleteDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+    ref as storageRef, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import { composeCard } from '../cards/renderer.js';
 import { getAllThemes, BUILTIN_METADATA, loadCustomThemes } from '../cards/themes/index.js';
 import { TIER_DEFS, TIER_ORDER } from '../cards/config.js';
@@ -730,8 +733,183 @@ previewDeleteBtn.addEventListener('click', async () => {
     }
 });
 
-// ── Utilities ──────────────────────────────────────────────
+// ── Utilities ───────────────────────────────────────────
 function _debounce(fn, ms) {
     let t;
     return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PNG TEMPLATES SECTION
+//  Navigation, gallery render, activate/deactivate/delete.
+// ═══════════════════════════════════════════════════════════
+
+let allPNGTemplates = []; // loaded from Firestore
+
+// ── Section Navigation ─────────────────────────────────────
+const navDesigns = document.getElementById('nav-designs');
+const navPng     = document.getElementById('nav-png');
+const secDesigns = document.getElementById('section-designs');
+const secPng     = document.getElementById('section-png');
+const filterBarEl = document.getElementById('filter-bar');
+const contentHeader = document.querySelector('header.content-header');
+
+if (navDesigns) {
+    navDesigns.addEventListener('click', () => {
+        navDesigns.classList.add('active');
+        navPng?.classList.remove('active');
+        secDesigns.style.display = '';
+        secPng.style.display = 'none';
+        filterBarEl.style.display = '';
+        if (contentHeader) contentHeader.style.display = '';
+    });
+}
+
+if (navPng) {
+    navPng.addEventListener('click', async () => {
+        navPng.classList.add('active');
+        navDesigns?.classList.remove('active');
+        secDesigns.style.display = 'none';
+        secPng.style.display = '';
+        filterBarEl.style.display = 'none';
+        if (contentHeader) contentHeader.style.display = 'none';
+        await loadPNGSection();
+    });
+}
+
+// ── Add New PNG Template button ─────────────────────────────
+const createPngBtn = document.getElementById('create-png-btn');
+if (createPngBtn) {
+    createPngBtn.addEventListener('click', () => {
+        window.open('png-editor.html', '_blank');
+    });
+}
+
+// ── Load PNG templates from Firestore ────────────────────────
+async function loadPNGSection() {
+    const grid = document.getElementById('png-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:#94a3b8;">Loading PNG templates…</div>';
+
+    try {
+        const snap = await getDocs(collection(db, 'png_templates'));
+        allPNGTemplates = [];
+        snap.forEach(d => allPNGTemplates.push({ id: d.id, ...d.data() }));
+
+        if (allPNGTemplates.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:#94a3b8;">
+                    <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1" style="opacity:.3;margin-bottom:16px;">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">No PNG templates yet</div>
+                    <div style="font-size:14px;">Click <strong>Add New PNG Template</strong> to upload your first design.</div>
+                </div>`;
+            return;
+        }
+
+        renderPNGGrid();
+    } catch (e) {
+        grid.innerHTML = `<div style="grid-column:1/-1;color:#f87171;padding:40px;">Error loading templates: ${e.message}</div>`;
+    }
+}
+
+// ── Render PNG gallery grid ───────────────────────────────
+function renderPNGGrid() {
+    const grid = document.getElementById('png-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    allPNGTemplates.forEach(tpl => {
+        const card = document.createElement('div');
+        card.className = 'design-card';
+        card.innerHTML = `
+            <div class="design-card-thumb" style="position:relative;height:160px;background:#000;border-radius:8px 8px 0 0;overflow:hidden;">
+                ${tpl.bgUrl
+                    ? `<img src="${tpl.bgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`
+                    : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#334155;font-size:12px;">No Background</div>`
+                }
+                <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 50%);pointer-events:none;"></div>
+                <div style="position:absolute;bottom:8px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="background:${tpl.isActive ? 'rgba(52,211,153,.2)' : 'rgba(248,113,113,.15)'};color:${tpl.isActive ? '#34d399' : '#f87171'};border:1px solid ${tpl.isActive ? 'rgba(52,211,153,.3)' : 'rgba(248,113,113,.25)'};border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;">
+                        ${tpl.isActive ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
+                    <span style="background:rgba(0,0,0,.5);color:#94a3b8;border-radius:4px;padding:2px 6px;font-size:10px;">
+                        ${tpl.category || 'Custom'}
+                    </span>
+                </div>
+            </div>
+            <div class="design-card-body">
+                <div class="design-card-name">${tpl.name || 'Untitled'}</div>
+                <div class="design-card-meta" style="font-size:11px;color:#94a3b8;margin-bottom:10px;">
+                    ${tpl.tag || 'All Tiers'} &nbsp;·&nbsp; ${tpl.bgWidth || 1600}×${tpl.bgHeight || 900}
+                    &nbsp;·&nbsp; ${(tpl.layers || []).length} layers
+                </div>
+                <div class="design-card-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn-action btn-edit" data-id="${tpl.id}">Edit</button>
+                    <button class="btn-action ${tpl.isActive ? 'btn-deactivate' : 'btn-activate'}" data-id="${tpl.id}">
+                        ${tpl.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="btn-action btn-duplicate" data-id="${tpl.id}">Duplicate</button>
+                    <button class="btn-action btn-delete-png" data-id="${tpl.id}" style="color:#f87171;">Delete</button>
+                </div>
+            </div>`;
+
+        // ── Edit → open editor ──
+        card.querySelector('.btn-edit').addEventListener('click', () => {
+            window.open(`png-editor.html?id=${tpl.id}`, '_blank');
+        });
+
+        // ── Activate / Deactivate ──
+        const toggleBtn = card.querySelector('.btn-activate, .btn-deactivate');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', async () => {
+                try {
+                    const newActive = !tpl.isActive;
+                    await setDoc(doc(db, 'png_templates', tpl.id), {
+                        isActive:  newActive,
+                        updatedAt: new Date().toISOString(),
+                    }, { merge: true });
+                    await loadPNGSection();
+                } catch (e) {
+                    alert('Failed: ' + e.message);
+                }
+            });
+        }
+
+        // ── Duplicate ──
+        card.querySelector('.btn-duplicate').addEventListener('click', async () => {
+            const newId = 'pngtpl_' + Date.now();
+            try {
+                const orig = await getDoc(doc(db, 'png_templates', tpl.id));
+                if (!orig.exists()) return;
+                const data = { ...orig.data(), name: (orig.data().name || 'Template') + ' (Copy)', isActive: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                await setDoc(doc(db, 'png_templates', newId), data);
+                window.open(`png-editor.html?id=${newId}`, '_blank');
+            } catch (e) {
+                alert('Duplicate failed: ' + e.message);
+            }
+        });
+
+        // ── Delete ──
+        card.querySelector('.btn-delete-png').addEventListener('click', async () => {
+            if (!confirm(`Delete template "${tpl.name}"? This cannot be undone.`)) return;
+            try {
+                await deleteDoc(doc(db, 'png_templates', tpl.id));
+                // Also try to remove storage file
+                if (tpl.bgUrl) {
+                    try {
+                        const path = decodeURIComponent(tpl.bgUrl.split('/o/')[1]?.split('?')[0] || '');
+                        if (path) await deleteObject(storageRef(storage, path));
+                    } catch (_) { /* storage deletion is best-effort */ }
+                }
+                await loadPNGSection();
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        });
+
+        grid.appendChild(card);
+    });
 }

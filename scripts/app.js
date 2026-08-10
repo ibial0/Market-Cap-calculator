@@ -8,9 +8,12 @@ import { initModals } from '../ui/modals.js';
 import { initProfile } from '../ui/profile.js';
 import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
+import { loadPNGTemplates } from '../cards/png-loader.js';
 
-// Load custom themes from Firestore asynchronously
+// Load custom themes and PNG templates from Firestore asynchronously at startup
 loadCustomThemes();
+loadPNGTemplates();
+
 // ═══════════════════════════════════════════════════════════
 //  DOM Elements
 // ═══════════════════════════════════════════════════════════

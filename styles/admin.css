@@ -718,3 +718,24 @@ body.admin-body {
     .designs-grid { grid-template-columns: 1fr; }
     .auth-panel   { padding: 36px 24px; }
 }
+
+/* ── Sidebar separator ──────────────────────────────────── */
+.sidebar-nav-sep {
+    height: 1px;
+    background: var(--adm-border);
+    margin: 8px 4px;
+}
+
+/* ── PNG section card thumbnail ─────────────────────────── */
+.design-card-thumb img {
+    transition: transform 0.3s ease;
+}
+.design-card:hover .design-card-thumb img {
+    transform: scale(1.04);
+}
+
+/* ── PNG action buttons ─────────────────────────────────── */
+.btn-activate   { color: var(--adm-success) !important; border-color: rgba(52,211,153,0.3) !important; }
+.btn-deactivate { color: var(--adm-warning) !important; border-color: rgba(245,158,11,0.3) !important; }
+.btn-duplicate  { color: var(--adm-accent2) !important; border-color: rgba(129,140,248,0.3) !important; }
+
