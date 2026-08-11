@@ -425,7 +425,6 @@ function openEditor(id, isPngOverride = false) {
         document.getElementById('delete-design-btn').classList.remove('hidden');
         document.getElementById('delete-hint').style.display = 'none';
         
-        mainGalleryView.style.display = 'none';
         editorModal.style.display = 'flex';
         updateEditorPreview();
         return;
@@ -543,8 +542,7 @@ document.getElementById('save-design-btn').addEventListener('click', async () =>
             
             // Hide editor and return to PNG gallery
             editorModal.style.display = 'none';
-            mainGalleryView.style.display = 'flex';
-            document.querySelector('[data-view="png"]').click();
+            document.getElementById('nav-png')?.click();
         } else {
             // Existing Theme Save Logic
             const data = {
@@ -565,7 +563,7 @@ document.getElementById('save-design-btn').addEventListener('click', async () =>
             
             // Hide editor and return to theme gallery
             editorModal.style.display = 'none';
-            mainGalleryView.style.display = 'flex';
+            document.getElementById('nav-designs')?.click();
         }
     } catch (e) {
         alert('Failed to save: ' + e.message);
