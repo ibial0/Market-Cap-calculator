@@ -55,16 +55,20 @@ async function _doLoad() {
 
         // Pre-fetch background images as data URLs in parallel
         await Promise.all(activeTemplates.map(async (tpl) => {
+            // Case 1: External URL (Imgur, imgBB, etc.) — fetch and convert to data URL
             if (tpl.bgUrl) {
                 try {
                     tpl.bgDataUrl = await _fetchAsDataURL(tpl.bgUrl);
                 } catch (err) {
                     console.warn('[PNGLoader] CORS fetch failed for', tpl.id, '— using URL directly');
-                    // Fall back: the <img> tag will still load it visually,
-                    // html2canvas may or may not capture it depending on CORS headers
+                    // Fall back: use URL directly. Browser <img> will still show it,
+                    // but html2canvas may not capture it if CORS blocks it.
                     tpl.bgDataUrl = tpl.bgUrl;
                 }
             }
+            // Case 2: bgDataUrl already stored in Firestore (local file upload) — ready to use
+            // No action needed, bgDataUrl is already set from Firestore data.
+
             _cache.set(tpl.id, tpl);
         }));
 

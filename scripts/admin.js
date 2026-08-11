@@ -2,7 +2,7 @@
 //  ADMIN DASHBOARD — Complete Implementation
 //  All buttons functional. Full CRUD. Filter system. Preview modal.
 // ═══════════════════════════════════════════════════════════
-import { auth, db, storage } from '../config/firebase.js';
+import { auth, db } from '../config/firebase.js';
 import {
     signInWithEmailAndPassword,
     onAuthStateChanged,
@@ -11,9 +11,6 @@ import {
 import {
     collection, getDocs, doc, setDoc, deleteDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import {
-    ref as storageRef, deleteObject
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import { composeCard } from '../cards/renderer.js';
 import { getAllThemes, BUILTIN_METADATA, loadCustomThemes } from '../cards/themes/index.js';
 import { TIER_DEFS, TIER_ORDER } from '../cards/config.js';
@@ -897,13 +894,6 @@ function renderPNGGrid() {
             if (!confirm(`Delete template "${tpl.name}"? This cannot be undone.`)) return;
             try {
                 await deleteDoc(doc(db, 'png_templates', tpl.id));
-                // Also try to remove storage file
-                if (tpl.bgUrl) {
-                    try {
-                        const path = decodeURIComponent(tpl.bgUrl.split('/o/')[1]?.split('?')[0] || '');
-                        if (path) await deleteObject(storageRef(storage, path));
-                    } catch (_) { /* storage deletion is best-effort */ }
-                }
                 await loadPNGSection();
             } catch (e) {
                 alert('Delete failed: ' + e.message);

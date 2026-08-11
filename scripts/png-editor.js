@@ -3,14 +3,11 @@
 //  Handles: load/new template, canvas scaling, draggable text
 //  layers, properties panel, PNG upload, save to Firestore.
 // ═══════════════════════════════════════════════════════════
-import { auth, db, storage } from '../config/firebase.js';
+import { auth, db } from '../config/firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
     doc, getDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import {
-    ref as storageRef, uploadBytes, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import { DEFAULT_LAYERS } from '../cards/png-engine.js';
 
 // ── Constants ─────────────────────────────────────────────
@@ -71,7 +68,6 @@ let template = {
 
 let selectedLayerId = null;
 let canvasScale     = 1;
-let pendingBgBlob   = null; // PNG blob waiting to be uploaded on save
 let isDirty         = false;
 
 // Drag state
@@ -772,6 +768,18 @@ function setupEvents() {
         window.location.href = 'admin.html';
     });
 
+    // ── Paste Image URL (primary method — 100% quality) ──
+    document.getElementById('btn-paste-url')?.addEventListener('click', () => {
+        const url = prompt(
+            'Paste the direct image URL from Imgur, imgBB, or any image host:\n\n' +
+            'Example: https://i.imgur.com/abc123.png\n\n' +
+            'Tip: Upload your PNG at imgur.com → right-click image → Copy Image Address'
+        );
+        if (!url || !url.trim()) return;
+        handleImageURL(url.trim());
+    });
+
+    // ── Browse File (local preview + auto-converts to data URL) ──
     document.getElementById('btn-upload-bg')?.addEventListener('click', () => {
         document.getElementById('bg-file-input')?.click();
     });
@@ -779,7 +787,7 @@ function setupEvents() {
     document.getElementById('bg-file-input')?.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) handleFileUpload(file);
-        e.target.value = ''; // allow re-upload same file
+        e.target.value = '';
     });
 
     document.getElementById('btn-reset-layers')?.addEventListener('click', () => {
@@ -860,7 +868,33 @@ function setupEvents() {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  FILE UPLOAD
+//  IMAGE INPUT — URL Paste (Primary, 100% quality)
+// ═══════════════════════════════════════════════════════════
+function handleImageURL(url) {
+    showLoading('Loading image from URL…');
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        template.bgUrl     = url;          // Original full-quality URL
+        template.bgDataUrl = url;          // Use URL directly for preview
+        template.bgWidth   = img.naturalWidth;
+        template.bgHeight  = img.naturalHeight;
+
+        hideLoading();
+        renderCanvasBg();
+        markDirty();
+        showToast('Background loaded! Remember to Save.', 'success');
+    };
+    img.onerror = () => {
+        hideLoading();
+        showToast('Could not load image from URL. Make sure it is a direct image link (e.g. ending in .png or .jpg).', 'error');
+    };
+    img.src = url;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  IMAGE INPUT — File Upload (Local preview, converts to data URL)
 // ═══════════════════════════════════════════════════════════
 function handleFileUpload(file) {
     if (!file.type.startsWith('image/')) {
@@ -873,24 +907,21 @@ function handleFileUpload(file) {
     const reader = new FileReader();
     reader.onload = (ev) => {
         const dataUrl = ev.target.result;
-
-        // Get image dimensions
         const img = new Image();
         img.onload = () => {
-            template.bgDataUrl = dataUrl;
-            template.bgUrl     = null; // will be set after upload on save
+            template.bgDataUrl = dataUrl;   // Full-quality data URL for preview
+            template.bgUrl     = null;      // No external URL yet
             template.bgWidth   = img.naturalWidth;
             template.bgHeight  = img.naturalHeight;
-            pendingBgBlob      = file;
 
             hideLoading();
             renderCanvasBg();
             markDirty();
-            showToast('Background uploaded! Remember to Save to persist.', 'success');
+            showToast('Preview loaded! For best quality, also paste the image URL from Imgur/imgBB.', 'success');
         };
         img.onerror = () => {
             hideLoading();
-            showToast('Could not read image dimensions.', 'error');
+            showToast('Could not read image.', 'error');
         };
         img.src = dataUrl;
     };
@@ -916,26 +947,25 @@ async function saveTemplate() {
             template.id = 'pngtpl_' + Date.now();
         }
 
-        // 1. Upload background PNG to Firebase Storage if changed
-        if (pendingBgBlob) {
-            showLoading('Uploading background image…');
-            const bgRef = storageRef(storage, `png_templates/${template.id}/background.${_ext(pendingBgBlob.type)}`);
-            const snapshot = await uploadBytes(bgRef, pendingBgBlob, {
-                contentType: pendingBgBlob.type || 'image/png',
-                cacheControl: 'public, max-age=31536000',
-            });
-            template.bgUrl = await getDownloadURL(snapshot.ref);
-            pendingBgBlob = null;
-            showLoading('Saving to database…');
-        }
-
+        // Validate: must have either a URL or a local data URL
         if (!template.bgUrl && !template.bgDataUrl) {
-            showToast('Please upload a background image first!', 'error');
+            showToast('Please set a background image first! Use "Paste Image URL" or "Browse File".', 'error');
             hideLoading();
             return;
         }
 
-        // 2. Save to Firestore (do NOT store bgDataUrl — it's too large)
+        // If only local file (no URL), warn but allow save
+        if (!template.bgUrl && template.bgDataUrl) {
+            // Check if data URL is too large for Firestore (1MB doc limit)
+            const sizeKB = Math.round((template.bgDataUrl.length * 0.75) / 1024);
+            if (sizeKB > 900) {
+                showToast('Image too large for direct save (' + sizeKB + 'KB). Please use "Paste Image URL" with Imgur/imgBB instead.', 'error');
+                hideLoading();
+                return;
+            }
+        }
+
+        // Save to Firestore
         const now = new Date().toISOString();
         const data = {
             name:         template.name || 'New PNG Template',
@@ -945,7 +975,8 @@ async function saveTemplate() {
             isActive:     template.isActive || false,
             displayMode:  template.displayMode || 'both',
             borderRadius: template.borderRadius || 0,
-            bgUrl:        template.bgUrl,
+            bgUrl:        template.bgUrl || null,       // External URL (full quality)
+            bgDataUrl:    template.bgUrl ? null : template.bgDataUrl, // Only store data URL if no external URL
             bgWidth:      template.bgWidth  || CARD_W,
             bgHeight:     template.bgHeight || CARD_H,
             layers:       template.layers.map(l => ({ ...l })),
