@@ -402,8 +402,40 @@ function _buildThemeFromFirestore(data) {
     return theme;
 }
 
-// ── Editor Modal ───────────────────────────────────────────
-function openEditor(id) {
+// ── Editor Form ────────────────────────────────────────────
+let currentEditorId = null;
+let isEditorPng = false;
+
+function openEditor(id, isPngOverride = false) {
+    currentEditorId = id;
+    
+    // Check if it's a PNG
+    const pngDesign = allPngTemplates.find(p => p.id === id);
+    if (pngDesign || isPngOverride) {
+        isEditorPng = true;
+        const d = pngDesign;
+        document.getElementById('edit-name').value     = d ? (d.name || '') : '';
+        document.getElementById('edit-category').value = d ? (d.category || '') : '';
+        document.getElementById('edit-tag').value      = d ? (d.tag || '') : '';
+        document.getElementById('edit-active').checked = d ? (d.isActive !== false) : true;
+        
+        document.getElementById('theme-logic-section').style.display = 'none';
+        document.getElementById('png-logic-section').style.display = 'block';
+        
+        document.getElementById('delete-design-btn').classList.remove('hidden');
+        document.getElementById('delete-hint').style.display = 'none';
+        
+        mainGalleryView.style.display = 'none';
+        editorModal.style.display = 'flex';
+        updateEditorPreview();
+        return;
+    }
+
+    // It's a Theme
+    isEditorPng = false;
+    document.getElementById('theme-logic-section').style.display = 'block';
+    document.getElementById('png-logic-section').style.display = 'none';
+
     const design = allDesigns.find(d => d.id === id);
     if (!design) return;
 
@@ -489,48 +521,64 @@ editorModal.addEventListener('click', (e) => {
 });
 
 // Save
-saveBtn.addEventListener('click', async () => {
-    const id = editId.value;
-    if (!id) { alert('Design ID is missing.'); return; }
-
-    saveBtn.textContent = 'Saving…';
-    saveBtn.disabled = true;
-
-    const tagValue = editTag.value;
-    // Derive tiers from tag
-    const tiers = _tiersFromTag(tagValue);
-
-    const logicSection = document.getElementById('theme-logic-section');
-    const includeLogic = !logicSection.classList.contains('hidden');
-
-    const data = {
-        name:            editName.value.trim() || id,
-        isActive:        editActive.checked,
-        category:        editCategory.value,
-        tag:             tagValue,
-        tiers,
-        updatedAt:       new Date().toISOString(),
-    };
-
-    if (includeLogic) {
-        data.palettes = editPal.value;
-        data.typography = editTypo.value;
-        data.renderBackground = editBg.value;
-        data.renderEffects = editFx.value;
-        data.getBorder = editBorder.value;
-        data.renderLayout = editLayout.value;
-    }
+document.getElementById('save-design-btn').addEventListener('click', async () => {
+    if (!currentEditorId) return;
+    const btn = document.getElementById('save-design-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
 
     try {
-        await setDoc(doc(db, 'card_designs', id), data, { merge: true });
-        closeEditorModal();
-        await loadAllData(); // refresh gallery
+        if (isEditorPng) {
+            const data = {
+                name:     document.getElementById('edit-name').value.trim(),
+                category: document.getElementById('edit-category').value,
+                tag:      document.getElementById('edit-tag').value,
+                isActive: document.getElementById('edit-active').checked,
+                updatedAt: new Date().toISOString()
+            };
+            await setDoc(doc(db, 'png_templates', currentEditorId), data, { merge: true });
+            
+            // Reload PNGs
+            await loadPNGSection();
+            
+            // Hide editor and return to PNG gallery
+            editorModal.style.display = 'none';
+            mainGalleryView.style.display = 'flex';
+            document.querySelector('[data-view="png"]').click();
+        } else {
+            // Existing Theme Save Logic
+            const data = {
+                name:            document.getElementById('edit-name').value.trim(),
+                category:        document.getElementById('edit-category').value,
+                tag:             document.getElementById('edit-tag').value,
+                isActive:        document.getElementById('edit-active').checked,
+                palettes:        document.getElementById('edit-palettes').value,
+                typography:      document.getElementById('edit-typography').value,
+                renderBackground:document.getElementById('edit-bg').value,
+                renderEffects:   document.getElementById('edit-fx').value,
+                getBorder:       document.getElementById('edit-border').value,
+                renderLayout:    document.getElementById('edit-layout').value,
+                updatedAt:       new Date().toISOString(),
+            };
+            await setDoc(doc(db, 'card_designs', currentEditorId), data, { merge: true });
+            await loadAllData();
+            
+            // Hide editor and return to theme gallery
+            editorModal.style.display = 'none';
+            mainGalleryView.style.display = 'flex';
+        }
     } catch (e) {
         alert('Failed to save: ' + e.message);
-        console.error('[Admin] Save error:', e);
     } finally {
-        saveBtn.textContent = 'Save Changes';
-        saveBtn.disabled = false;
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+});
+
+// PNG Visual Editor opener
+document.getElementById('open-visual-editor-btn')?.addEventListener('click', () => {
+    if (currentEditorId) {
+        window.open(`png-editor.html?id=${currentEditorId}`, '_blank');
     }
 });
 
@@ -583,31 +631,46 @@ refreshPrvBtn.addEventListener('click', updateEditorPreview);
 });
 
 function updateEditorPreview() {
+    if (!currentEditorId) return;
     try {
-        const id = editId.value;
-        const design = allDesigns.find(d => d.id === id);
-        const logicSection = document.getElementById('theme-logic-section');
-        const includeLogic = !logicSection.classList.contains('hidden');
-
-        let theme;
-        if (!includeLogic && design && design._builtinTheme) {
-            // For built-in themes where logic is hidden, use the actual built-in theme for preview
-            theme = design._builtinTheme;
+        let html = '';
+        if (isEditorPng) {
+            const pngDesign = allPngTemplates.find(p => p.id === currentEditorId);
+            if (pngDesign) {
+                // Just show the raw image for preview in the editor
+                html = `<div style="width:1600px;height:900px;background:url('${pngDesign.bgDataUrl || pngDesign.bgUrl}') center/cover;"></div>`;
+            }
         } else {
-            const fd = {
-                id:              id,
-                name:            editName.value,
-                palettes:        editPal.value,
-                typography:      editTypo.value,
-                renderBackground:editBg.value,
-                renderEffects:   editFx.value,
-                getBorder:       editBorder.value,
-                renderLayout:    editLayout.value,
-            };
-            theme = _buildThemeFromFirestore(fd);
+            const logicSection = document.getElementById('theme-logic-section');
+            const editName     = document.getElementById('edit-name');
+            const editPal      = document.getElementById('edit-palettes');
+            const editTypo     = document.getElementById('edit-typography');
+            const editBg       = document.getElementById('edit-bg');
+            const editFx       = document.getElementById('edit-fx');
+            const editBorder   = document.getElementById('edit-border');
+            const editLayout   = document.getElementById('edit-layout');
+
+            const includeLogic = !logicSection.classList.contains('hidden');
+            const design = allDesigns.find(d => d.id === currentEditorId);
+
+            let theme;
+            if (!includeLogic && design && design._builtinTheme) {
+                theme = design._builtinTheme;
+            } else {
+                const fd = {
+                    id:              currentEditorId,
+                    name:            editName.value,
+                    palettes:        editPal.value,
+                    typography:      editTypo.value,
+                    renderBackground:editBg.value,
+                    renderEffects:   editFx.value,
+                    getBorder:       editBorder.value,
+                    renderLayout:    editLayout.value,
+                };
+                theme = _buildThemeFromFirestore(fd);
+            }
+            html = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: currentEditorId }, randomizer: MOCK_RNG });
         }
-        
-        const html  = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: id }, randomizer: MOCK_RNG });
 
         const node = document.getElementById('card-node');
         node.innerHTML = html;
@@ -630,45 +693,77 @@ window.addEventListener('resize', () => {
 });
 
 // ── Preview Modal ──────────────────────────────────────────
+let currentPreviewIsPng = false;
 function openPreviewModal(id) {
-    const design = allDesigns.find(d => d.id === id);
-    if (!design) return;
     currentPreviewId = id;
-
-    previewTitle.textContent = design.name;
+    
+    const themeDesign = allDesigns.find(d => d.id === id);
+    const pngDesign   = allPngTemplates.find(p => p.id === id);
+    
+    if (!themeDesign && !pngDesign) return;
+    
+    currentPreviewIsPng = !!pngDesign;
+    const name     = pngDesign ? pngDesign.name : themeDesign.name;
+    const tag      = pngDesign ? pngDesign.tag : themeDesign.tag;
+    const category = pngDesign ? pngDesign.category : themeDesign.category;
+    const isActive = pngDesign ? pngDesign.isActive !== false : themeDesign.isActive;
+    
+    previewTitle.textContent = name || 'Untitled';
 
     // Meta badges
-    const typeBadgeClass = design._type === 'builtin' ? 'type-builtin' : design._type === 'overridden' ? 'type-overridden' : 'type-custom';
-    const typeLabel       = design._type === 'builtin' ? 'Built-in' : design._type === 'overridden' ? 'Modified' : 'Custom';
+    let typeBadgeClass, typeLabel;
+    if (pngDesign) {
+        typeBadgeClass = 'type-custom';
+        typeLabel = 'PNG Template';
+        document.getElementById('preview-duplicate-btn').style.display = 'inline-block';
+    } else {
+        typeBadgeClass = themeDesign._type === 'builtin' ? 'type-builtin' : themeDesign._type === 'overridden' ? 'type-overridden' : 'type-custom';
+        typeLabel      = themeDesign._type === 'builtin' ? 'Built-in' : themeDesign._type === 'overridden' ? 'Modified' : 'Custom';
+        document.getElementById('preview-duplicate-btn').style.display = 'none';
+    }
+
     previewMeta.innerHTML = `
         <span class="design-type-badge ${typeBadgeClass}">${typeLabel}</span>
-        ${design.tag      ? `<span class="design-tag-badge">${design.tag}</span>` : ''}
-        ${design.category ? `<span class="design-tag-badge" style="background:rgba(129,140,248,0.12);color:#818cf8;">${design.category}</span>` : ''}
-        <span class="design-status ${design.isActive ? 'status-active' : 'status-inactive'}">${design.isActive ? 'Active' : 'Inactive'}</span>
+        ${tag ? `<span class="design-tag-badge">${tag}</span>` : ''}
+        ${category ? `<span class="design-tag-badge" style="background:rgba(129,140,248,0.12);color:#818cf8;">${category}</span>` : ''}
+        <span class="design-status ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Active' : 'Inactive'}</span>
     `;
 
     // Render card
     try {
-        let theme = design._builtinTheme;
-        if (!theme && design._firestoreData) theme = _buildThemeFromFirestore(design._firestoreData);
-        if (theme) {
-            const html = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: id }, randomizer: MOCK_RNG });
-            previewCard.innerHTML = html;
+        if (pngDesign) {
+            previewCard.innerHTML = `<div style="width:1600px;height:900px;background:url('${pngDesign.bgDataUrl || pngDesign.bgUrl}') center/cover;"></div>`;
         } else {
-            previewCard.innerHTML = '<div style="background:#1a2340;width:1600px;height:900px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:36px;">No Preview</div>';
+            let theme = themeDesign._builtinTheme;
+            if (!theme && themeDesign._firestoreData) theme = _buildThemeFromFirestore(themeDesign._firestoreData);
+            if (theme) {
+                const html = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: id }, randomizer: MOCK_RNG });
+                previewCard.innerHTML = html;
+            } else {
+                previewCard.innerHTML = '<div style="background:#1a2340;width:1600px;height:900px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:36px;">No Preview</div>';
+            }
         }
     } catch (e) {
         previewCard.innerHTML = '<div style="background:#2d1010;width:1600px;height:900px;display:flex;align-items:center;justify-content:center;color:#f87171;font-size:36px;">Render Error</div>';
     }
 
     // Toggle active button label
-    previewToggleBtn.textContent = design.isActive ? 'Deactivate' : 'Activate';
+    const isActiveStatus = currentPreviewIsPng 
+        ? allPngTemplates.find(p => p.id === currentPreviewId)?.isActive !== false
+        : allDesigns.find(d => d.id === currentPreviewId)?.isActive;
+        
+    previewToggleBtn.textContent = isActiveStatus ? 'Deactivate' : 'Activate';
 
-    // Show delete only for non-pure-builtin
-    if (design._type === 'custom' || design._type === 'overridden') {
+    // Show delete
+    if (currentPreviewIsPng) {
         previewDeleteBtn.classList.remove('hidden');
     } else {
-        previewDeleteBtn.classList.add('hidden');
+        const d = allDesigns.find(d => d.id === currentPreviewId);
+        if (d && (d._type === 'custom' || d._type === 'overridden')) {
+            previewDeleteBtn.classList.remove('hidden');
+        } else {
+            previewDeleteBtn.classList.add('hidden');
+        }
     }
 
     previewModal.style.display = 'flex';
@@ -690,19 +785,44 @@ previewEditBtn.addEventListener('click', () => {
     if (currentPreviewId) openEditor(currentPreviewId);
 });
 
+document.getElementById('preview-duplicate-btn')?.addEventListener('click', async () => {
+    if (!currentPreviewIsPng) return;
+    const id = currentPreviewId;
+    const tpl = allPngTemplates.find(p => p.id === id);
+    if (!tpl) return;
+    const newId = 'pngtpl_' + Date.now();
+    try {
+        const orig = await getDoc(doc(db, 'png_templates', id));
+        if (!orig.exists()) return;
+        const data = { ...orig.data(), name: (orig.data().name || 'Template') + ' (Copy)', isActive: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        await setDoc(doc(db, 'png_templates', newId), data);
+        previewModal.style.display = 'none';
+        window.open(`png-editor.html?id=${newId}`, '_blank');
+        await loadPNGSection();
+    } catch (e) {
+        alert('Duplicate failed: ' + e.message);
+    }
+});
+
 previewToggleBtn.addEventListener('click', async () => {
     const id = currentPreviewId;
-    const design = allDesigns.find(d => d.id === id);
-    if (!design) return;
-
     previewToggleBtn.textContent = 'Saving…';
     previewToggleBtn.disabled = true;
 
     try {
-        const newActive = !design.isActive;
-        await setDoc(doc(db, 'card_designs', id), { isActive: newActive, updatedAt: new Date().toISOString() }, { merge: true });
-        previewModal.style.display = 'none';
-        await loadAllData();
+        if (currentPreviewIsPng) {
+            const design = allPngTemplates.find(p => p.id === id);
+            const newActive = !(design.isActive !== false);
+            await setDoc(doc(db, 'png_templates', id), { isActive: newActive, updatedAt: new Date().toISOString() }, { merge: true });
+            previewModal.style.display = 'none';
+            await loadPNGSection();
+        } else {
+            const design = allDesigns.find(d => d.id === id);
+            const newActive = !design.isActive;
+            await setDoc(doc(db, 'card_designs', id), { isActive: newActive, updatedAt: new Date().toISOString() }, { merge: true });
+            previewModal.style.display = 'none';
+            await loadAllData();
+        }
     } catch (e) {
         alert('Failed to update status: ' + e.message);
     } finally {
@@ -712,21 +832,30 @@ previewToggleBtn.addEventListener('click', async () => {
 
 previewDeleteBtn.addEventListener('click', async () => {
     const id = currentPreviewId;
-    const design = allDesigns.find(d => d.id === id);
-    if (!design) return;
-
-    const msg = design._type === 'overridden'
-        ? 'Remove override? The original design will be restored.'
-        : 'Delete this custom design permanently?';
-
-    if (!confirm(msg)) return;
-
-    try {
-        await deleteDoc(doc(db, 'card_designs', id));
-        previewModal.style.display = 'none';
-        await loadAllData();
-    } catch (e) {
-        alert('Failed to delete: ' + e.message);
+    
+    if (currentPreviewIsPng) {
+        if (!confirm('Delete this PNG template permanently?')) return;
+        try {
+            await deleteDoc(doc(db, 'png_templates', id));
+            previewModal.style.display = 'none';
+            await loadPNGSection();
+        } catch (e) {
+            alert('Failed to delete: ' + e.message);
+        }
+    } else {
+        const design = allDesigns.find(d => d.id === id);
+        if (!design) return;
+        const msg = design._type === 'overridden'
+            ? 'Remove override? The original design will be restored.'
+            : 'Delete this custom design permanently?';
+        if (!confirm(msg)) return;
+        try {
+            await deleteDoc(doc(db, 'card_designs', id));
+            previewModal.style.display = 'none';
+            await loadAllData();
+        } catch (e) {
+            alert('Failed to delete: ' + e.message);
+        }
     }
 });
 
@@ -741,7 +870,7 @@ function _debounce(fn, ms) {
 //  Navigation, gallery render, activate/deactivate/delete.
 // ═══════════════════════════════════════════════════════════
 
-let allPNGTemplates = []; // loaded from Firestore
+let allPngTemplates = []; // loaded from Firestore
 
 // ── Section Navigation ─────────────────────────────────────
 const navDesigns = document.getElementById('nav-designs');
@@ -790,10 +919,10 @@ async function loadPNGSection() {
 
     try {
         const snap = await getDocs(collection(db, 'png_templates'));
-        allPNGTemplates = [];
-        snap.forEach(d => allPNGTemplates.push({ id: d.id, ...d.data() }));
+        allPngTemplates = [];
+        snap.forEach(d => allPngTemplates.push({ id: d.id, ...d.data() }));
 
-        if (allPNGTemplates.length === 0) {
+        if (allPngTemplates.length === 0) {
             grid.innerHTML = `
                 <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:#94a3b8;">
                     <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1" style="opacity:.3;margin-bottom:16px;">
@@ -818,88 +947,54 @@ function renderPNGGrid() {
     if (!grid) return;
     grid.innerHTML = '';
 
-    allPNGTemplates.forEach(tpl => {
+    allPngTemplates.forEach(tpl => {
         const card = document.createElement('div');
         card.className = 'design-card';
+        card.dataset.id = tpl.id;
+
+        const isActive = tpl.isActive !== false;
+        
+        // Thumbnail is just the image
+        const thumbHTML = `<div style="width:1600px;height:900px;background:url('${tpl.bgDataUrl || tpl.bgUrl}') center/cover;"></div>`;
+
         card.innerHTML = `
-            <div class="design-card-thumb" style="position:relative;height:160px;background:#000;border-radius:8px 8px 0 0;overflow:hidden;">
-                ${tpl.bgUrl
-                    ? `<img src="${tpl.bgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`
-                    : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#334155;font-size:12px;">No Background</div>`
-                }
-                <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 50%);pointer-events:none;"></div>
-                <div style="position:absolute;bottom:8px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="background:${tpl.isActive ? 'rgba(52,211,153,.2)' : 'rgba(248,113,113,.15)'};color:${tpl.isActive ? '#34d399' : '#f87171'};border:1px solid ${tpl.isActive ? 'rgba(52,211,153,.3)' : 'rgba(248,113,113,.25)'};border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;">
-                        ${tpl.isActive ? 'ACTIVE' : 'INACTIVE'}
+            <div class="design-thumb-container">
+                <div class="design-thumb-scaler" style="transform:scale(0.2);transform-origin:top left;">${thumbHTML}</div>
+            </div>
+            <div class="design-info">
+                <div class="design-info-header">
+                    <div style="min-width:0;">
+                        <h3 title="${tpl.name}">${tpl.name || 'Untitled'}</h3>
+                        <div class="design-badges">
+                            <span class="design-type-badge type-custom" style="background:#10b981;color:#fff;">PNG</span>
+                            ${tpl.tag ? `<span class="design-tag-badge">${tpl.tag}</span>` : ''}
+                        </div>
+                    </div>
+                    <span class="design-status ${isActive ? 'status-active' : 'status-inactive'}">
+                        ${isActive ? 'Active' : 'Inactive'}
                     </span>
-                    <span style="background:rgba(0,0,0,.5);color:#94a3b8;border-radius:4px;padding:2px 6px;font-size:10px;">
-                        ${tpl.category || 'Custom'}
-                    </span>
+                </div>
+                <div class="design-actions">
+                    <span class="design-id-label">${tpl.id}</span>
+                    <button class="btn-secondary manage-btn" data-id="${tpl.id}">Manage</button>
                 </div>
             </div>
-            <div class="design-card-body">
-                <div class="design-card-name">${tpl.name || 'Untitled'}</div>
-                <div class="design-card-meta" style="font-size:11px;color:#94a3b8;margin-bottom:10px;">
-                    ${tpl.tag || 'All Tiers'} &nbsp;·&nbsp; ${tpl.bgWidth || 1600}×${tpl.bgHeight || 900}
-                    &nbsp;·&nbsp; ${(tpl.layers || []).length} layers
-                </div>
-                <div class="design-card-actions" style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button class="btn-action btn-edit" data-id="${tpl.id}">Edit</button>
-                    <button class="btn-action ${tpl.isActive ? 'btn-deactivate' : 'btn-activate'}" data-id="${tpl.id}">
-                        ${tpl.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button class="btn-action btn-duplicate" data-id="${tpl.id}">Duplicate</button>
-                    <button class="btn-action btn-delete-png" data-id="${tpl.id}" style="color:#f87171;">Delete</button>
-                </div>
-            </div>`;
+        `;
 
-        // ── Edit → open editor ──
-        card.querySelector('.btn-edit').addEventListener('click', () => {
-            window.open(`png-editor.html?id=${tpl.id}`, '_blank');
+        // Click card body → open preview modal
+        card.addEventListener('click', (e) => {
+            if (!e.target.closest('.manage-btn')) openPreviewModal(tpl.id);
         });
 
-        // ── Activate / Deactivate ──
-        const toggleBtn = card.querySelector('.btn-activate, .btn-deactivate');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', async () => {
-                try {
-                    const newActive = !tpl.isActive;
-                    await setDoc(doc(db, 'png_templates', tpl.id), {
-                        isActive:  newActive,
-                        updatedAt: new Date().toISOString(),
-                    }, { merge: true });
-                    await loadPNGSection();
-                } catch (e) {
-                    alert('Failed: ' + e.message);
-                }
-            });
-        }
-
-        // ── Duplicate ──
-        card.querySelector('.btn-duplicate').addEventListener('click', async () => {
-            const newId = 'pngtpl_' + Date.now();
-            try {
-                const orig = await getDoc(doc(db, 'png_templates', tpl.id));
-                if (!orig.exists()) return;
-                const data = { ...orig.data(), name: (orig.data().name || 'Template') + ' (Copy)', isActive: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-                await setDoc(doc(db, 'png_templates', newId), data);
-                window.open(`png-editor.html?id=${newId}`, '_blank');
-            } catch (e) {
-                alert('Duplicate failed: ' + e.message);
-            }
-        });
-
-        // ── Delete ──
-        card.querySelector('.btn-delete-png').addEventListener('click', async () => {
-            if (!confirm(`Delete template "${tpl.name}"? This cannot be undone.`)) return;
-            try {
-                await deleteDoc(doc(db, 'png_templates', tpl.id));
-                await loadPNGSection();
-            } catch (e) {
-                alert('Delete failed: ' + e.message);
-            }
+        // Click Manage button → open editor
+        card.querySelector('.manage-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditor(tpl.id);
         });
 
         grid.appendChild(card);
     });
+    
+    // Scale thumbnails responsively
+    _resizeThumbs();
 }

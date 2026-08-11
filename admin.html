@@ -215,6 +215,14 @@
                         </div>
                     </div>
 
+                    <div class="form-section" id="png-logic-section" style="display:none;">
+                        <h3>Visual Editor</h3>
+                        <p class="text-muted" style="font-size:12px; margin-bottom:12px;">
+                            The visual design, layers, and background image must be edited in the dedicated PNG Visual Editor.
+                        </p>
+                        <button id="open-visual-editor-btn" class="btn-secondary w-full">Open PNG Visual Editor</button>
+                    </div>
+
                     <div class="editor-actions">
                         <button id="save-design-btn" class="btn-primary w-full">Save Changes</button>
                         <button id="delete-design-btn" class="btn-danger w-full hidden" style="margin-top:10px;">Delete Design</button>
@@ -262,7 +270,8 @@
                 </div>
             </div>
             <div class="preview-modal-actions">
-                <button id="preview-edit-btn" class="btn-secondary">Edit Design</button>
+                <button id="preview-edit-btn" class="btn-secondary">Manage / Edit</button>
+                <button id="preview-duplicate-btn" class="btn-secondary" style="display:none;">Duplicate</button>
                 <button id="preview-toggle-btn" class="btn-secondary">Toggle Active</button>
                 <button id="preview-delete-btn" class="btn-danger hidden">Delete</button>
             </div>
