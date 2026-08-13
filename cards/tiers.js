@@ -1,49 +1,99 @@
 // ═══════════════════════════════════════════════════════════
 //  PERFORMANCE TIER CLASSIFIER
 //  Single source of truth for all tier thresholds.
-//  Thresholds are based on the profit multiplier (X):
-//    1.00x = break-even, 2.00x = +100% profit, etc.
+//
+//  Boundary Rule (STRICT, NON-OVERLAPPING):
+//    minMul <= multiplier < maxMul   (lower inclusive, upper exclusive)
+//  Exception: profit_14 uses maxMul = Infinity (no upper bound).
+//  Exception: loss_5 uses minMul = -Infinity (no lower bound).
+//
+//  Profit tiers:  multiplier >= 1.0
+//  Loss tiers:    multiplier < 1.0  (includes 0 and negatives)
 // ═══════════════════════════════════════════════════════════
 import { TIER_DEFS } from './config.js';
 
 /**
  * Classifies a trade result into a performance tier.
  * @param {number} multiplier - The X multiple (targetMC / initMC)
- * @param {number} roi        - ROI percentage (can be negative)
- * @param {boolean} isProfit  - Whether the trade is profitable
- * @returns {{ id: string, def: object }}
+ * @returns {{ id: string|null, def: object|null }}
  */
 export function classifyTier(multiplier) {
-    let matchedId = null;
+    if (typeof multiplier !== 'number' || !isFinite(multiplier) && multiplier !== Infinity && multiplier !== -Infinity) {
+        console.warn('[Tier] Invalid multiplier:', multiplier);
+        return { id: null, def: null };
+    }
 
-    // Strict sequential check against boundaries
+    // Scan tiers: minMul <= multiplier < maxMul (exclusive upper bound)
     for (const [id, def] of Object.entries(TIER_DEFS)) {
-        if (multiplier >= def.minMul && multiplier <= def.maxMul) {
-            matchedId = id;
-            break;
+        const inRange = multiplier >= def.minMul && multiplier < def.maxMul;
+        // Special case: profit_14 has maxMul=Infinity → >= minMul is enough
+        const isTopTier = def.maxMul === Infinity && multiplier >= def.minMul;
+        if (inRange || isTopTier) {
+            return { id, def };
         }
     }
 
-    return { id: matchedId, def: matchedId ? TIER_DEFS[matchedId] : null };
+    // Should never reach here if TIER_DEFS covers all real numbers.
+    console.error('[Tier] No tier matched for multiplier:', multiplier);
+    return { id: null, def: null };
 }
 
-// ── Boundary Tests (Self-Validation) ───────────────
+// ── Boundary Self-Validation ────────────────────────────────
+// Runs once on load. Tests critical boundary values to catch any
+// future config regressions immediately in the browser console.
 function _validateTierBoundaries() {
-    const testVals = [
-        1, 1.49, 1.5, 2.49, 2.5, 3.49, 3.5, 4.99, 5, 9.99, 10, 19.99, 20, 
-        39.99, 40, 74.99, 75, 99.99, 100, 199.99, 200, 299.99, 300, 399.99, 
-        400, 499.99, 500, 1000,
-        0.99, 0, -0.99, -1, -1.99, -2, -4.99, -5, -10, -50
+    const tests = [
+        // Profit tiers — test at boundaries
+        { val: 1.0,    expected: 'profit_1'  },
+        { val: 1.49,   expected: 'profit_1'  },
+        { val: 1.5,    expected: 'profit_2'  },
+        { val: 2.499,  expected: 'profit_2'  },
+        { val: 2.5,    expected: 'profit_3'  },
+        { val: 3.499,  expected: 'profit_3'  },
+        { val: 3.5,    expected: 'profit_4'  },
+        { val: 4.999,  expected: 'profit_4'  },
+        { val: 5.0,    expected: 'profit_5'  },
+        { val: 9.999,  expected: 'profit_5'  },
+        { val: 10.0,   expected: 'profit_6'  },
+        { val: 19.999, expected: 'profit_6'  },
+        { val: 20.0,   expected: 'profit_7'  },
+        { val: 39.999, expected: 'profit_7'  },
+        { val: 40.0,   expected: 'profit_8'  },
+        { val: 74.999, expected: 'profit_8'  },
+        { val: 75.0,   expected: 'profit_9'  },
+        { val: 99.999, expected: 'profit_9'  },
+        { val: 100.0,  expected: 'profit_10' },
+        { val: 199.999,expected: 'profit_10' },
+        { val: 200.0,  expected: 'profit_11' },
+        { val: 500.0,  expected: 'profit_14' },
+        { val: 10000,  expected: 'profit_14' },
+        // Loss tiers
+        { val: 0.999,  expected: 'loss_1'    },
+        { val: 0.5,    expected: 'loss_1'    },
+        { val: 0.0,    expected: 'loss_1'    },
+        { val: -0.001, expected: 'loss_2'    },
+        { val: -0.999, expected: 'loss_2'    },
+        { val: -1.0,   expected: 'loss_3'    },
+        { val: -4.999, expected: 'loss_3'    },
+        { val: -5.0,   expected: 'loss_4'    },
+        { val: -9.999, expected: 'loss_4'    },
+        { val: -10.0,  expected: 'loss_5'    },
+        { val: -100,   expected: 'loss_5'    },
     ];
+
     let errors = 0;
-    for (const val of testVals) {
-        const t = classifyTier(val);
-        if (!t.id) {
-            console.error(`[Tier Test] ERROR: Value ${val} matches NO tier.`);
+    for (const t of tests) {
+        const result = classifyTier(t.val);
+        if (result.id !== t.expected) {
+            console.error(`[Tier FAIL] ${t.val} → got "${result.id}", expected "${t.expected}"`);
             errors++;
         }
     }
-    if (errors === 0) console.log('[Tier Test] All boundary validations passed.');
+    if (errors === 0) {
+        console.log('[Tier] ✅ All', tests.length, 'boundary tests passed.');
+    } else {
+        console.error('[Tier] ❌', errors, 'boundary test(s) FAILED. Check config.js TIER_DEFS.');
+    }
 }
-// Run once on load to ensure integrity
+
 _validateTierBoundaries();

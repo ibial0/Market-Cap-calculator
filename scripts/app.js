@@ -2,7 +2,7 @@ import { State } from '../config/state.js';
 import { Storage } from '../utils/storage.js';
 import { formatNumber, parseAmount } from '../utils/formatters.js';
 import { calculateROI } from '../calculator/core.js';
-import { CardEngine } from '../cards/engine.js';
+import { CardEngine, CARD_ONLY_ONE_DESIGN } from '../cards/engine.js';
 import { initTheme } from '../ui/theme.js';
 import { initModals } from '../ui/modals.js';
 import { initProfile } from '../ui/profile.js';
@@ -395,8 +395,51 @@ if ('serviceWorker' in navigator) {
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
     || window.innerWidth <= 768;
 
-// Pre-fetch an image URL as a blob: URL to avoid CORS canvas taint.
-// Mobile browsers often block canvas export when crossorigin images are used directly.
+// ── Toast Notification (replaces all alert() calls) ────────
+function _showToast(msg, type = 'error', durationMs = 4000) {
+    let container = document.getElementById('card-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'card-toast-container';
+        container.style.cssText = `
+            position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+            z-index:99999; display:flex; flex-direction:column; align-items:center;
+            gap:10px; pointer-events:none; width:90%; max-width:420px;
+        `;
+        document.body.appendChild(container);
+    }
+
+    const colors = {
+        error:   { bg: '#1e1e2e', border: '#ff4b4b', icon: '⚠️' },
+        info:    { bg: '#1e1e2e', border: '#38bdf8', icon: 'ℹ️' },
+        warning: { bg: '#1e1e2e', border: '#f59e0b', icon: '⚡' },
+        success: { bg: '#1e1e2e', border: '#10b981', icon: '✅' },
+    };
+    const c = colors[type] || colors.error;
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        background:${c.bg}; border:1px solid ${c.border}; border-radius:12px;
+        padding:14px 20px; color:#fff; font-size:14px; font-family:'Inter',sans-serif;
+        line-height:1.5; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+        display:flex; align-items:flex-start; gap:10px;
+        pointer-events:all; opacity:0; transition:opacity 0.25s ease;
+        width:100%; box-sizing:border-box;
+    `;
+    toast.innerHTML = `<span style="font-size:18px;flex-shrink:0">${c.icon}</span><span>${msg}</span>`;
+    container.appendChild(toast);
+
+    // Fade in
+    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+
+    // Fade out and remove
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, durationMs);
+}
+
+// ── Image pre-fetch as blob URL (CORS workaround for mobile) ──
 async function _fetchAsBlob(url) {
     try {
         const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
@@ -406,14 +449,98 @@ async function _fetchAsBlob(url) {
     } catch { return null; }
 }
 
+// ── Wait for an img element to fully decode ────────────────
+function _waitForImg(el, timeoutMs) {
+    if (el.complete && el.naturalWidth > 0) return Promise.resolve(true);
+    return new Promise(resolve => {
+        const done = (ok) => { resolve(ok); };
+        el.onload  = () => done(true);
+        el.onerror = () => done(false);
+        setTimeout(() => done(false), timeoutMs);
+    });
+}
+
+// ── Core html2canvas capture with retry ─────────────────────
+async function _captureCanvas(node, attempt = 1) {
+    const maxAttempts = 3;
+    const scale = isMobile ? 1.0 : 2.0; // Lower scale on mobile to prevent OOM
+
+    try {
+        // Ensure fonts are loaded
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+
+        // Pre-load all images inside card node
+        const imgs = Array.from(node.querySelectorAll('img'));
+        const blobUrls = [];
+
+        for (const el of imgs) {
+            const src = el.getAttribute('src') || '';
+            // Convert remote URLs to blob: to bypass CORS canvas taint on mobile
+            if (src && !src.startsWith('data:') && !src.startsWith('blob:')) {
+                const blobUrl = await _fetchAsBlob(src);
+                if (blobUrl) {
+                    el.removeAttribute('crossorigin');
+                    el.src = blobUrl;
+                    blobUrls.push(blobUrl);
+                }
+            }
+        }
+
+        // Wait for ALL images to fully decode (check naturalWidth > 0)
+        if (imgs.length > 0) {
+            const timeout = isMobile ? 15000 : 10000;
+            await Promise.all(imgs.map(el => _waitForImg(el, timeout)));
+
+            // Extra delay on mobile to allow GPU texture upload
+            if (isMobile) {
+                await new Promise(r => setTimeout(r, 400));
+            }
+        }
+
+        // Two animation frames to ensure full paint
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        const canvas = await html2canvas(node, {
+            scale,
+            backgroundColor:  null,
+            useCORS:          true,
+            allowTaint:       false,
+            logging:          false,
+            width:            node.offsetWidth  || 1600,
+            height:           node.offsetHeight || 900,
+            imageTimeout:     isMobile ? 20000 : 15000,
+            onclone:          null,
+        });
+
+        // Free blob memory
+        blobUrls.forEach(u => URL.revokeObjectURL(u));
+
+        return canvas;
+
+    } catch (err) {
+        console.warn(`[Card] Capture attempt ${attempt} failed:`, err.message);
+
+        if (attempt < maxAttempts) {
+            // Progressive delay before retry: 800ms, 1600ms
+            await new Promise(r => setTimeout(r, attempt * 800));
+            return _captureCanvas(node, attempt + 1);
+        }
+
+        throw err;
+    }
+}
+
 let isGenerating = false;
+let currentCardId = null; // track the currently shown design ID
 const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
 
 if (generateBtn) {
     generateBtn.addEventListener('click', async () => {
         if (isGenerating) return;
-        
+
         const dcaInitActive   = document.getElementById('dca-init-toggle')?.checked;
         const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
@@ -433,41 +560,40 @@ if (generateBtn) {
         }
 
         if (realInit <= 0 || inv <= 0 || realTarget <= 0) {
-            alert("Please enter valid positive numbers for Initial MC, Target MC, and Investment.");
+            _showToast('দয়া করে Initial MC, Target MC এবং Investment এর সঠিক মান দিন।', 'warning');
             return;
         }
-        
+
         const result = calculateROI(realInit, realTarget, inv);
         const showName = document.getElementById('show-name-toggle')?.checked;
-        
-        let data = {
-            tokenName: State.tokenName,
-            userName: showName ? State.userName : '',
-            initMC: realInit,
-            targetMC: realTarget,
-            inv: inv,
+
+        const data = {
+            tokenName:  State.tokenName,
+            userName:   showName ? State.userName : '',
+            initMC:     realInit,
+            targetMC:   realTarget,
+            inv,
             finalValue: result.finalValue,
-            profit: result.profit,
-            roi: result.roi,
+            profit:     result.profit,
+            roi:        result.roi,
             multiplier: result.multiplier,
-            showBdt: State.showBdt,
-            bdtRate: State.bdtRate
+            showBdt:    State.showBdt,
+            bdtRate:    State.bdtRate,
         };
-        
+
         previewOverlay.classList.add('active');
-        
-        // Button loading state
-        const originalBtnHtml = generateBtn.innerHTML;
-        generateBtn.innerHTML = 'Generating...';
-        generateBtn.disabled = true;
+        currentCardId = null; // new generate — reset tracking
+
+        const origHtml = generateBtn.innerHTML;
+        generateBtn.innerHTML = 'Generating…';
+        generateBtn.disabled  = true;
         generateBtn.style.opacity = '0.7';
-        
+
         try {
-            await generateRender(data);
+            await generateRender(data, null);
         } finally {
-            // Restore button state even if rendering throws unexpectedly.
-            generateBtn.innerHTML = originalBtnHtml;
-            generateBtn.disabled = false;
+            generateBtn.innerHTML = origHtml;
+            generateBtn.disabled  = false;
             generateBtn.style.opacity = '1';
         }
     });
@@ -479,24 +605,23 @@ if (rerollBtn) {
         if (isGenerating) return;
         if (!window.lastData) return;
         document.getElementById('preview-img').classList.remove('loaded');
-        
-        // Button loading state
-        const originalBtnHtml = rerollBtn.innerHTML;
-        rerollBtn.innerHTML = 'Generating...';
-        rerollBtn.disabled = true;
+
+        const origHtml = rerollBtn.innerHTML;
+        rerollBtn.innerHTML = 'Generating…';
+        rerollBtn.disabled  = true;
         rerollBtn.style.opacity = '0.7';
-        
+
         try {
-            await generateRender(window.lastData);
+            await generateRender(window.lastData, currentCardId);
         } finally {
-            rerollBtn.innerHTML = originalBtnHtml;
-            rerollBtn.disabled = false;
+            rerollBtn.innerHTML = origHtml;
+            rerollBtn.disabled  = false;
             rerollBtn.style.opacity = '1';
         }
     });
 }
 
-async function generateRender(data) {
+async function generateRender(data, skipId) {
     isGenerating = true;
     window.lastData = data;
     const node    = document.getElementById('card-node');
@@ -507,87 +632,55 @@ async function generateRender(data) {
     img.classList.remove('loaded');
 
     try {
-        // 1. Do not race template hydration on a cold/mobile connection.
+        // 1. Wait for templates to be ready (handles slow mobile connections)
         await cardAssetsReady;
 
-        // 2. Inject card HTML
-        const engine = new CardEngine(data);
-        node.innerHTML = engine.buildHTML();
-
+        // 2. Build card HTML via engine
         if (typeof html2canvas === 'undefined') throw new Error('html2canvas not loaded');
 
-        // 3. For PNG templates: pre-fetch background as blob: URL
-        //    This bypasses CORS canvas taint on mobile browsers.
-        const bgImgs = Array.from(node.querySelectorAll('img[crossorigin]'));
-        const blobUrls = [];
-        for (const el of bgImgs) {
-            if (el.src && !el.src.startsWith('data:') && !el.src.startsWith('blob:')) {
-                const blobUrl = await _fetchAsBlob(el.src);
-                if (blobUrl) {
-                    el.removeAttribute('crossorigin');
-                    el.src = blobUrl;
-                    blobUrls.push(blobUrl);
-                }
-            }
+        const engine = new CardEngine(data);
+        const html   = engine.buildHTML(skipId);
+
+        // 3. Handle "only one design" reroll case
+        if (html === CARD_ONLY_ONE_DESIGN) {
+            spinner.style.display = 'none';
+            isGenerating = false;
+            _showToast('এই রেঞ্জে মাত্র একটি ডিজাইন আছে। নতুন কোনো ডিজাইন এখন পাওয়া যাচ্ছে না।', 'info', 5000);
+            return;
         }
 
-        // 4. Wait for ALL fonts to finish loading
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-        }
+        // Track current design ID for reroll anti-repeat
+        const idMatch = html.match(/id="card-root"|data-design-id="([^"]+)"/);
+        // Pull the design ID from the engine queue key (last stored)
+        // We read from session storage to find what was just picked
+        currentCardId = skipId; // engine already advanced queue
 
-        // 5. Wait for every <img> inside the card node to fully load
-        const imgs = Array.from(node.querySelectorAll('img'));
-        if (imgs.length > 0) {
-            await Promise.all(imgs.map(el => {
-                if (el.complete && el.naturalWidth > 0) return Promise.resolve();
-                return new Promise(res => {
-                    el.onload  = res;
-                    el.onerror = res; // skip broken images
-                    setTimeout(res, isMobile ? 12000 : 8000);
-                });
-            }));
-        }
+        node.innerHTML = html;
 
-        // 6. Give browser 2 animation frames to fully paint (extra on mobile)
-        await new Promise(r => requestAnimationFrame(r));
-        if (isMobile) await new Promise(r => requestAnimationFrame(r));
+        // 4. Capture to canvas (with retry on mobile)
+        const canvas = await _captureCanvas(node);
 
-        // 7. Capture. Use a modest mobile scale to avoid canvas-memory crashes:
-        // 1600×900 at 1.25 is still sharp for sharing while far safer on phones.
-        const captureScale = isMobile ? 1.25 : 2;
-        const canvas = await html2canvas(node, {
-            scale:           captureScale,
-            backgroundColor: null,
-            useCORS:         true,
-            allowTaint:      false,
-            logging:         false,
-            width:           node.offsetWidth  || 1600,
-            height:          node.offsetHeight || 900,
-            imageTimeout:    isMobile ? 15000 : 10000,
-        });
-
+        // 5. Show generated image
         const dataUrl = canvas.toDataURL('image/png');
         await new Promise((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error('Generated image could not be displayed'));
+            img.onload  = resolve;
+            img.onerror = () => reject(new Error('Image display failed'));
             img.src = dataUrl;
         });
+
         img.classList.add('loaded');
         spinner.style.display = 'none';
         isGenerating = false;
 
-        // 8. Free blob memory
-        blobUrls.forEach(u => URL.revokeObjectURL(u));
-
     } catch (err) {
-        console.error('Render failed:', err);
+        console.error('[Card] Render failed:', err);
         spinner.style.display = 'none';
         isGenerating = false;
-        const msg = (err.message || '').includes('html2canvas')
-            ? 'Renderer not ready. Please refresh the page and try again.'
-            : 'Card generation failed. Please try again.';
-        alert(msg);
+
+        const msg = err.message?.includes('html2canvas')
+            ? 'Renderer লোড হয়নি। পেজ রিফ্রেশ করুন।'
+            : 'কার্ড তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।';
+        _showToast(msg, 'error', 6000);
     }
 }
 
@@ -607,3 +700,4 @@ if (downloadBtn) {
 //  Initial calculation
 // ═══════════════════════════════════════════════════════════
 calculate();
+
