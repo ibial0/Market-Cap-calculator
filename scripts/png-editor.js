@@ -13,6 +13,18 @@ import { DEFAULT_LAYERS } from '../cards/png-engine.js';
 // ── Constants ─────────────────────────────────────────────
 const CARD_W = 1600;
 const CARD_H = 900;
+const SNAP_DISTANCE = 10;
+const TIER_GROUPS = [
+    { label: 'Profit ranges', ids: Array.from({ length: 14 }, (_, index) => `profit_${index + 1}`) },
+    { label: 'Loss ranges', ids: Array.from({ length: 4 }, (_, index) => `loss_${index + 1}`) },
+];
+const TIER_LABELS = {
+    profit_1: '1X → 1.5X', profit_2: '1.5X → 2.5X', profit_3: '2.5X → 3.5X', profit_4: '3.5X → 5X',
+    profit_5: '5X → 10X', profit_6: '10X → 20X', profit_7: '20X → 40X', profit_8: '40X → 75X',
+    profit_9: '75X → 100X', profit_10: '100X → 200X', profit_11: '200X → 300X', profit_12: '300X → 400X',
+    profit_13: '400X → 500X', profit_14: '500X+',
+    loss_1: '0 → -1X', loss_2: '-1X → -2X', loss_3: '-2X → -5X', loss_4: '-5X+',
+};
 
 const FONT_OPTIONS = [
     { label: 'Inter', value: "'Inter', sans-serif" },
@@ -79,6 +91,7 @@ const elLoadingMsg  = () => document.getElementById('loading-msg');
 const elToast       = () => document.getElementById('editor-toast');
 const elScaleInfo   = () => document.getElementById('canvas-scale-info');
 const elPosInfo     = () => document.getElementById('canvas-pos-info');
+const elSnapInfo    = () => document.getElementById('canvas-snap-info');
 
 // ═══════════════════════════════════════════════════════════
 //  INIT
@@ -104,6 +117,8 @@ async function init() {
         }
 
         hideLoading();
+        buildTierPicker();
+        setSelectedTiers(document.getElementById('tpl-tiers'), template.tiers || []);
         renderAll();
         setupEvents();
     });
@@ -130,11 +145,7 @@ async function loadTemplate(id) {
         // Populate toolbar / settings UI
         document.getElementById('tpl-name-input').value  = template.name || '';
         const tagSelect = document.getElementById('tpl-tiers');
-        if (tagSelect) {
-            Array.from(tagSelect.options).forEach(opt => {
-                opt.selected = template.tiers && template.tiers.includes(opt.value);
-            });
-        }
+        setSelectedTiers(tagSelect, template.tiers || []);
         document.getElementById('tpl-display').value     = template.displayMode || 'both';
         document.getElementById('tpl-radius').value      = template.borderRadius || 0;
         document.getElementById('tpl-active').checked    = template.isActive || false;
@@ -152,8 +163,108 @@ function renderAll() {
     updateCanvasScale();
     renderCanvasBg();
     renderCanvasLayers();
+    ensureAlignmentGuides();
     renderLayerList();
     if (selectedLayerId) renderPropsPanel(selectedLayerId);
+}
+
+function buildTierPicker() {
+    const container = document.getElementById('tpl-tiers');
+    if (!container) return;
+    container.innerHTML = TIER_GROUPS.map(group => `
+        <div class="editor-tier-group">
+            <span class="editor-tier-group-title">${group.label}</span>
+            <div class="editor-tier-options">
+                ${group.ids.map(id => `<button type="button" class="editor-tier-option" data-tier-id="${id}" aria-pressed="false">${TIER_LABELS[id]}</button>`).join('')}
+            </div>
+        </div>`).join('');
+    container.addEventListener('click', event => {
+        const option = event.target.closest('[data-tier-id]');
+        if (!option) return;
+        const isSelected = !option.classList.contains('selected');
+        option.classList.toggle('selected', isSelected);
+        option.setAttribute('aria-pressed', String(isSelected));
+        template.tiers = getSelectedTiers(container);
+        markDirty();
+    });
+}
+
+function setSelectedTiers(container, tiers = []) {
+    const selected = new Set(Array.isArray(tiers) ? tiers : []);
+    container?.querySelectorAll('[data-tier-id]').forEach(option => {
+        const isSelected = selected.has(option.dataset.tierId);
+        option.classList.toggle('selected', isSelected);
+        option.setAttribute('aria-pressed', String(isSelected));
+    });
+}
+
+function getSelectedTiers(container) {
+    return Array.from(container?.querySelectorAll('[data-tier-id].selected') || [], option => option.dataset.tierId);
+}
+
+function ensureAlignmentGuides() {
+    const canvas = elCanvas();
+    if (!canvas || canvas.querySelector('.alignment-guides')) return;
+    const guides = document.createElement('div');
+    guides.className = 'alignment-guides';
+    guides.innerHTML = '<i class="alignment-guide vertical" data-guide="v"></i><i class="alignment-guide horizontal" data-guide="h"></i>';
+    canvas.appendChild(guides);
+}
+
+function showAlignmentGuides(guides = {}) {
+    const canvas = elCanvas();
+    if (!canvas) return;
+    const vertical = canvas.querySelector('[data-guide="v"]');
+    const horizontal = canvas.querySelector('[data-guide="h"]');
+    const showGuide = (guide, position, axis) => {
+        if (!guide) return;
+        const visible = Number.isFinite(position);
+        guide.classList.toggle('visible', visible);
+        if (visible) guide.style[axis] = `${Math.round(position)}px`;
+    };
+    showGuide(vertical, guides.x, 'left');
+    showGuide(horizontal, guides.y, 'top');
+    if (elSnapInfo()) elSnapInfo().textContent = guides.label ? `Guides: ${guides.label}` : 'Guides: ready';
+}
+
+function clearAlignmentGuides() {
+    showAlignmentGuides({});
+}
+
+function layerAnchor(layer) {
+    return layer.textAlign === 'right' ? layer.x : layer.x;
+}
+
+function snapLayerPosition(layer, x, y) {
+    const targetsX = [{ value: 0, label: 'left edge' }, { value: CARD_W / 2, label: 'center' }, { value: CARD_W, label: 'right edge' }];
+    const targetsY = [{ value: 0, label: 'top edge' }, { value: CARD_H / 2, label: 'middle' }, { value: CARD_H, label: 'bottom edge' }];
+
+    template.layers?.forEach(other => {
+        if (other.id === layer.id || !other.visible) return;
+        targetsX.push({ value: layerAnchor(other), label: `${other.label} aligned` });
+        targetsY.push({ value: other.y, label: `${other.label} aligned` });
+    });
+
+    const nearest = (value, targets) => targets.reduce((best, target) => {
+        const distance = Math.abs(value - target.value);
+        return distance < best.distance ? { ...target, distance } : best;
+    }, { distance: Infinity });
+
+    const xTarget = nearest(x, targetsX);
+    const yTarget = nearest(y, targetsY);
+    const snapped = { x: Math.max(0, Math.min(CARD_W, x)), y: Math.max(0, Math.min(CARD_H, y)), guides: {}, labels: [] };
+    if (xTarget.distance <= SNAP_DISTANCE) {
+        snapped.x = xTarget.value;
+        snapped.guides.x = xTarget.value;
+        snapped.labels.push(xTarget.label);
+    }
+    if (yTarget.distance <= SNAP_DISTANCE) {
+        snapped.y = yTarget.value;
+        snapped.guides.y = yTarget.value;
+        snapped.labels.push(yTarget.label);
+    }
+    snapped.guides.label = snapped.labels.join(' + ');
+    return snapped;
 }
 
 function updateCanvasScale() {
@@ -181,9 +292,8 @@ function renderCanvasBg() {
     const canvas = elCanvas();
     if (!canvas) return;
 
-    // Remove existing bg img
-    const old = canvas.querySelector('.canvas-bg-img, .canvas-no-bg');
-    if (old) old.remove();
+    // Remove existing background without touching the persistent guide overlay.
+    canvas.querySelectorAll('.canvas-bg-img, .canvas-no-bg').forEach(old => old.remove());
 
     const src = template.bgDataUrl || template.bgUrl;
     if (src) {
@@ -313,7 +423,7 @@ function buildLayerElement(layer) {
 function refreshLayerElement(layerId) {
     const canvas = elCanvas();
     if (!canvas) return;
-    const old = canvas.querySelector(`.canvas-layer[data-id="${layerId}"]`);
+    const old = Array.from(canvas.querySelectorAll('.canvas-layer')).find(el => el.dataset.id === layerId);
     const layer = getLayer(layerId);
     if (!layer) return;
     const newEl = buildLayerElement(layer);
@@ -742,8 +852,10 @@ function setupEvents() {
         const dy = (e.clientY - dragState.startY) / canvasScale;
         const layer = getLayer(dragState.layerId);
         if (!layer) return;
-        layer.x = Math.round(dragState.origX + dx);
-        layer.y = Math.round(dragState.origY + dy);
+        const snapped = snapLayerPosition(layer, Math.round(dragState.origX + dx), Math.round(dragState.origY + dy));
+        layer.x = snapped.x;
+        layer.y = snapped.y;
+        showAlignmentGuides(snapped.guides);
         refreshLayerElement(dragState.layerId);
 
         if (elPosInfo()) elPosInfo().textContent = `X: ${layer.x}  Y: ${layer.y}`;
@@ -759,9 +871,10 @@ function setupEvents() {
 
     document.addEventListener('mouseup', () => {
         if (!dragState) return;
-        const el = elCanvas()?.querySelector(`.canvas-layer[data-id="${dragState.layerId}"]`);
+        const el = Array.from(elCanvas()?.querySelectorAll('.canvas-layer') || []).find(node => node.dataset.id === dragState.layerId);
         if (el) el.classList.remove('dragging');
         dragState = null;
+        clearAlignmentGuides();
     });
 
     // Touch drag
@@ -773,13 +886,15 @@ function setupEvents() {
         const dy = (touch.clientY - dragState.startY) / canvasScale;
         const layer = getLayer(dragState.layerId);
         if (!layer) return;
-        layer.x = Math.round(dragState.origX + dx);
-        layer.y = Math.round(dragState.origY + dy);
+        const snapped = snapLayerPosition(layer, Math.round(dragState.origX + dx), Math.round(dragState.origY + dy));
+        layer.x = snapped.x;
+        layer.y = snapped.y;
+        showAlignmentGuides(snapped.guides);
         refreshLayerElement(dragState.layerId);
         markDirty();
     }, { passive: false });
 
-    document.addEventListener('touchend', () => { dragState = null; });
+    document.addEventListener('touchend', () => { dragState = null; clearAlignmentGuides(); });
 
     // Click on canvas bg (not a layer) → deselect
     elCanvas()?.addEventListener('click', (e) => {
@@ -871,12 +986,6 @@ function setupEvents() {
     // ── Template settings ──
     document.getElementById('tpl-name-input')?.addEventListener('input', (e) => {
         template.name = e.target.value.trim() || 'New PNG Template';
-        markDirty();
-    });
-
-    document.getElementById('tpl-tiers')?.addEventListener('change', (e) => {
-        const select = e.target;
-        template.tiers = Array.from(select.selectedOptions).map(opt => opt.value);
         markDirty();
     });
 

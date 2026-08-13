@@ -61,6 +61,47 @@ const previewEditBtn    = document.getElementById('preview-edit-btn');
 const previewToggleBtn  = document.getElementById('preview-toggle-btn');
 const previewDeleteBtn  = document.getElementById('preview-delete-btn');
 
+// Professional multi-select tier picker. Native <select multiple> controls
+// behave inconsistently across desktop and mobile, so the editor uses clear,
+// touch-friendly toggle chips instead.
+function buildTierPicker(container) {
+    if (!container) return;
+    const groups = [
+        { label: 'Profit ranges', ids: TIER_ORDER.filter(id => id.startsWith('profit_')) },
+        { label: 'Loss ranges', ids: TIER_ORDER.filter(id => id.startsWith('loss_')) },
+    ];
+    container.innerHTML = groups.map(group => `
+        <div class="tier-picker-group">
+            <span class="tier-picker-group-title">${group.label}</span>
+            <div class="tier-picker-options">
+                ${group.ids.map(id => `<button type="button" class="tier-option" data-tier-id="${id}" aria-pressed="false">${TIER_DEFS[id]?.label || id}</button>`).join('')}
+            </div>
+        </div>`).join('');
+
+    container.addEventListener('click', event => {
+        const option = event.target.closest('[data-tier-id]');
+        if (!option) return;
+        const selected = !option.classList.contains('selected');
+        option.classList.toggle('selected', selected);
+        option.setAttribute('aria-pressed', String(selected));
+    });
+}
+
+function setSelectedTiers(container, tiers = []) {
+    const selected = new Set(Array.isArray(tiers) ? tiers : []);
+    container?.querySelectorAll('[data-tier-id]').forEach(option => {
+        const active = selected.has(option.dataset.tierId);
+        option.classList.toggle('selected', active);
+        option.setAttribute('aria-pressed', String(active));
+    });
+}
+
+function getSelectedTiers(container) {
+    return Array.from(container?.querySelectorAll('[data-tier-id].selected') || [], option => option.dataset.tierId);
+}
+
+buildTierPicker(editTag);
+
 // ── State ──────────────────────────────────────────────────
 let allDesigns      = []; // merged + annotated list
 let currentFilter   = { status: 'all', tier: 'all' };
@@ -125,7 +166,6 @@ function _friendlyAuthError(code) {
 // ── Dashboard Init ─────────────────────────────────────────
 async function initDashboard() {
     designsGrid.innerHTML = '<div class="gallery-empty"><p>Loading designs…</p></div>';
-    filterBar.innerHTML   = '';
     try {
         await loadAllData();
     } catch (e) {
@@ -206,15 +246,6 @@ function renderFilterBar() {
     const active   = allDesigns.filter(d => d.isActive).length;
     const inactive = allDesigns.filter(d => !d.isActive).length;
 
-    // Tier counts
-    const tierCounts = {};
-    TIER_ORDER.forEach(tid => { tierCounts[tid] = 0; });
-    allDesigns.forEach(d => {
-        (d.tiers || []).forEach(t => {
-            if (tierCounts[t] !== undefined) tierCounts[t]++;
-        });
-    });
-
     sidebarFilter.innerHTML = `
         <button class="filter-tab ${currentFilter.status === 'all'      ? 'active' : ''}" data-status="all">
             All Designs <span class="count-badge">${total}</span>
@@ -227,22 +258,6 @@ function renderFilterBar() {
         </button>
     `;
 
-    filterBar.innerHTML = `
-        <div class="filter-row">
-            <span class="filter-row-label">Performance:</span>
-            <button class="filter-tab ${currentFilter.tier === 'all' ? 'active' : ''}" data-tier="all">
-                All Tiers
-            </button>
-            ${TIER_ORDER.map(tid => {
-                const def = TIER_DEFS[tid];
-                if (!def) return '';
-                return `<button class="filter-tab ${currentFilter.tier === tid ? 'active' : ''}" data-tier="${tid}">
-                    ${def.tag || def.label} <span class="count-badge">${tierCounts[tid]}</span>
-                </button>`;
-            }).join('')}
-        </div>
-    `;
-
     // Status filter clicks
     sidebarFilter.querySelectorAll('[data-status]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -252,14 +267,6 @@ function renderFilterBar() {
         });
     });
 
-    // Tier filter clicks
-    filterBar.querySelectorAll('[data-tier]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            currentFilter.tier = btn.dataset.tier;
-            renderFilterBar();
-            renderGrid();
-        });
-    });
 }
 
 // ── Gallery Grid ───────────────────────────────────────────
@@ -280,8 +287,6 @@ function renderGrid() {
 
     if (currentFilter.status === 'active')   filtered = filtered.filter(d => d.isActive);
     if (currentFilter.status === 'inactive') filtered = filtered.filter(d => !d.isActive);
-    if (currentFilter.tier !== 'all')        filtered = filtered.filter(d => (d.tiers || []).includes(currentFilter.tier));
-
     if (filtered.length === 0) {
         designsGrid.innerHTML = `
             <div class="gallery-empty">
@@ -450,7 +455,7 @@ function openEditor(id, isPngOverride = false) {
         const d = pngDesign;
         document.getElementById('edit-name').value     = d ? (d.name || '') : '';
         const tagSelect = document.getElementById('edit-tag');
-        Array.from(tagSelect.options).forEach(opt => opt.selected = d && d.tiers ? d.tiers.includes(opt.value) : false);
+        setSelectedTiers(tagSelect, d?.tiers || []);
         document.getElementById('edit-active').checked = d ? (d.isActive !== false) : true;
         
         document.getElementById('theme-logic-section').style.display = 'none';
@@ -479,7 +484,7 @@ function openEditor(id, isPngOverride = false) {
     editId.value             = design.id;
     editName.value           = design.name;
     editActive.checked       = design.isActive;
-    Array.from(editTag.options).forEach(opt => opt.selected = design.tiers && design.tiers.includes(opt.value));
+    setSelectedTiers(editTag, design.tiers || []);
     editPal.value            = fd ? (fd.palettes   || '[{}]')     : '[{}]';
     editTypo.value           = fd ? (fd.typography || '{}')       : '{}';
     editBg.value             = fd ? (fd.renderBackground || "return '';") : "return '';";
@@ -512,12 +517,14 @@ function openEditor(id, isPngOverride = false) {
 
 function openNewDesignEditor() {
     const newId = 'theme_' + Date.now();
+    currentEditorId = newId;
+    isEditorPng = false;
     editorTitle.textContent  = 'New Custom Design';
     editorSub.textContent    = 'ID: ' + newId + '  •  New Custom';
     editId.value             = newId;
     editName.value           = 'My New Design';
     editActive.checked       = true;
-    Array.from(editTag.options).forEach(opt => opt.selected = false);
+    setSelectedTiers(editTag, []);
     editPal.value            = JSON.stringify([
         { bg: '#0f172a', text: '#ffffff', accent: '#38bdf8', positive: '#10b981', negative: '#ef4444' }
     ], null, 2);
@@ -559,7 +566,7 @@ document.getElementById('save-design-btn').addEventListener('click', async () =>
     btn.textContent = 'Saving…';
 
     try {
-        const selectedTiers = Array.from(document.getElementById('edit-tag').selectedOptions).map(opt => opt.value);
+        const selectedTiers = getSelectedTiers(document.getElementById('edit-tag'));
         const baseData = {
             name:     document.getElementById('edit-name').value.trim(),
             tiers:    selectedTiers,
@@ -708,8 +715,8 @@ function updateEditorPreview() {
                     getBorder:       editBorder.value,
                     renderLayout:    editLayout.value,
                 };
-                const isOverridden = themeDesign._type === 'overridden' || themeDesign._type === 'custom';
-                theme = isOverridden ? _buildThemeFromFirestore(fd, themeDesign._builtinTheme) : themeDesign._builtinTheme;
+                const isOverridden = design?._type === 'overridden' || design?._type === 'custom';
+                theme = isOverridden ? _buildThemeFromFirestore(fd, design?._builtinTheme) : design?._builtinTheme;
             }
             html = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: currentEditorId }, randomizer: MOCK_RNG });
         }
@@ -918,7 +925,6 @@ const navDesigns = document.getElementById('nav-designs');
 const navPng     = document.getElementById('nav-png');
 const secDesigns = document.getElementById('section-designs');
 const secPng     = document.getElementById('section-png');
-const filterBarEl = document.getElementById('filter-bar');
 const contentHeader = document.querySelector('header.content-header');
 
 if (navDesigns) {
@@ -927,7 +933,6 @@ if (navDesigns) {
         navPng?.classList.remove('active');
         secDesigns.style.display = '';
         secPng.style.display = 'none';
-        filterBarEl.style.display = '';
         if (contentHeader) contentHeader.style.display = '';
     });
 }
@@ -938,7 +943,6 @@ if (navPng) {
         navDesigns?.classList.remove('active');
         secDesigns.style.display = 'none';
         secPng.style.display = '';
-        filterBarEl.style.display = 'none';
         if (contentHeader) contentHeader.style.display = 'none';
         await loadPNGSection();
     });

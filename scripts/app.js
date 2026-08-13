@@ -10,9 +10,9 @@ import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
 
-// Load custom themes and PNG templates from Firestore asynchronously at startup
-loadCustomThemes();
-loadPNGTemplates();
+// Keep a single readiness promise. Card generation waits for templates to be
+// loaded instead of racing Firestore/network startup on slower mobile devices.
+const cardAssetsReady = Promise.allSettled([loadCustomThemes(), loadPNGTemplates()]);
 
 // ═══════════════════════════════════════════════════════════
 //  DOM Elements
@@ -462,12 +462,14 @@ if (generateBtn) {
         generateBtn.disabled = true;
         generateBtn.style.opacity = '0.7';
         
-        await generateRender(data);
-        
-        // Restore button state
-        generateBtn.innerHTML = originalBtnHtml;
-        generateBtn.disabled = false;
-        generateBtn.style.opacity = '1';
+        try {
+            await generateRender(data);
+        } finally {
+            // Restore button state even if rendering throws unexpectedly.
+            generateBtn.innerHTML = originalBtnHtml;
+            generateBtn.disabled = false;
+            generateBtn.style.opacity = '1';
+        }
     });
 }
 
@@ -484,12 +486,13 @@ if (rerollBtn) {
         rerollBtn.disabled = true;
         rerollBtn.style.opacity = '0.7';
         
-        await generateRender(window.lastData);
-        
-        // Restore button state
-        rerollBtn.innerHTML = originalBtnHtml;
-        rerollBtn.disabled = false;
-        rerollBtn.style.opacity = '1';
+        try {
+            await generateRender(window.lastData);
+        } finally {
+            rerollBtn.innerHTML = originalBtnHtml;
+            rerollBtn.disabled = false;
+            rerollBtn.style.opacity = '1';
+        }
     });
 }
 
@@ -503,14 +506,17 @@ async function generateRender(data) {
     spinner.style.display = 'block';
     img.classList.remove('loaded');
 
-    // 1. Inject card HTML
-    let engine = new CardEngine(data);
-    node.innerHTML = engine.buildHTML();
-
     try {
+        // 1. Do not race template hydration on a cold/mobile connection.
+        await cardAssetsReady;
+
+        // 2. Inject card HTML
+        const engine = new CardEngine(data);
+        node.innerHTML = engine.buildHTML();
+
         if (typeof html2canvas === 'undefined') throw new Error('html2canvas not loaded');
 
-        // 2. For PNG templates: pre-fetch background as blob: URL
+        // 3. For PNG templates: pre-fetch background as blob: URL
         //    This bypasses CORS canvas taint on mobile browsers.
         const bgImgs = Array.from(node.querySelectorAll('img[crossorigin]'));
         const blobUrls = [];
@@ -525,12 +531,12 @@ async function generateRender(data) {
             }
         }
 
-        // 3. Wait for ALL fonts to finish loading
+        // 4. Wait for ALL fonts to finish loading
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
         }
 
-        // 4. Wait for every <img> inside the card node to fully load
+        // 5. Wait for every <img> inside the card node to fully load
         const imgs = Array.from(node.querySelectorAll('img'));
         if (imgs.length > 0) {
             await Promise.all(imgs.map(el => {
@@ -543,12 +549,13 @@ async function generateRender(data) {
             }));
         }
 
-        // 5. Give browser 2 animation frames to fully paint (extra on mobile)
+        // 6. Give browser 2 animation frames to fully paint (extra on mobile)
         await new Promise(r => requestAnimationFrame(r));
         if (isMobile) await new Promise(r => requestAnimationFrame(r));
 
-        // 6. Capture — lower scale on mobile to avoid OOM crash
-        const captureScale = isMobile ? 1.5 : 2;
+        // 7. Capture. Use a modest mobile scale to avoid canvas-memory crashes:
+        // 1600×900 at 1.25 is still sharp for sharing while far safer on phones.
+        const captureScale = isMobile ? 1.25 : 2;
         const canvas = await html2canvas(node, {
             scale:           captureScale,
             backgroundColor: null,
@@ -560,14 +567,17 @@ async function generateRender(data) {
             imageTimeout:    isMobile ? 15000 : 10000,
         });
 
-        img.src = canvas.toDataURL('image/png', 1.0);
-        img.onload = () => {
-            img.classList.add('loaded');
-            spinner.style.display = 'none';
-            isGenerating = false;
-        };
+        const dataUrl = canvas.toDataURL('image/png');
+        await new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Generated image could not be displayed'));
+            img.src = dataUrl;
+        });
+        img.classList.add('loaded');
+        spinner.style.display = 'none';
+        isGenerating = false;
 
-        // 7. Free blob memory
+        // 8. Free blob memory
         blobUrls.forEach(u => URL.revokeObjectURL(u));
 
     } catch (err) {

@@ -263,6 +263,24 @@ body.editor-body {
     user-select: none;
 }
 
+/* Precision guide overlay. It never becomes part of the saved template. */
+.alignment-guides {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+}
+.alignment-guide {
+    position: absolute;
+    display: none;
+    background: #38bdf8;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.28), 0 0 12px rgba(56,189,248,.75);
+    opacity: .95;
+}
+.alignment-guide.vertical { width: 1px; top: 0; bottom: 0; }
+.alignment-guide.horizontal { height: 1px; left: 0; right: 0; }
+.alignment-guide.visible { display: block; }
+
 .canvas-bg-img {
     position: absolute;
     inset: 0;
@@ -513,6 +531,47 @@ body.editor-body {
     font-family: 'Inter', sans-serif;
 }
 .tpl-setting-select option { background: #1a2340; }
+
+.tpl-setting-help {
+    margin-top: -4px;
+    color: var(--ed-muted);
+    font-size: 10px;
+    line-height: 1.4;
+}
+.editor-tier-picker {
+    display: grid;
+    gap: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.editor-tier-group { display: grid; gap: 6px; }
+.editor-tier-group-title {
+    color: var(--ed-muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+.editor-tier-options { display: flex; flex-wrap: wrap; gap: 5px; }
+.editor-tier-option {
+    padding: 6px 7px;
+    min-height: 30px;
+    background: rgba(0,0,0,.26);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 7px;
+    color: var(--ed-muted);
+    cursor: pointer;
+    font: 600 10px/1.1 'Roboto Mono', monospace;
+    transition: all .15s ease;
+}
+.editor-tier-option:hover { border-color: rgba(56,189,248,.6); color: var(--ed-text); }
+.editor-tier-option.selected {
+    color: #fff;
+    border-color: var(--ed-accent);
+    background: rgba(56,189,248,.18);
+}
+.editor-tier-option.selected::before { content: '✓ '; color: #7dd3fc; }
 
 /* ── Toast notifications ─────────────────────────────────── */
 .editor-toast {

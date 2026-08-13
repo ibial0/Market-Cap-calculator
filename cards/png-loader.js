@@ -25,7 +25,10 @@ export async function loadPNGTemplates() {
 
 /** Returns array of all currently active PNG templates (already cached). */
 export function getActivePNGTemplates() {
-    return Array.from(_cache.values()).filter(t => t.isActive !== false);
+    // Only offer templates that have an export-safe source to the card engine.
+    // A remote image that refuses CORS may display in a browser, but html2canvas
+    // cannot reliably export it (especially on mobile) and produces black cards.
+    return Array.from(_cache.values()).filter(t => t.isActive !== false && t.exportReady !== false);
 }
 
 /** Returns a specific PNG template by ID, or null. */
@@ -55,15 +58,19 @@ async function _doLoad() {
 
         // Pre-fetch background images as data URLs in parallel
         await Promise.all(activeTemplates.map(async (tpl) => {
+            tpl.exportReady = Boolean(tpl.bgDataUrl && String(tpl.bgDataUrl).startsWith('data:'));
             // Case 1: External URL (Imgur, imgBB, etc.) — fetch and convert to data URL
             if (tpl.bgUrl) {
                 try {
                     tpl.bgDataUrl = await _fetchAsDataURL(tpl.bgUrl);
+                    tpl.exportReady = true;
                 } catch (err) {
-                    console.warn('[PNGLoader] CORS fetch failed for', tpl.id, '— using URL directly');
-                    // Fall back: use URL directly. Browser <img> will still show it,
-                    // but html2canvas may not capture it if CORS blocks it.
+                    console.warn('[PNGLoader] Excluding export-unsafe image for', tpl.id, err.message);
+                    // Keep the URL for the admin/editor preview, but do not let this
+                    // template enter the user-facing random pool until it is hosted
+                    // with CORS support or saved as a data URL.
                     tpl.bgDataUrl = tpl.bgUrl;
+                    tpl.exportReady = false;
                 }
             }
             // Case 2: bgDataUrl already stored in Firestore (local file upload) — ready to use

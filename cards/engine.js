@@ -7,7 +7,7 @@
 import { classifyTier } from './tiers.js';
 import { Randomizer } from './randomizer.js';
 import { composeCard } from './renderer.js';
-import { getTheme, getAllThemeIds, getThemeTiers } from './themes/index.js';
+import { getTheme, getAllThemeIds, getThemeTiers, getFallbackTheme } from './themes/index.js';
 import { getActivePNGTemplates, getPNGTemplate } from './png-loader.js';
 import { composePNGCard } from './png-engine.js';
 
@@ -45,6 +45,11 @@ export class CardEngine {
         ];
 
         if (pool.length === 0) {
+            // A card should always be generated. If an admin has temporarily
+            // unassigned every design for a range, render the stable fallback
+            // design instead of a black/error card for the user.
+            const fallback = getFallbackTheme();
+            if (fallback) return this._renderSingleTheme(fallback, tierId);
             return `<div style="width:1600px;height:900px;background:#0a0f1c;display:flex;align-items:center;justify-content:center;color:#fff;font-size:32px;">No card templates available for this tier</div>`;
         }
 
@@ -106,6 +111,16 @@ export class CardEngine {
             data: this.d,
             tier: this.tier,
             combo,
+            randomizer: _randomizer,
+        });
+    }
+
+    _renderSingleTheme(theme, tierId) {
+        return composeCard({
+            theme,
+            data: this.d,
+            tier: this.tier,
+            combo: { themeId: theme.id, bgVariant: 0, charVariant: 0, accentIdx: 0, detailIdx: 0 },
             randomizer: _randomizer,
         });
     }

@@ -88,9 +88,6 @@
                 </div>
             </header>
 
-            <!-- Filter Bar (injected by admin.js) -->
-            <div id="filter-bar" class="filter-bar"></div>
-
             <!-- ═══ Design Gallery section (existing themes) ═══ -->
             <div id="section-designs">
                 <div id="designs-grid" class="designs-grid">
@@ -148,32 +145,9 @@
                         </div>
                         <div class="form-row-inline">
                             <div class="input-group" style="flex:1;">
-                                <label>Assigned Tiers (Hold Ctrl/Cmd to select multiple)</label>
-                                <select id="edit-tag" multiple class="text-input adm-select" style="height:250px;">
-                                    <optgroup label="── Profit Tiers ──">
-                                        <option value="profit_1">1X → 1.5X</option>
-                                        <option value="profit_2">1.5X → 2.5X</option>
-                                        <option value="profit_3">2.5X → 3.5X</option>
-                                        <option value="profit_4">3.5X → 5X</option>
-                                        <option value="profit_5">5X → 10X</option>
-                                        <option value="profit_6">10X → 20X</option>
-                                        <option value="profit_7">20X → 40X</option>
-                                        <option value="profit_8">40X → 75X</option>
-                                        <option value="profit_9">75X → 100X</option>
-                                        <option value="profit_10">100X → 200X</option>
-                                        <option value="profit_11">200X → 300X</option>
-                                        <option value="profit_12">300X → 400X</option>
-                                        <option value="profit_13">400X → 500X</option>
-                                        <option value="profit_14">500X+</option>
-                                    </optgroup>
-                                    <optgroup label="── Loss Tiers ──">
-                                        <option value="loss_1">0 → -1X</option>
-                                        <option value="loss_2">-1X → -2X</option>
-                                        <option value="loss_3">-2X → -5X</option>
-                                        <option value="loss_4">-5X → -10X</option>
-                                        <option value="loss_5">-10X+</option>
-                                    </optgroup>
-                                </select>
+                                <label>Assigned Performance Tiers</label>
+                                <p class="tier-picker-help">Choose every range where this design may appear. No Ctrl/Cmd key or scrolling list required.</p>
+                                <div id="edit-tag" class="tier-picker" role="group" aria-label="Assigned performance tiers"></div>
                             </div>
                         </div>
                         <div class="form-row-inline">
