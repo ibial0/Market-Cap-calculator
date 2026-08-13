@@ -57,17 +57,27 @@ export const TEXT_SCALE = {
 };
 
 // ── Tier Definitions ──────────────────────────────────────
-// minMul / maxMul are used by the category filtering system.
-// A multiplier of 1.00 = break-even. Below 1.00 = loss.
+// minMul / maxMul drive the card category filtering system.
+// 1.00 = break-even. Below 1.00 = loss territory.
+//
+// Range map (user-facing):
+//   10x+          → Legendary
+//   5x – 9.99x    → Mega Win
+//   3x – 4.99x    → Big Win
+//   1.5x – 2.99x  → Good Win
+//   1x  – 1.49x   → Small Win
+//   0.5x – 0.99x  → Small Loss
+//   0x  – 0.49x   → Heavy Loss
+//   < 0x           → Rekt
 export const TIER_DEFS = {
-    legendary:   { label: 'LEGENDARY',   badge: 'LEGENDARY',  tag: 'Legendary',   minMul: 10,   maxMul: Infinity, emotions: ['legendary','euphoric','transcendent'],          colorTemp: 'ultra_gold'    },
-    mega_win:    { label: 'MEGA WIN',    badge: 'MEGA WIN',   tag: 'Mega Win',    minMul: 5,    maxMul: 9.99,     emotions: ['euphoric','triumphant','legendary'],            colorTemp: 'hot_gold'      },
-    big_win:     { label: 'BIG WIN',     badge: 'BIG WIN',    tag: 'Big Win',     minMul: 3,    maxMul: 4.99,     emotions: ['confident','celebrating','proud'],             colorTemp: 'warm_vibrant'  },
-    solid_win:   { label: 'GOOD WIN',    badge: 'GOOD WIN',   tag: 'Good Win',    minMul: 1.5,  maxMul: 2.99,     emotions: ['content','satisfied','calm'],                  colorTemp: 'warm_neutral'  },
-    micro_win:   { label: 'SMALL WIN',   badge: 'SMALL WIN',  tag: 'Small Win',   minMul: 1.0,  maxMul: 1.49,     emotions: ['playful','ironic','smug'],                     colorTemp: 'neutral'       },
-    small_loss:  { label: 'SMALL LOSS',  badge: 'SMALL LOSS', tag: 'Small Loss',  minMul: 0.5,  maxMul: 0.99,     emotions: ['shrug','wry','dark_humor'],                    colorTemp: 'cool'          },
-    medium_loss: { label: 'HEAVY LOSS',  badge: 'LOSS',       tag: 'Heavy Loss',  minMul: 0,    maxMul: 0.49,     emotions: ['somber','dramatic','moody'],                   colorTemp: 'cool_desat'    },
-    rekt:        { label: 'REKT',        badge: 'REKT',       tag: 'Loss',        minMul: -Infinity, maxMul: 0,   emotions: ['devastated','tragicomic','broken'],            colorTemp: 'cold_stormy'   },
+    legendary:   { label: 'LEGENDARY',   badge: 'LEGENDARY',  tag: 'Legendary',   minMul: 10,        maxMul: Infinity, emotions: ['legendary','euphoric','transcendent'], colorTemp: 'ultra_gold'  },
+    mega_win:    { label: 'MEGA WIN',    badge: 'MEGA WIN',   tag: 'Mega Win',    minMul: 5,         maxMul: 9.999,    emotions: ['euphoric','triumphant','legendary'],   colorTemp: 'hot_gold'    },
+    big_win:     { label: 'BIG WIN',     badge: 'BIG WIN',    tag: 'Big Win',     minMul: 3,         maxMul: 4.999,    emotions: ['confident','celebrating','proud'],     colorTemp: 'warm_vibrant'},
+    solid_win:   { label: 'GOOD WIN',    badge: 'GOOD WIN',   tag: 'Good Win',    minMul: 1.5,       maxMul: 2.999,    emotions: ['content','satisfied','calm'],          colorTemp: 'warm_neutral'},
+    micro_win:   { label: 'SMALL WIN',   badge: 'SMALL WIN',  tag: 'Small Win',   minMul: 1.0,       maxMul: 1.499,    emotions: ['playful','ironic','smug'],             colorTemp: 'neutral'     },
+    small_loss:  { label: 'SMALL LOSS',  badge: 'SMALL LOSS', tag: 'Small Loss',  minMul: 0.5,       maxMul: 0.999,    emotions: ['shrug','wry','dark_humor'],            colorTemp: 'cool'        },
+    medium_loss: { label: 'HEAVY LOSS',  badge: 'HEAVY LOSS', tag: 'Heavy Loss',  minMul: 0,         maxMul: 0.499,    emotions: ['somber','dramatic','moody'],           colorTemp: 'cool_desat'  },
+    rekt:        { label: 'REKT',        badge: 'REKT',       tag: 'Loss',        minMul: -Infinity, maxMul: -0.001,   emotions: ['devastated','tragicomic','broken'],    colorTemp: 'cold_stormy' },
 };
 
 // ── Performance Tier Order (for UI display) ───────────────

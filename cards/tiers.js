@@ -18,15 +18,16 @@ export function classifyTier(multiplier, roi, isProfit) {
 
     if (!isProfit || multiplier < 1) {
         // Loss territory
-        if (multiplier < 0.5)   id = 'medium_loss';   // Heavy Loss: below 0.50x
-        else                    id = 'small_loss';     // Small Loss: 0.50x – 0.99x
+        if (multiplier < 0)    id = 'rekt';          // Rekt: went negative (e.g. leveraged loss)
+        else if (multiplier < 0.5)  id = 'medium_loss';  // Heavy Loss: 0 – 0.499x
+        else                        id = 'small_loss';    // Small Loss: 0.5x – 0.999x
     } else {
         // Profit territory — multiplier >= 1.0
-        if (multiplier >= 10)       id = 'legendary';   // 10x+
-        else if (multiplier >= 5)   id = 'mega_win';    // 5x – 9.99x
-        else if (multiplier >= 3)   id = 'big_win';     // 3x – 4.99x
-        else if (multiplier >= 1.5) id = 'solid_win';  // 1.5x – 2.99x
-        else                        id = 'micro_win';   // 1.0x – 1.49x (small/break-even win)
+        if      (multiplier >= 10)  id = 'legendary';   // 10x+
+        else if (multiplier >= 5)   id = 'mega_win';    // 5x – 9.999x
+        else if (multiplier >= 3)   id = 'big_win';     // 3x – 4.999x
+        else if (multiplier >= 1.5) id = 'solid_win';   // 1.5x – 2.999x
+        else                        id = 'micro_win';   // 1.0x – 1.499x
     }
 
     return { id, def: TIER_DEFS[id] };

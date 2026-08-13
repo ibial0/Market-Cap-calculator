@@ -390,6 +390,22 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════════════════════
 //  Card Generation Logic
 // ═══════════════════════════════════════════════════════════
+
+// Detect mobile for performance tuning
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+    || window.innerWidth <= 768;
+
+// Pre-fetch an image URL as a blob: URL to avoid CORS canvas taint.
+// Mobile browsers often block canvas export when crossorigin images are used directly.
+async function _fetchAsBlob(url) {
+    try {
+        const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+        if (!resp.ok) return null;
+        const blob = await resp.blob();
+        return URL.createObjectURL(blob);
+    } catch { return null; }
+}
+
 let isGenerating = false;
 const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
@@ -439,7 +455,19 @@ if (generateBtn) {
         };
         
         previewOverlay.classList.add('active');
+        
+        // Button loading state
+        const originalBtnHtml = generateBtn.innerHTML;
+        generateBtn.innerHTML = 'Generating...';
+        generateBtn.disabled = true;
+        generateBtn.style.opacity = '0.7';
+        
         await generateRender(data);
+        
+        // Restore button state
+        generateBtn.innerHTML = originalBtnHtml;
+        generateBtn.disabled = false;
+        generateBtn.style.opacity = '1';
     });
 }
 
@@ -449,7 +477,19 @@ if (rerollBtn) {
         if (isGenerating) return;
         if (!window.lastData) return;
         document.getElementById('preview-img').classList.remove('loaded');
+        
+        // Button loading state
+        const originalBtnHtml = rerollBtn.innerHTML;
+        rerollBtn.innerHTML = 'Generating...';
+        rerollBtn.disabled = true;
+        rerollBtn.style.opacity = '0.7';
+        
         await generateRender(window.lastData);
+        
+        // Restore button state
+        rerollBtn.innerHTML = originalBtnHtml;
+        rerollBtn.disabled = false;
+        rerollBtn.style.opacity = '1';
     });
 }
 
@@ -468,40 +508,56 @@ async function generateRender(data) {
     node.innerHTML = engine.buildHTML();
 
     try {
-        if (typeof html2canvas === 'undefined') throw new Error("html2canvas not loaded");
+        if (typeof html2canvas === 'undefined') throw new Error('html2canvas not loaded');
 
-        // 2. Wait for ALL fonts to finish loading (real event, not setTimeout)
+        // 2. For PNG templates: pre-fetch background as blob: URL
+        //    This bypasses CORS canvas taint on mobile browsers.
+        const bgImgs = Array.from(node.querySelectorAll('img[crossorigin]'));
+        const blobUrls = [];
+        for (const el of bgImgs) {
+            if (el.src && !el.src.startsWith('data:') && !el.src.startsWith('blob:')) {
+                const blobUrl = await _fetchAsBlob(el.src);
+                if (blobUrl) {
+                    el.removeAttribute('crossorigin');
+                    el.src = blobUrl;
+                    blobUrls.push(blobUrl);
+                }
+            }
+        }
+
+        // 3. Wait for ALL fonts to finish loading
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
         }
 
-        // 3. Wait for every <img> inside the card node to fully load
+        // 4. Wait for every <img> inside the card node to fully load
         const imgs = Array.from(node.querySelectorAll('img'));
         if (imgs.length > 0) {
             await Promise.all(imgs.map(el => {
                 if (el.complete && el.naturalWidth > 0) return Promise.resolve();
-                return new Promise((res, rej) => {
+                return new Promise(res => {
                     el.onload  = res;
-                    el.onerror = res; // Don't block on broken images — just skip
-                    // Safety timeout: 8s per image max
-                    setTimeout(res, 8000);
+                    el.onerror = res; // skip broken images
+                    setTimeout(res, isMobile ? 12000 : 8000);
                 });
             }));
         }
 
-        // 4. One rAF to let the browser paint before we snapshot
+        // 5. Give browser 2 animation frames to fully paint (extra on mobile)
         await new Promise(r => requestAnimationFrame(r));
+        if (isMobile) await new Promise(r => requestAnimationFrame(r));
 
-        // 5. Capture
+        // 6. Capture — lower scale on mobile to avoid OOM crash
+        const captureScale = isMobile ? 1.5 : 2;
         const canvas = await html2canvas(node, {
-            scale: 2,
+            scale:           captureScale,
             backgroundColor: null,
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-            // Force html2canvas to use the node's exact size
-            width:  node.offsetWidth,
-            height: node.offsetHeight,
+            useCORS:         true,
+            allowTaint:      false,
+            logging:         false,
+            width:           node.offsetWidth  || 1600,
+            height:          node.offsetHeight || 900,
+            imageTimeout:    isMobile ? 15000 : 10000,
         });
 
         img.src = canvas.toDataURL('image/png', 1.0);
@@ -511,11 +567,17 @@ async function generateRender(data) {
             isGenerating = false;
         };
 
+        // 7. Free blob memory
+        blobUrls.forEach(u => URL.revokeObjectURL(u));
+
     } catch (err) {
-        console.error("Render failed:", err);
+        console.error('Render failed:', err);
         spinner.style.display = 'none';
         isGenerating = false;
-        alert("Card render failed. Please try again.");
+        const msg = (err.message || '').includes('html2canvas')
+            ? 'Renderer not ready. Please refresh the page and try again.'
+            : 'Card generation failed. Please try again.';
+        alert(msg);
     }
 }
 

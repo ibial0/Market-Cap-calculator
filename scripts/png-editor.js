@@ -34,17 +34,36 @@ const MOCK_DATA = {
     isProfit: true, profitColor: '#00ff88',
 };
 
+// HTML escape helper (prevents XSS in template strings)
+function _esc(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ── Performance Tag → Tier IDs ───────────────────────────
+// Each tag maps ONLY to the exact tiers it should appear for.
+// "Legendary" card will NOT appear for Big Win users, and vice versa.
 const TAG_TIER_MAP = {
-    'All Tiers':  ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
+    // ── Exact single-tier tags ──────────────────────────
+    'Legendary':  ['legendary'],                    // 10x+
+    'Mega Win':   ['mega_win'],                     // 5x – 9.99x
+    'Big Win':    ['big_win'],                      // 3x – 4.99x
+    'Good Win':   ['solid_win'],                    // 1.5x – 2.99x
+    'Small Win':  ['micro_win'],                    // 1x – 1.49x
+    'Small Loss': ['small_loss'],                   // 0.5x – 0.99x
+    'Heavy Loss': ['medium_loss', 'rekt'],          // below 0.5x
+
+    // ── Multi-tier range tags ────────────────────────────
     'All Wins':   ['legendary','mega_win','big_win','solid_win','micro_win'],
-    'Big+ Wins':  ['legendary','mega_win','big_win','solid_win'],
-    'Legendary':  ['legendary'],
-    'Mega Win':   ['legendary','mega_win'],
-    'Big Win':    ['legendary','mega_win','big_win'],
-    'Good Win':   ['legendary','mega_win','big_win','solid_win'],
-    'Small Win':  ['micro_win'],
-    'Small Loss': ['small_loss'],
-    'Heavy Loss': ['medium_loss','rekt'],
+    'Big+ Wins':  ['legendary','mega_win','big_win'],
+    'Mega+ Wins': ['legendary','mega_win'],
+    'All Losses': ['small_loss','medium_loss','rekt'],
+
+    // ── Universal (show for all users) ──────────────────
+    'All Tiers':  ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
 };
 
 // ── State ─────────────────────────────────────────────────
@@ -231,8 +250,10 @@ function buildLayerElement(layer) {
     el.className      = 'canvas-layer' + (selectedLayerId === layer.id ? ' selected' : '') + (!layer.visible ? ' hidden-layer' : '');
     el.dataset.id     = layer.id;
 
-    // Get display value
-    const rawVal = MOCK_DATA[layer.field] || '';
+    // Get display value — static labels use their own saved text
+    const rawVal = layer.field === 'static_label'
+        ? (layer.staticText || '')
+        : (MOCK_DATA[layer.field] || '');
     let value = rawVal;
     if (displayMode === 'roi'        && layer.field === 'mul') value = '';
     if (displayMode === 'multiplier' && layer.field === 'roi') value = '';
@@ -338,7 +359,9 @@ function renderLayerList() {
             (!layer.visible ? ' hidden-layer' : '');
         item.dataset.id = layer.id;
 
-        const previewVal = MOCK_DATA[layer.field] || '—';
+        const previewVal = layer.field === 'static_label'
+            ? (layer.staticText || '[Static Label]')
+            : (MOCK_DATA[layer.field] || '—');
 
         item.innerHTML = `
             <button class="layer-vis-btn ${layer.visible ? 'visible' : ''}" data-vis="${layer.id}" title="${layer.visible ? 'Visible' : 'Hidden'}">
@@ -429,6 +452,23 @@ function renderPropsPanel(layerId) {
     ).join('');
 
     form.innerHTML = `
+        ${layer.field === 'static_label' ? `
+        <!-- STATIC TEXT (only for static label layers) -->
+        <div class="prop-group" style="border:1px solid var(--ed-accent);border-radius:8px;padding:10px;">
+            <div class="prop-group-title" style="color:var(--ed-accent);">📝 Static Text Content</div>
+            <div style="font-size:10px;color:var(--ed-muted);margin-bottom:8px;">
+                This text is fixed — it will always appear exactly as typed on every user's card. 
+                Position and style can still be changed freely.
+            </div>
+            <div class="prop-row">
+                <input type="text" class="prop-input" id="prop-static-text"
+                    value="${_esc(layer.staticText || '')}"
+                    placeholder="Type your label text here…"
+                    style="width:100%;font-size:14px;font-weight:600;">
+            </div>
+        </div>
+        ` : ''}
+
         <!-- POSITION -->
         <div class="prop-group">
             <div class="prop-group-title">Position (px on 1600×900)</div>
@@ -599,6 +639,17 @@ function _bindPropEvents(layer) {
     bind('prop-weight',   'fontWeight',    v => String(v));
     bind('prop-spacing',  'letterSpacing', Number);
     bind('prop-shadow',   'textShadow',    null);
+
+    // Static label text: save to layer.staticText (not a regular data field)
+    const staticInp = document.getElementById('prop-static-text');
+    if (staticInp) {
+        staticInp.addEventListener('input', (e) => {
+            layer.staticText = e.target.value;
+            refreshLayerElement(layer.id);
+            renderLayerList();
+            markDirty();
+        });
+    }
 
     // Color: sync picker ↔ hex text
     const colorPicker = document.getElementById('prop-color');
@@ -799,6 +850,37 @@ function setupEvents() {
         if (elPropsForm()) elPropsForm().style.display = 'none';
         if (elPropsName()) elPropsName().textContent = 'Properties';
         showToast('Layers reset to defaults.');
+        markDirty();
+    });
+
+    // ── Add Static Label Layer ─────────────────────────────
+    document.getElementById('btn-add-static-label')?.addEventListener('click', () => {
+        if (!template.layers) return;
+        const newId   = 'custom_' + Date.now();
+        const newLayer = {
+            id:           newId,
+            label:        'Custom Label',
+            field:        'static_label',
+            staticText:   'YOUR TEXT HERE',
+            x: 80, y: 450,
+            fontSize:     48,
+            fontFamily:   "'Outfit', sans-serif",
+            fontWeight:   '700',
+            color:        '#ffffff',
+            opacity:      1,
+            textAlign:    'left',
+            letterSpacing: 2,
+            textShadow:   '',
+            stroke:       '#000000',
+            strokeWidth:  0,
+            rotation:     0,
+            visible:      true,
+            useProfit:    false,
+        };
+        template.layers.push(newLayer);
+        renderAll();
+        selectLayer(newId);
+        showToast('Static label added. Type your text in the Properties panel.');
         markDirty();
     });
 

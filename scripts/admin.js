@@ -604,18 +604,24 @@ delBtn.addEventListener('click', async () => {
 
 // ── Map tag → tier IDs ─────────────────────────────────────
 function _tiersFromTag(tag) {
+    // Each tag maps ONLY to its exact tier(s).
+    // A "Big Win" template will NOT show for 10x+ users.
     const map = {
-        'All Tiers':   ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-        'All Wins':    ['legendary','mega_win','big_win','solid_win','micro_win'],
-        'Legendary':   ['legendary'],
-        'Mega Win':    ['legendary','mega_win'],
-        'Big Win':     ['legendary','mega_win','big_win'],
-        'Big+ Wins':   ['legendary','mega_win','big_win','solid_win'],
-        'Good Win':    ['legendary','mega_win','big_win','solid_win'],
-        'Small+ Wins': ['legendary','mega_win','big_win','solid_win','micro_win','small_loss'],
-        'Small Win':   ['micro_win'],
-        'Small Loss':  ['small_loss'],
-        'Heavy Loss':  ['medium_loss','rekt'],
+        // Exact single-tier
+        'Legendary':    ['legendary'],
+        'Mega Win':     ['mega_win'],
+        'Big Win':      ['big_win'],
+        'Good Win':     ['solid_win'],
+        'Small Win':    ['micro_win'],
+        'Small Loss':   ['small_loss'],
+        'Heavy Loss':   ['medium_loss','rekt'],
+        // Multi-tier ranges
+        'All Wins':     ['legendary','mega_win','big_win','solid_win','micro_win'],
+        'Big+ Wins':    ['legendary','mega_win','big_win'],
+        'Mega+ Wins':   ['legendary','mega_win'],
+        'All Losses':   ['small_loss','medium_loss','rekt'],
+        // Universal
+        'All Tiers':    ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
     };
     return map[tag] || ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'];
 }

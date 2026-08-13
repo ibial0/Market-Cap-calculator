@@ -135,7 +135,9 @@ export function composePNGCard(template, data) {
         if (displayMode === 'roi' && layer.field === 'mul') return '';
         if (displayMode === 'multiplier' && layer.field === 'roi') return '';
 
-        const rawVal = cd[layer.field];
+        const rawVal = layer.field === 'static_label'
+            ? (layer.staticText || '')   // static label — value set by admin, never changes
+            : cd[layer.field];
         if (rawVal === undefined || rawVal === null || rawVal === '') return '';
 
         // Dynamic profit color override
@@ -197,9 +199,20 @@ export function composePNGCard(template, data) {
     ">
         <img
             src="${bgSrc}"
-            style="position:absolute;inset:0;width:${CARD_W}px;height:${CARD_H}px;object-fit:cover;display:block;pointer-events:none;"
+            style="
+                position:absolute;
+                top:0; left:0;
+                width:${CARD_W}px;
+                height:${CARD_H}px;
+                object-fit:cover;
+                object-position:center center;
+                display:block;
+                pointer-events:none;
+                user-select:none;
+            "
             crossorigin="anonymous"
             loading="eager"
+            decoding="sync"
         >
         ${layersHTML}
     </div>`;

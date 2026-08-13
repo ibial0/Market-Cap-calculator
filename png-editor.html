@@ -72,6 +72,13 @@
             Reset Layers
         </button>
 
+        <button class="tb-btn tb-btn-preview" id="btn-add-static-label" title="Add a fixed text layer that never changes on user cards">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            + Static Label
+        </button>
+
         <button class="tb-btn tb-btn-save" id="btn-save">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -117,16 +124,24 @@
                 <div class="tpl-setting-row">
                     <span class="tpl-setting-label">Tiers</span>
                     <select class="tpl-setting-select" id="tpl-tag">
-                        <option value="All Tiers" selected>All Tiers</option>
-                        <option value="All Wins">All Wins</option>
-                        <option value="Big+ Wins">Big+ Wins (3x+)</option>
-                        <option value="Legendary">Legendary (10x+)</option>
-                        <option value="Mega Win">Mega Win (5x+)</option>
-                        <option value="Big Win">Big Win (3x+)</option>
-                        <option value="Good Win">Good Win (1.5x+)</option>
-                        <option value="Small Win">Small Win</option>
-                        <option value="Small Loss">Small Loss</option>
-                        <option value="Heavy Loss">Heavy Loss</option>
+                        <optgroup label="── Universal ──">
+                            <option value="All Tiers" selected>All Tiers (Everyone)</option>
+                        </optgroup>
+                        <optgroup label="── Exact Tier ──">
+                            <option value="Legendary">Legendary (10x+)</option>
+                            <option value="Mega Win">Mega Win (5x–9.99x)</option>
+                            <option value="Big Win">Big Win (3x–4.99x)</option>
+                            <option value="Good Win">Good Win (1.5x–2.99x)</option>
+                            <option value="Small Win">Small Win (1x–1.49x)</option>
+                            <option value="Small Loss">Small Loss (0.5x–0.99x)</option>
+                            <option value="Heavy Loss">Heavy Loss (below 0.5x)</option>
+                        </optgroup>
+                        <optgroup label="── Multi-Tier Range ──">
+                            <option value="All Wins">All Wins (1x+)</option>
+                            <option value="Big+ Wins">Big+ Wins (3x+)</option>
+                            <option value="Mega+ Wins">Mega+ Wins (5x+)</option>
+                            <option value="All Losses">All Losses</option>
+                        </optgroup>
                     </select>
                 </div>
 
