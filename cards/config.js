@@ -57,46 +57,31 @@ export const TEXT_SCALE = {
 };
 
 // ── Tier Definitions ──────────────────────────────────────
-// minMul / maxMul drive the card category filtering system.
-// 1.00 = break-even. Below 1.00 = loss territory.
-//
-// Range map (user-facing):
-//   10x+          → Legendary
-//   5x – 9.99x    → Mega Win
-//   3x – 4.99x    → Big Win
-//   1.5x – 2.99x  → Good Win
-//   1x  – 1.49x   → Small Win
-//   0.5x – 0.99x  → Small Loss
-//   0x  – 0.49x   → Heavy Loss
-//   < 0x           → Rekt
 export const TIER_DEFS = {
-    legendary:   { label: 'LEGENDARY',   badge: 'LEGENDARY',  tag: 'Legendary',   minMul: 10,        maxMul: Infinity, emotions: ['legendary','euphoric','transcendent'], colorTemp: 'ultra_gold'  },
-    mega_win:    { label: 'MEGA WIN',    badge: 'MEGA WIN',   tag: 'Mega Win',    minMul: 5,         maxMul: 9.999,    emotions: ['euphoric','triumphant','legendary'],   colorTemp: 'hot_gold'    },
-    big_win:     { label: 'BIG WIN',     badge: 'BIG WIN',    tag: 'Big Win',     minMul: 3,         maxMul: 4.999,    emotions: ['confident','celebrating','proud'],     colorTemp: 'warm_vibrant'},
-    solid_win:   { label: 'GOOD WIN',    badge: 'GOOD WIN',   tag: 'Good Win',    minMul: 1.5,       maxMul: 2.999,    emotions: ['content','satisfied','calm'],          colorTemp: 'warm_neutral'},
-    micro_win:   { label: 'SMALL WIN',   badge: 'SMALL WIN',  tag: 'Small Win',   minMul: 1.0,       maxMul: 1.499,    emotions: ['playful','ironic','smug'],             colorTemp: 'neutral'     },
-    small_loss:  { label: 'SMALL LOSS',  badge: 'SMALL LOSS', tag: 'Small Loss',  minMul: 0.5,       maxMul: 0.999,    emotions: ['shrug','wry','dark_humor'],            colorTemp: 'cool'        },
-    medium_loss: { label: 'HEAVY LOSS',  badge: 'HEAVY LOSS', tag: 'Heavy Loss',  minMul: 0,         maxMul: 0.499,    emotions: ['somber','dramatic','moody'],           colorTemp: 'cool_desat'  },
-    rekt:        { label: 'REKT',        badge: 'REKT',       tag: 'Loss',        minMul: -Infinity, maxMul: -0.001,   emotions: ['devastated','tragicomic','broken'],    colorTemp: 'cold_stormy' },
+    profit_1:  { label: '1X → 1.5X',   tag: '1X → 1.5X',   minMul: 1,    maxMul: 1.499 },
+    profit_2:  { label: '1.5X → 2.5X', tag: '1.5X → 2.5X', minMul: 1.5,  maxMul: 2.499 },
+    profit_3:  { label: '2.5X → 3.5X', tag: '2.5X → 3.5X', minMul: 2.5,  maxMul: 3.499 },
+    profit_4:  { label: '3.5X → 5X',   tag: '3.5X → 5X',   minMul: 3.5,  maxMul: 4.999 },
+    profit_5:  { label: '5X → 10X',    tag: '5X → 10X',    minMul: 5,    maxMul: 9.999 },
+    profit_6:  { label: '10X → 20X',   tag: '10X → 20X',   minMul: 10,   maxMul: 19.999 },
+    profit_7:  { label: '20X → 40X',   tag: '20X → 40X',   minMul: 20,   maxMul: 39.999 },
+    profit_8:  { label: '40X → 75X',   tag: '40X → 75X',   minMul: 40,   maxMul: 74.999 },
+    profit_9:  { label: '75X → 100X',  tag: '75X → 100X',  minMul: 75,   maxMul: 99.999 },
+    profit_10: { label: '100X → 200X', tag: '100X → 200X', minMul: 100,  maxMul: 199.999 },
+    profit_11: { label: '200X → 300X', tag: '200X → 300X', minMul: 200,  maxMul: 299.999 },
+    profit_12: { label: '300X → 400X', tag: '300X → 400X', minMul: 300,  maxMul: 399.999 },
+    profit_13: { label: '400X → 500X', tag: '400X → 500X', minMul: 400,  maxMul: 499.999 },
+    profit_14: { label: '500X+',       tag: '500X+',       minMul: 500,  maxMul: Infinity },
+
+    loss_1:    { label: '0 → -1X',     tag: '0 → -1X',     minMul: -0.999, maxMul: 0.999 },
+    loss_2:    { label: '-1X → -2X',   tag: '-1X → -2X',   minMul: -1.999, maxMul: -1 },
+    loss_3:    { label: '-2X → -5X',   tag: '-2X → -5X',   minMul: -4.999, maxMul: -2 },
+    loss_4:    { label: '-5X+',        tag: '-5X+',        minMul: -Infinity, maxMul: -5 },
 };
 
 // ── Performance Tier Order (for UI display) ───────────────
-export const TIER_ORDER = ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'];
-
-// ── Theme / Tier Compatibility Matrix ─────────────────────
-// This is the authoritative list of which tiers a theme supports.
-// Designs best suited for high-energy wins should NOT appear for losses.
-export const THEME_TIER_MATRIX = {
-    // Luxury Gold — premium, works for all positive tiers
-    cyberpunk:     ['legendary','mega_win','big_win','solid_win','micro_win'],
-    // Anime (Ghibli Cats) — emotional range covers everything
-    anime:         ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    // Neon Glow — high-energy, best for wins
-    pixel_art:     ['legendary','mega_win','big_win','solid_win'],
-    // Comic / Sunrise Gold — warm energy, positive trades
-    comic:         ['legendary','mega_win','big_win','solid_win','micro_win'],
-    // Crystal Clean — minimal/neutral, good for all
-    minimal:       ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-    // Aurora Glassmorphism — ethereal, best for positive trades
-    glassmorphism: ['legendary','mega_win','big_win','solid_win','micro_win','small_loss'],
-};
+export const TIER_ORDER = [
+    'profit_14', 'profit_13', 'profit_12', 'profit_11', 'profit_10', 'profit_9',
+    'profit_8', 'profit_7', 'profit_6', 'profit_5', 'profit_4', 'profit_3', 'profit_2', 'profit_1',
+    'loss_1', 'loss_2', 'loss_3', 'loss_4'
+];

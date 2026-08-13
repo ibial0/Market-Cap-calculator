@@ -62,7 +62,7 @@ export default {
     getBorder(pal) { return `border-radius:32px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.8);`; },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
-        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
+        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz } = cd;
         const P = 60; // Inner padding
 
         const lbl = (t) => `<div style="font-size:12px;font-family:${typo.body};color:${pal.text};
@@ -86,9 +86,6 @@ export default {
                             font-weight:700;color:${pal.text};line-height:1;letter-spacing:-0.04em;">${tok}</div>
                         ${usr ? `<div style="font-size:20px;color:${pal.text};opacity:0.5;margin-top:8px;">@${usr}</div>` : ''}
                     </div>
-                    ${tierBadge ? `<div style="font-size:14px;font-weight:600;color:${pal.accent};
-                        background:rgba(255,255,255,0.9);padding:10px 24px;border-radius:50px;
-                        box-shadow:0 4px 12px rgba(0,0,0,0.05);letter-spacing:2px;">${tierBadge}</div>` : ''}
                 </div>
 
                 <!-- CENTER: Beautiful airy typography -->

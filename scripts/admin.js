@@ -42,7 +42,6 @@ const refreshPrvBtn = document.getElementById('refresh-preview-btn');
 const editId       = document.getElementById('edit-id');
 const editName     = document.getElementById('edit-name');
 const editActive   = document.getElementById('edit-active');
-const editCategory = document.getElementById('edit-category');
 const editTag      = document.getElementById('edit-tag');
 const editPal      = document.getElementById('edit-palettes');
 const editTypo     = document.getElementById('edit-typography');
@@ -168,8 +167,6 @@ async function loadAllData() {
         allDesigns.push({
             id,
             name:     (firestoreOverride && firestoreOverride.name) || builtinMeta.name || id,
-            category: (firestoreOverride && firestoreOverride.category) || builtinMeta.category || '',
-            tag:      (firestoreOverride && firestoreOverride.tag)      || builtinMeta.tag      || '',
             tiers:    (firestoreOverride && firestoreOverride.tiers)    || builtinMeta.tiers    || [],
             isActive,
             _type:    type,
@@ -185,8 +182,6 @@ async function loadAllData() {
         allDesigns.push({
             id:       fd.id,
             name:     fd.name || fd.id,
-            category: fd.category || '',
-            tag:      fd.tag      || '',
             tiers:    fd.tiers    || [],
             isActive: fd.isActive !== false,
             _type:    'custom',
@@ -306,10 +301,9 @@ function renderGrid() {
         // Generate thumbnail
         let thumbHTML = '';
         try {
-            let theme = d._builtinTheme;
-            if (!theme && d._firestoreData) {
-                theme = _buildThemeFromFirestore(d._firestoreData);
-            }
+            const isOverridden = d._type === 'overridden' || d._type === 'custom';
+            const theme = isOverridden ? _buildThemeFromFirestore(d._firestoreData, d._builtinTheme) : d._builtinTheme;
+            
             if (theme) {
                 MOCK_COMBO.themeId = d.id;
                 thumbHTML = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: MOCK_COMBO, randomizer: MOCK_RNG });
@@ -334,7 +328,7 @@ function renderGrid() {
                         <h3 title="${d.name}">${d.name}</h3>
                         <div class="design-badges">
                             <span class="design-type-badge ${typeBadgeClass}">${typeLabel}</span>
-                            ${d.tag ? `<span class="design-tag-badge">${d.tag}</span>` : ''}
+                            ${(d.tiers && d.tiers.length) ? `<span class="design-tag-badge">${d.tiers.length} Tiers</span>` : `<span class="design-tag-badge" style="background:rgba(255,100,100,0.1);color:#ff5555;">No Tiers</span>`}
                         </div>
                     </div>
                     <span class="design-status ${d.isActive ? 'status-active' : 'status-inactive'}">
@@ -379,26 +373,66 @@ function _resizeThumbs() {
 window.addEventListener('resize', _resizeThumbs);
 
 // ── Build Theme Object from Firestore Data ─────────────────
-function _buildThemeFromFirestore(data) {
+function _buildThemeFromFirestore(data, fallback = null) {
     const theme = {
         id: data.id, name: data.name,
-        bgVariants: 1, charVariants: 1, accentVariants: 1, detailVariants: 1,
+        bgVariants: fallback ? fallback.bgVariants : 1, 
+        charVariants: fallback ? fallback.charVariants : 1, 
+        accentVariants: fallback ? fallback.accentVariants : 1, 
+        detailVariants: fallback ? fallback.detailVariants : 1,
     };
-    try {
-        const pal = JSON.parse(data.palettes || '[]');
-        theme.getPalette = (tid, idx) => pal.length ? { ...pal[idx % pal.length] } : {};
-    } catch { theme.getPalette = () => ({}); }
 
     try {
-        const typo = JSON.parse(data.typography || '{}');
-        theme.getTypography = () => typo;
-    } catch { theme.getTypography = () => ({}); }
+        if (data.palettes && data.palettes.trim() !== '' && data.palettes !== '[{}]') {
+            const pal = JSON.parse(data.palettes);
+            theme.getPalette = (tid, idx) => pal.length ? { ...pal[idx % pal.length] } : {};
+        } else if (fallback && fallback.getPalette) {
+            theme.getPalette = fallback.getPalette;
+        } else {
+            theme.getPalette = () => ({});
+        }
+    } catch { theme.getPalette = fallback ? fallback.getPalette : () => ({}); }
+
+    try {
+        if (data.typography && data.typography.trim() !== '' && data.typography !== '{}') {
+            const typo = JSON.parse(data.typography);
+            theme.getTypography = () => typo;
+        } else if (fallback && fallback.getTypography) {
+            theme.getTypography = fallback.getTypography;
+        } else {
+            theme.getTypography = () => ({});
+        }
+    } catch { theme.getTypography = fallback ? fallback.getTypography : () => ({}); }
 
     const _fn = (args, body) => { try { return new Function(args, body); } catch { return () => ''; } };
-    theme.renderBackground = data.renderBackground ? _fn('pal,tierId,variant', data.renderBackground) : () => '';
-    theme.renderEffects     = data.renderEffects    ? _fn('pal,tierId,detailIdx', data.renderEffects)  : () => '';
-    theme.getBorder         = data.getBorder        ? _fn('pal', data.getBorder)                        : () => '';
-    theme.renderLayout      = data.renderLayout     ? _fn('{ cd, pal, typo, W, H, S }', data.renderLayout) : null;
+    
+    // Ignore empty overrides that were saved accidentally by the UI
+    const isBlank = str => !str || str.trim() === "return '';" || str.trim() === "return \"\";";
+    
+    if (data.renderBackground && !isBlank(data.renderBackground)) {
+        theme.renderBackground = _fn('pal,tierId,variant', data.renderBackground);
+    } else {
+        theme.renderBackground = fallback ? fallback.renderBackground : () => '';
+    }
+
+    if (data.renderEffects && !isBlank(data.renderEffects)) {
+        theme.renderEffects = _fn('pal,tierId,detailIdx', data.renderEffects);
+    } else {
+        theme.renderEffects = fallback ? fallback.renderEffects : () => '';
+    }
+
+    if (data.getBorder && !isBlank(data.getBorder)) {
+        theme.getBorder = _fn('pal', data.getBorder);
+    } else {
+        theme.getBorder = fallback ? fallback.getBorder : () => '';
+    }
+
+    if (data.renderLayout && !isBlank(data.renderLayout)) {
+        theme.renderLayout = _fn('{ cd, pal, typo, W, H, S }', data.renderLayout);
+    } else {
+        theme.renderLayout = fallback ? fallback.renderLayout : null;
+    }
+    
     return theme;
 }
 
@@ -415,8 +449,8 @@ function openEditor(id, isPngOverride = false) {
         isEditorPng = true;
         const d = pngDesign;
         document.getElementById('edit-name').value     = d ? (d.name || '') : '';
-        document.getElementById('edit-category').value = d ? (d.category || '') : '';
-        document.getElementById('edit-tag').value      = d ? (d.tag || '') : '';
+        const tagSelect = document.getElementById('edit-tag');
+        Array.from(tagSelect.options).forEach(opt => opt.selected = d && d.tiers ? d.tiers.includes(opt.value) : false);
         document.getElementById('edit-active').checked = d ? (d.isActive !== false) : true;
         
         document.getElementById('theme-logic-section').style.display = 'none';
@@ -445,8 +479,7 @@ function openEditor(id, isPngOverride = false) {
     editId.value             = design.id;
     editName.value           = design.name;
     editActive.checked       = design.isActive;
-    editCategory.value       = design.category || '';
-    editTag.value            = design.tag || '';
+    Array.from(editTag.options).forEach(opt => opt.selected = design.tiers && design.tiers.includes(opt.value));
     editPal.value            = fd ? (fd.palettes   || '[{}]')     : '[{}]';
     editTypo.value           = fd ? (fd.typography || '{}')       : '{}';
     editBg.value             = fd ? (fd.renderBackground || "return '';") : "return '';";
@@ -484,8 +517,7 @@ function openNewDesignEditor() {
     editId.value             = newId;
     editName.value           = 'My New Design';
     editActive.checked       = true;
-    editCategory.value       = 'Custom';
-    editTag.value            = 'All Tiers';
+    Array.from(editTag.options).forEach(opt => opt.selected = false);
     editPal.value            = JSON.stringify([
         { bg: '#0f172a', text: '#ffffff', accent: '#38bdf8', positive: '#10b981', negative: '#ef4444' }
     ], null, 2);
@@ -527,15 +559,16 @@ document.getElementById('save-design-btn').addEventListener('click', async () =>
     btn.textContent = 'Saving…';
 
     try {
+        const selectedTiers = Array.from(document.getElementById('edit-tag').selectedOptions).map(opt => opt.value);
+        const baseData = {
+            name:     document.getElementById('edit-name').value.trim(),
+            tiers:    selectedTiers,
+            isActive: document.getElementById('edit-active').checked,
+            updatedAt: new Date().toISOString()
+        };
+
         if (isEditorPng) {
-            const data = {
-                name:     document.getElementById('edit-name').value.trim(),
-                category: document.getElementById('edit-category').value,
-                tag:      document.getElementById('edit-tag').value,
-                isActive: document.getElementById('edit-active').checked,
-                updatedAt: new Date().toISOString()
-            };
-            await setDoc(doc(db, 'png_templates', currentEditorId), data, { merge: true });
+            await setDoc(doc(db, 'png_templates', currentEditorId), baseData, { merge: true });
             
             // Reload PNGs
             await loadPNGSection();
@@ -544,21 +577,25 @@ document.getElementById('save-design-btn').addEventListener('click', async () =>
             editorModal.style.display = 'none';
             document.getElementById('nav-png')?.click();
         } else {
-            // Existing Theme Save Logic
-            const data = {
-                name:            document.getElementById('edit-name').value.trim(),
-                category:        document.getElementById('edit-category').value,
-                tag:             document.getElementById('edit-tag').value,
-                isActive:        document.getElementById('edit-active').checked,
-                palettes:        document.getElementById('edit-palettes').value,
-                typography:      document.getElementById('edit-typography').value,
-                renderBackground:document.getElementById('edit-bg').value,
-                renderEffects:   document.getElementById('edit-fx').value,
-                getBorder:       document.getElementById('edit-border').value,
-                renderLayout:    document.getElementById('edit-layout').value,
-                updatedAt:       new Date().toISOString(),
-            };
-            await setDoc(doc(db, 'card_designs', currentEditorId), data, { merge: true });
+            // Check if it is a built-in theme
+            const design = allDesigns.find(d => d.id === currentEditorId);
+            const isBuiltin = design && (design._type === 'builtin' || design._type === 'overridden');
+
+            let finalData = { ...baseData };
+            
+            // Only overwrite logic fields if this is a custom design 
+            // OR if it's already an overridden design (to preserve edits, although our UI doesn't allow editing builtin logic)
+            // But we don't allow editing builtin logic, so for builtins we NEVER save the logic fields from the form.
+            if (!isBuiltin) {
+                finalData.palettes         = document.getElementById('edit-palettes').value;
+                finalData.typography       = document.getElementById('edit-typography').value;
+                finalData.renderBackground = document.getElementById('edit-bg').value;
+                finalData.renderEffects    = document.getElementById('edit-fx').value;
+                finalData.getBorder        = document.getElementById('edit-border').value;
+                finalData.renderLayout     = document.getElementById('edit-layout').value;
+            }
+
+            await setDoc(doc(db, 'card_designs', currentEditorId), finalData, { merge: true });
             await loadAllData();
             
             // Hide editor and return to theme gallery
@@ -671,7 +708,8 @@ function updateEditorPreview() {
                     getBorder:       editBorder.value,
                     renderLayout:    editLayout.value,
                 };
-                theme = _buildThemeFromFirestore(fd);
+                const isOverridden = themeDesign._type === 'overridden' || themeDesign._type === 'custom';
+                theme = isOverridden ? _buildThemeFromFirestore(fd, themeDesign._builtinTheme) : themeDesign._builtinTheme;
             }
             html = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: currentEditorId }, randomizer: MOCK_RNG });
         }
@@ -708,8 +746,7 @@ function openPreviewModal(id) {
     
     currentPreviewIsPng = !!pngDesign;
     const name     = pngDesign ? pngDesign.name : themeDesign.name;
-    const tag      = pngDesign ? pngDesign.tag : themeDesign.tag;
-    const category = pngDesign ? pngDesign.category : themeDesign.category;
+    const tiers    = pngDesign ? pngDesign.tiers : themeDesign.tiers;
     const isActive = pngDesign ? pngDesign.isActive !== false : themeDesign.isActive;
     
     previewTitle.textContent = name || 'Untitled';
@@ -728,8 +765,7 @@ function openPreviewModal(id) {
 
     previewMeta.innerHTML = `
         <span class="design-type-badge ${typeBadgeClass}">${typeLabel}</span>
-        ${tag ? `<span class="design-tag-badge">${tag}</span>` : ''}
-        ${category ? `<span class="design-tag-badge" style="background:rgba(129,140,248,0.12);color:#818cf8;">${category}</span>` : ''}
+        ${(tiers && tiers.length) ? `<span class="design-tag-badge">${tiers.length} Tiers Assigned</span>` : ''}
         <span class="design-status ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Active' : 'Inactive'}</span>
     `;
 
@@ -739,7 +775,8 @@ function openPreviewModal(id) {
             previewCard.innerHTML = `<div style="width:1600px;height:900px;background:url('${pngDesign.bgDataUrl || pngDesign.bgUrl}') center/cover;"></div>`;
         } else {
             let theme = themeDesign._builtinTheme;
-            if (!theme && themeDesign._firestoreData) theme = _buildThemeFromFirestore(themeDesign._firestoreData);
+            const isOverridden = themeDesign._type === 'overridden' || themeDesign._type === 'custom';
+            theme = isOverridden ? _buildThemeFromFirestore(themeDesign._firestoreData, themeDesign._builtinTheme) : themeDesign._builtinTheme;
             if (theme) {
                 const html = composeCard({ theme, data: MOCK_DATA, tier: MOCK_TIER, combo: { ...MOCK_COMBO, themeId: id }, randomizer: MOCK_RNG });
                 previewCard.innerHTML = html;
@@ -971,7 +1008,7 @@ function renderPNGGrid() {
                         <h3 title="${tpl.name}">${tpl.name || 'Untitled'}</h3>
                         <div class="design-badges">
                             <span class="design-type-badge type-custom" style="background:#10b981;color:#fff;">PNG</span>
-                            ${tpl.tag ? `<span class="design-tag-badge">${tpl.tag}</span>` : ''}
+                            ${(tpl.tiers && tpl.tiers.length) ? `<span class="design-tag-badge">${tpl.tiers.length} Tiers</span>` : `<span class="design-tag-badge" style="background:rgba(255,100,100,0.1);color:#ff5555;">No Tiers</span>`}
                         </div>
                     </div>
                     <span class="design-status ${isActive ? 'status-active' : 'status-inactive'}">

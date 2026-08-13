@@ -13,22 +13,37 @@ import { TIER_DEFS } from './config.js';
  * @param {boolean} isProfit  - Whether the trade is profitable
  * @returns {{ id: string, def: object }}
  */
-export function classifyTier(multiplier, roi, isProfit) {
-    let id;
+export function classifyTier(multiplier) {
+    let matchedId = null;
 
-    if (!isProfit || multiplier < 1) {
-        // Loss territory
-        if (multiplier < 0)    id = 'rekt';          // Rekt: went negative (e.g. leveraged loss)
-        else if (multiplier < 0.5)  id = 'medium_loss';  // Heavy Loss: 0 – 0.499x
-        else                        id = 'small_loss';    // Small Loss: 0.5x – 0.999x
-    } else {
-        // Profit territory — multiplier >= 1.0
-        if      (multiplier >= 10)  id = 'legendary';   // 10x+
-        else if (multiplier >= 5)   id = 'mega_win';    // 5x – 9.999x
-        else if (multiplier >= 3)   id = 'big_win';     // 3x – 4.999x
-        else if (multiplier >= 1.5) id = 'solid_win';   // 1.5x – 2.999x
-        else                        id = 'micro_win';   // 1.0x – 1.499x
+    // Strict sequential check against boundaries
+    for (const [id, def] of Object.entries(TIER_DEFS)) {
+        if (multiplier >= def.minMul && multiplier <= def.maxMul) {
+            matchedId = id;
+            break;
+        }
     }
 
-    return { id, def: TIER_DEFS[id] };
+    return { id: matchedId, def: matchedId ? TIER_DEFS[matchedId] : null };
 }
+
+// ── Boundary Tests (Self-Validation) ───────────────
+function _validateTierBoundaries() {
+    const testVals = [
+        1, 1.49, 1.5, 2.49, 2.5, 3.49, 3.5, 4.99, 5, 9.99, 10, 19.99, 20, 
+        39.99, 40, 74.99, 75, 99.99, 100, 199.99, 200, 299.99, 300, 399.99, 
+        400, 499.99, 500, 1000,
+        0.99, 0, -0.99, -1, -1.99, -2, -4.99, -5, -10, -50
+    ];
+    let errors = 0;
+    for (const val of testVals) {
+        const t = classifyTier(val);
+        if (!t.id) {
+            console.error(`[Tier Test] ERROR: Value ${val} matches NO tier.`);
+            errors++;
+        }
+    }
+    if (errors === 0) console.log('[Tier Test] All boundary validations passed.');
+}
+// Run once on load to ensure integrity
+_validateTierBoundaries();

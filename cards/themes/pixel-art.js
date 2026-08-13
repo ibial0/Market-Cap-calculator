@@ -73,10 +73,11 @@ export default {
     },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
-        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
+        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz } = cd;
 
-        const lbl = (t) => `<div style="font-size:12px;font-family:${typo.body};color:${pal.accent};
-            font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;opacity:0.8;">${t}</div>`;
+        const lbl = (t) => `<div style="font-size:14px;font-family:${typo.mono};color:${pal.accent};
+            opacity:0.8;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+            margin-bottom:8px;">${t}</div>`;
         const dval = (v, c) => `<div style="font-size:36px;font-family:${typo.mono};font-weight:700;
             color:${c || pal.text};letter-spacing:-1px;">${v}</div>`;
 
@@ -91,11 +92,6 @@ export default {
                         text-shadow: 0 0 20px ${pal.accent}80;">${tok}</div>
                     ${usr ? `<div style="font-size:20px;font-family:${typo.mono};color:${pal.accent};margin-top:12px;">@${usr}</div>` : ''}
                 </div>
-                ${tierBadge ? `<div style="font-size:16px;font-weight:800;color:${pal.bg};
-                    background:${pal.accent};padding:8px 24px;border-radius:4px;
-                    box-shadow: 0 0 20px ${pal.accent}80;letter-spacing:2px;transform:skewX(-10deg);">
-                    <span style="display:block;transform:skewX(10deg);">${tierBadge}</span>
-                </div>` : ''}
             </div>
 
             <!-- CENTER -->

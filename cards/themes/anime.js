@@ -350,7 +350,7 @@ export default {
     },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
-        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge, emotion } = cd;
+        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, emotion } = cd;
         const level = _getLevel(emotion || 'content');
         const catSVG = _buildCats(level, pal);
 
@@ -360,11 +360,7 @@ export default {
         const dval = (v, c) => `<div style="font-size:34px;font-family:${typo.mono};font-weight:700;
             color:${c || pal.text};white-space:nowrap;line-height:1.1;">${v}</div>`;
 
-        const badge = (isProfit && tierBadge) ? `
-            <div style="display:inline-flex;align-items:center;padding:7px 18px;
-                background:${pal.accent}22;border:1px solid ${pal.accent}50;
-                color:${pal.accent};border-radius:50px;font-size:15px;font-weight:700;
-                letter-spacing:2px;white-space:nowrap;">${tierBadge}</div>` : '';
+        const badge = '';
 
         const usrEl = usr ? `<div style="font-size:22px;font-family:${typo.body};font-weight:500;
             color:${pal.text};opacity:0.5;margin-top:8px;white-space:nowrap;

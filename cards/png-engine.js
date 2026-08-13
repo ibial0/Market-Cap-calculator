@@ -30,14 +30,6 @@ export const DEFAULT_LAYERS = [
         rotation: 0, visible: true, useProfit: false,
     },
     {
-        id: 'tierBadge', label: 'Tier Badge', field: 'tierBadge',
-        x: 80,   y: 166, fontSize: 20,  fontFamily: "'Inter', sans-serif",
-        fontWeight: '700', color: '#ffd700', opacity: 1,
-        textAlign: 'left', letterSpacing: 5,
-        textShadow: '', stroke: '#000000', strokeWidth: 0,
-        rotation: 0, visible: false, useProfit: false,
-    },
-    {
         id: 'mul', label: 'Multiplier (X)', field: 'mul',
         x: 80,   y: 330, fontSize: 130, fontFamily: "'Outfit', sans-serif",
         fontWeight: '900', color: '#00ff88', opacity: 1,
@@ -103,14 +95,13 @@ export function formatCardData(data) {
     return {
         tok:        (data.tokenName || 'CRYPTO').toUpperCase(),
         usr:        data.userName ? '@' + data.userName : '',
-        mul:        data.multiplier.toFixed(2) + 'x',
+        mul:        (isProfit ? '' : '-') + data.multiplier.toFixed(2) + 'x',
         roi:        (isProfit ? '+' : '') + data.roi.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%',
         pStr:       (isProfit ? '+' : '-') + sym + fmtNum(Math.abs(data.profit), rate),
         inv:        sym + fmtNum(data.inv, rate),
         fin:        sym + fmtNum(data.finalValue, rate),
         ent:        sym + fmtNum(data.initMC, rate),
         ext:        sym + fmtNum(data.targetMC, rate),
-        tierBadge:  (data.tierBadge || '').toUpperCase(),
         isProfit,
         profitColor: isProfit ? '#00ff88' : '#ff4b4b',
     };

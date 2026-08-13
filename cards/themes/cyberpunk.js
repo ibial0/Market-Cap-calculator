@@ -79,7 +79,7 @@ export default {
     },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
-        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
+        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz } = cd;
         const ac = pal.accent;
         const P = 72; // generous padding for luxury feel
 
@@ -105,10 +105,7 @@ export default {
                         letter-spacing:-0.03em;">${tok}</div>
                 </div>
                 <div style="text-align:right;margin-top:6px;">
-                    ${tierBadge ? `<div style="font-size:14px;font-weight:700;color:${ac};
-                        letter-spacing:4px;border:1px solid ${ac}50;padding:8px 22px;
-                        margin-bottom:14px;display:inline-block;">${tierBadge}</div>` : ''}
-                    ${usr ? `<div style="font-size:22px;color:${pal.text};opacity:0.45;display:block;margin-top:${tierBadge ? '10px' : '0'};">@${usr}</div>` : ''}
+                    ${usr ? `<div style="font-size:22px;color:${pal.text};opacity:0.45;display:block;">@${usr}</div>` : ''}
                 </div>
             </div>
 

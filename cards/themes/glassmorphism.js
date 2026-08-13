@@ -78,7 +78,7 @@ export default {
     getBorder(pal) { return `border: 1px solid rgba(255,255,255,0.1); border-radius: 32px; box-shadow: inset 0 0 80px rgba(0,0,0,0.5);`; },
 
     renderLayout({ cd, pal, typo, W, H, S }) {
-        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
+        const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz } = cd;
 
         const lbl = (t) => `<div style="font-size:13px;font-family:${typo.body};color:rgba(255,255,255,0.6);
             font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">${t}</div>`;
@@ -91,8 +91,6 @@ export default {
             <!-- TOP -->
             <div style="display:flex;justify-content:center;position:relative;">
                 <div style="text-align:center;">
-                    ${tierBadge ? `<div style="font-size:12px;font-weight:800;color:${pal.accent};
-                        letter-spacing:4px;text-transform:uppercase;margin-bottom:16px;">[ ${tierBadge} ]</div>` : ''}
                     <div style="font-size:${Math.min(tokSz + 20, 100)}px;font-family:${typo.display};
                         font-weight:800;color:#fff;line-height:1;letter-spacing:0.02em;">${tok}</div>
                     ${usr ? `<div style="font-size:22px;color:rgba(255,255,255,0.7);margin-top:12px;">@${usr}</div>` : ''}

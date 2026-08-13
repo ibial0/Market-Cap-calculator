@@ -54,7 +54,7 @@ export function composeCard({ theme, data, tier, combo, randomizer }) {
     // ── Pre-format every data string ─────────────────────
     const tok  = (d.tokenName || 'CRYPTO').toUpperCase();
     const usr  = d.userName  || '';
-    const mul  = d.multiplier.toFixed(2) + 'x';
+    const mul  = (isProfit ? '' : '-') + d.multiplier.toFixed(2) + 'x';
     const roi  = (isProfit ? '+' : '') + d.roi.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%';
     const pStr = (isProfit ? '+' : '-') + sym + fmtNum(Math.abs(d.profit), rate);
     const inv  = sym + fmtNum(d.inv, rate);
@@ -72,8 +72,7 @@ export function composeCard({ theme, data, tier, combo, randomizer }) {
         isProfit, profitColor, tokSz, mulSz,
         sym, rate, emotion,
         tierId:    tier.id,
-        tierLabel: tier.def.label,
-        tierBadge: tier.def.badge,
+        tierLabel: tier.def?.label || '',
     };
 
     // ── Build layers ─────────────────────────────────────
@@ -135,7 +134,7 @@ function _wrapFullLayout(theme, pal, typo, cd) {
 /** Fallback default layout if theme doesn't provide one */
 function _defaultLayout({ cd, pal, typo, W, H, S }) {
     // Just a clean full-width fallback
-    const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz, tierBadge } = cd;
+    const { tok, usr, mul, roi, pStr, inv, ent, ext, isProfit, profitColor, tokSz, mulSz } = cd;
     return `
         <div style="padding:${S}px; height:100%; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">

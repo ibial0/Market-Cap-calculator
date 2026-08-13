@@ -43,36 +43,12 @@ function _esc(s) {
         .replace(/"/g, '&quot;');
 }
 
-// ── Performance Tag → Tier IDs ───────────────────────────
-// Each tag maps ONLY to the exact tiers it should appear for.
-// "Legendary" card will NOT appear for Big Win users, and vice versa.
-const TAG_TIER_MAP = {
-    // ── Exact single-tier tags ──────────────────────────
-    'Legendary':  ['legendary'],                    // 10x+
-    'Mega Win':   ['mega_win'],                     // 5x – 9.99x
-    'Big Win':    ['big_win'],                      // 3x – 4.99x
-    'Good Win':   ['solid_win'],                    // 1.5x – 2.99x
-    'Small Win':  ['micro_win'],                    // 1x – 1.49x
-    'Small Loss': ['small_loss'],                   // 0.5x – 0.99x
-    'Heavy Loss': ['medium_loss', 'rekt'],          // below 0.5x
-
-    // ── Multi-tier range tags ────────────────────────────
-    'All Wins':   ['legendary','mega_win','big_win','solid_win','micro_win'],
-    'Big+ Wins':  ['legendary','mega_win','big_win'],
-    'Mega+ Wins': ['legendary','mega_win'],
-    'All Losses': ['small_loss','medium_loss','rekt'],
-
-    // ── Universal (show for all users) ──────────────────
-    'All Tiers':  ['legendary','mega_win','big_win','solid_win','micro_win','small_loss','medium_loss','rekt'],
-};
 
 // ── State ─────────────────────────────────────────────────
 let template = {
     id: null,
     name: 'New PNG Template',
-    category: 'Custom',
-    tag: 'All Tiers',
-    tiers: [...TAG_TIER_MAP['All Tiers']],
+    tiers: [],
     isActive: false,
     displayMode: 'both',
     borderRadius: 0,
@@ -153,8 +129,12 @@ async function loadTemplate(id) {
 
         // Populate toolbar / settings UI
         document.getElementById('tpl-name-input').value  = template.name || '';
-        document.getElementById('tpl-category').value    = template.category || 'Custom';
-        document.getElementById('tpl-tag').value         = template.tag || 'All Tiers';
+        const tagSelect = document.getElementById('tpl-tiers');
+        if (tagSelect) {
+            Array.from(tagSelect.options).forEach(opt => {
+                opt.selected = template.tiers && template.tiers.includes(opt.value);
+            });
+        }
         document.getElementById('tpl-display').value     = template.displayMode || 'both';
         document.getElementById('tpl-radius').value      = template.borderRadius || 0;
         document.getElementById('tpl-active').checked    = template.isActive || false;
@@ -894,14 +874,9 @@ function setupEvents() {
         markDirty();
     });
 
-    document.getElementById('tpl-category')?.addEventListener('change', (e) => {
-        template.category = e.target.value;
-        markDirty();
-    });
-
-    document.getElementById('tpl-tag')?.addEventListener('change', (e) => {
-        template.tag   = e.target.value;
-        template.tiers = TAG_TIER_MAP[e.target.value] || TAG_TIER_MAP['All Tiers'];
+    document.getElementById('tpl-tiers')?.addEventListener('change', (e) => {
+        const select = e.target;
+        template.tiers = Array.from(select.selectedOptions).map(opt => opt.value);
         markDirty();
     });
 
@@ -1051,9 +1026,7 @@ async function saveTemplate() {
         const now = new Date().toISOString();
         const data = {
             name:         template.name || 'New PNG Template',
-            category:     template.category || 'Custom',
-            tag:          template.tag || 'All Tiers',
-            tiers:        template.tiers || TAG_TIER_MAP['All Tiers'],
+            tiers:        template.tiers || [],
             isActive:     template.isActive || false,
             displayMode:  template.displayMode || 'both',
             borderRadius: template.borderRadius || 0,

@@ -108,39 +108,31 @@
                     Template Settings
                 </div>
 
-                <div class="tpl-setting-row">
-                    <span class="tpl-setting-label">Category</span>
-                    <select class="tpl-setting-select" id="tpl-category">
-                        <option value="Premium">Premium</option>
-                        <option value="Character">Character</option>
-                        <option value="Neon">Neon</option>
-                        <option value="Minimal">Minimal</option>
-                        <option value="Warm">Warm</option>
-                        <option value="Glassmorphism">Glassmorphism</option>
-                        <option value="Custom" selected>Custom</option>
-                    </select>
-                </div>
-
-                <div class="tpl-setting-row">
-                    <span class="tpl-setting-label">Tiers</span>
-                    <select class="tpl-setting-select" id="tpl-tag">
-                        <optgroup label="── Universal ──">
-                            <option value="All Tiers" selected>All Tiers (Everyone)</option>
+                <div class="tpl-setting-row" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                    <span class="tpl-setting-label">Tiers (Hold Ctrl/Cmd to multi-select)</span>
+                    <select class="tpl-setting-select" id="tpl-tiers" multiple style="height: 180px;">
+                        <optgroup label="── Profit Tiers ──">
+                            <option value="profit_1">1X → 1.5X</option>
+                            <option value="profit_2">1.5X → 2.5X</option>
+                            <option value="profit_3">2.5X → 3.5X</option>
+                            <option value="profit_4">3.5X → 5X</option>
+                            <option value="profit_5">5X → 10X</option>
+                            <option value="profit_6">10X → 20X</option>
+                            <option value="profit_7">20X → 40X</option>
+                            <option value="profit_8">40X → 75X</option>
+                            <option value="profit_9">75X → 100X</option>
+                            <option value="profit_10">100X → 200X</option>
+                            <option value="profit_11">200X → 300X</option>
+                            <option value="profit_12">300X → 400X</option>
+                            <option value="profit_13">400X → 500X</option>
+                            <option value="profit_14">500X+</option>
                         </optgroup>
-                        <optgroup label="── Exact Tier ──">
-                            <option value="Legendary">Legendary (10x+)</option>
-                            <option value="Mega Win">Mega Win (5x–9.99x)</option>
-                            <option value="Big Win">Big Win (3x–4.99x)</option>
-                            <option value="Good Win">Good Win (1.5x–2.99x)</option>
-                            <option value="Small Win">Small Win (1x–1.49x)</option>
-                            <option value="Small Loss">Small Loss (0.5x–0.99x)</option>
-                            <option value="Heavy Loss">Heavy Loss (below 0.5x)</option>
-                        </optgroup>
-                        <optgroup label="── Multi-Tier Range ──">
-                            <option value="All Wins">All Wins (1x+)</option>
-                            <option value="Big+ Wins">Big+ Wins (3x+)</option>
-                            <option value="Mega+ Wins">Mega+ Wins (5x+)</option>
-                            <option value="All Losses">All Losses</option>
+                        <optgroup label="── Loss Tiers ──">
+                            <option value="loss_1">0 → -1X</option>
+                            <option value="loss_2">-1X → -2X</option>
+                            <option value="loss_3">-2X → -5X</option>
+                            <option value="loss_4">-5X → -10X</option>
+                            <option value="loss_5">-10X+</option>
                         </optgroup>
                     </select>
                 </div>
