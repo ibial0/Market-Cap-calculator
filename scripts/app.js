@@ -454,12 +454,18 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
 
 // ── Image pre-fetch as blob URL (CORS workaround for mobile) ──
 async function _fetchAsBlob(url) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 8000); // 8 second max
     try {
-        const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+        const resp = await fetch(url, { mode: 'cors', cache: 'force-cache', signal: controller.signal });
+        clearTimeout(id);
         if (!resp.ok) return null;
         const blob = await resp.blob();
         return URL.createObjectURL(blob);
-    } catch { return null; }
+    } catch { 
+        clearTimeout(id);
+        return null; 
+    }
 }
 
 // ── Wait for an img element to fully decode ────────────────
@@ -495,9 +501,12 @@ async function _captureCanvas(node, attempt = 1) {
     const scale = isMobile ? 1.0 : 2.0; // Lower scale on mobile to prevent OOM
 
     try {
-        // Ensure fonts are loaded
+        // Ensure fonts are loaded (with a max timeout in case the API hangs)
         if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
+            await Promise.race([
+                document.fonts.ready,
+                new Promise(r => setTimeout(r, 3000))
+            ]);
         }
 
         // Pre-load all images inside card node
@@ -531,17 +540,20 @@ async function _captureCanvas(node, attempt = 1) {
         // Two animation frames to ensure full paint
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-        const canvas = await html2canvas(node, {
-            scale,
-            backgroundColor:  null,
-            useCORS:          true,
-            allowTaint:       false,
-            logging:          false,
-            width:            node.offsetWidth  || 1600,
-            height:           node.offsetHeight || 900,
-            imageTimeout:     isMobile ? 20000 : 15000,
-            onclone:          null,
-        });
+        const canvas = await Promise.race([
+            html2canvas(node, {
+                scale,
+                backgroundColor:  null,
+                useCORS:          true,
+                allowTaint:       false,
+                logging:          false,
+                width:            node.offsetWidth  || 1600,
+                height:           node.offsetHeight || 900,
+                imageTimeout:     isMobile ? 20000 : 15000,
+                onclone:          null,
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('html2canvas execution timed out (25s)')), 25000))
+        ]);
 
         // Free blob memory
         blobUrls.forEach(u => URL.revokeObjectURL(u));
@@ -686,8 +698,9 @@ async function generateRender(data, isReroll) {
         // 5. Show generated image
         const dataUrl = canvas.toDataURL('image/png');
         await new Promise((resolve, reject) => {
-            img.onload  = resolve;
-            img.onerror = () => reject(new Error('Image display failed'));
+            const id = setTimeout(() => reject(new Error('Image load timeout')), 5000);
+            img.onload  = () => { clearTimeout(id); resolve(); };
+            img.onerror = () => { clearTimeout(id); reject(new Error('Image display failed')); };
             img.src = dataUrl;
         });
 
