@@ -145,19 +145,27 @@ export function composePNGCard(template, data) {
         // Shadow
         const shadowCSS = layer.textShadow ? `text-shadow:${layer.textShadow};` : '';
 
-        // Position anchor based on text alignment
+        // ── Auto-center: dynamic numeric layers ─────────────
+        // Layers like mul, roi, pStr, fin show user-specific values
+        // that change size (e.g., "5x" vs "12.50x"). Force center
+        // alignment at the layer's x coordinate so numbers never
+        // drift left/right when digits increase or decrease.
+        const AUTO_CENTER_FIELDS = ['mul', 'roi', 'pStr', 'fin'];
+        const effectiveAlign = AUTO_CENTER_FIELDS.includes(layer.id)
+            ? 'center'
+            : layer.textAlign;
+
+        // Position anchor based on effective text alignment
         let posCSS;
-        if (layer.textAlign === 'right') {
-            // x = right edge position from left; place using `right`
+        if (effectiveAlign === 'right') {
             posCSS = `right:${CARD_W - layer.x}px;top:${layer.y}px;`;
-        } else if (layer.textAlign === 'center') {
-            // x = center position; offset by 50%
+        } else if (effectiveAlign === 'center') {
             posCSS = `left:${layer.x}px;top:${layer.y}px;transform:translateX(-50%)${layer.rotation ? ` rotate(${layer.rotation}deg)` : ''};`;
         } else {
             posCSS = `left:${layer.x}px;top:${layer.y}px;`;
         }
 
-        const rotateCSS = (layer.rotation && layer.textAlign !== 'center')
+        const rotateCSS = (layer.rotation && effectiveAlign !== 'center')
             ? `transform:rotate(${layer.rotation}deg);`
             : '';
 
@@ -170,7 +178,7 @@ export function composePNGCard(template, data) {
             font-weight:${layer.fontWeight};
             color:${color};
             opacity:${layer.opacity};
-            text-align:${layer.textAlign};
+            text-align:${effectiveAlign};
             letter-spacing:${layer.letterSpacing || 0}px;
             ${shadowCSS}
             ${strokeCSS}

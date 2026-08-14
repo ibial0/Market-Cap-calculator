@@ -10,23 +10,18 @@ import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
 
-// Keep a single readiness promise. Card generation waits for templates to be
-// loaded instead of racing Firestore/network startup on slower mobile devices.
-// Timeout after 10s so slow Firebase doesn't freeze the entire app —
-// if templates fail, the app still works (no PNG cards, built-in themes only).
+// Card asset readiness — RACE between actual load and a max timeout.
+// This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
+// Previously this was allSettled([..., timeout]) which ALWAYS waited 10 full seconds!
 let _assetsLoaded = false;
-const _ASSET_TIMEOUT = 10000;
-const cardAssetsReady = Promise.allSettled([
-    loadCustomThemes(),
-    loadPNGTemplates(),
-    new Promise(r => setTimeout(r, _ASSET_TIMEOUT)), // max wait
-]).then(() => { _assetsLoaded = true; });
+const _assetLoad = Promise.allSettled([loadCustomThemes(), loadPNGTemplates()]);
+const _assetTimeout = new Promise(r => setTimeout(r, 10000));
+const cardAssetsReady = Promise.race([_assetLoad, _assetTimeout])
+    .then(() => { _assetsLoaded = true; });
 
 // ── Tab Visibility: Re-init if returning after long absence ──
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !_assetsLoaded) {
-        // Tab was hidden before assets finished loading.
-        // Re-trigger (png-loader deduplicates concurrent calls).
         loadPNGTemplates().catch(() => {});
         loadCustomThemes().catch(() => {});
     }
@@ -478,6 +473,22 @@ function _waitForImg(el, timeoutMs) {
     });
 }
 
+// ── Wait for html2canvas to be ready (loaded with defer) ──
+// html2canvas uses `defer` so it may not be available the instant
+// the module runs. Poll every 100ms until it appears or timeout.
+function _waitForHtml2Canvas(timeoutMs = 8000) {
+    if (typeof html2canvas !== 'undefined') return Promise.resolve(true);
+    return new Promise(resolve => {
+        const start = Date.now();
+        const check = () => {
+            if (typeof html2canvas !== 'undefined') return resolve(true);
+            if (Date.now() - start >= timeoutMs) return resolve(false);
+            setTimeout(check, 100);
+        };
+        check();
+    });
+}
+
 // ── Core html2canvas capture with retry ─────────────────────
 async function _captureCanvas(node, attempt = 1) {
     const maxAttempts = 3;
@@ -649,11 +660,12 @@ async function generateRender(data, isReroll) {
     img.classList.remove('loaded');
 
     try {
-        // 1. Wait for templates to be ready (handles slow mobile connections)
-        await cardAssetsReady;
-
-        // 2. Build card HTML via engine
-        if (typeof html2canvas === 'undefined') throw new Error('html2canvas not loaded');
+        // 1. Wait for templates AND html2canvas to be ready in parallel
+        const [, h2cReady] = await Promise.all([
+            cardAssetsReady,
+            _waitForHtml2Canvas(8000),
+        ]);
+        if (!h2cReady) throw new Error('html2canvas not loaded');
 
         const engine = new CardEngine(data);
         const html   = engine.buildHTML(isReroll);

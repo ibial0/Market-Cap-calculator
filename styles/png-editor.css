@@ -127,6 +127,14 @@ body.editor-body {
 .tb-btn-save:hover { opacity: 0.9; }
 .tb-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Disabled state for undo/redo ghost buttons */
+.tb-btn-ghost:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.tb-btn:active:not(:disabled) { transform: scale(0.96); }
+
 /* ── Three-column layout ─────────────────────────────────── */
 .editor-body-layout {
     flex: 1;

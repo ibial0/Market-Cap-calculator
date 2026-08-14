@@ -13,7 +13,7 @@ import { DEFAULT_LAYERS } from '../cards/png-engine.js';
 // ── Constants ─────────────────────────────────────────────
 const CARD_W = 1600;
 const CARD_H = 900;
-const SNAP_DISTANCE = 10;
+const SNAP_DISTANCE = 8;
 const TIER_GROUPS = [
     { label: 'Profit ranges', ids: Array.from({ length: 14 }, (_, index) => `profit_${index + 1}`) },
     { label: 'Loss ranges', ids: Array.from({ length: 4 }, (_, index) => `loss_${index + 1}`) },
@@ -26,15 +26,46 @@ const TIER_LABELS = {
     loss_1: '0 → -1X', loss_2: '-1X → -2X', loss_3: '-2X → -5X', loss_4: '-5X+',
 };
 
-const FONT_OPTIONS = [
-    { label: 'Inter', value: "'Inter', sans-serif" },
-    { label: 'Outfit', value: "'Outfit', sans-serif" },
-    { label: 'Roboto Mono', value: "'Roboto Mono', monospace" },
-    { label: 'Bebas Neue', value: "'Bebas Neue', cursive" },
-    { label: 'Montserrat', value: "'Montserrat', sans-serif" },
-    { label: 'Poppins', value: "'Poppins', sans-serif" },
-    { label: 'Orbitron', value: "'Orbitron', sans-serif" },
-    { label: 'Rajdhani', value: "'Rajdhani', sans-serif" },
+// ── Font library ───────────────────────────────────────────
+// All fonts below are from Google Fonts. Custom imported fonts
+// (via Import Font URL) are injected at runtime and appended here.
+let FONT_OPTIONS = [
+    // Sans-serif
+    { label: 'Inter',           value: "'Inter', sans-serif" },
+    { label: 'Outfit',          value: "'Outfit', sans-serif" },
+    { label: 'Montserrat',      value: "'Montserrat', sans-serif" },
+    { label: 'Poppins',         value: "'Poppins', sans-serif" },
+    { label: 'Raleway',         value: "'Raleway', sans-serif" },
+    { label: 'Nunito',          value: "'Nunito', sans-serif" },
+    { label: 'Space Grotesk',   value: "'Space Grotesk', sans-serif" },
+    { label: 'DM Sans',         value: "'DM Sans', sans-serif" },
+    { label: 'Exo 2',           value: "'Exo 2', sans-serif" },
+    { label: 'Barlow',          value: "'Barlow', sans-serif" },
+    { label: 'Kanit',           value: "'Kanit', sans-serif" },
+    // Monospace
+    { label: 'Roboto Mono',     value: "'Roboto Mono', monospace" },
+    { label: 'Space Mono',      value: "'Space Mono', monospace" },
+    { label: 'Share Tech Mono', value: "'Share Tech Mono', monospace" },
+    // Display / Stylized
+    { label: 'Bebas Neue',      value: "'Bebas Neue', cursive" },
+    { label: 'Orbitron',        value: "'Orbitron', sans-serif" },
+    { label: 'Rajdhani',        value: "'Rajdhani', sans-serif" },
+    { label: 'Exo',             value: "'Exo', sans-serif" },
+    { label: 'Russo One',       value: "'Russo One', sans-serif" },
+    { label: 'Black Ops One',   value: "'Black Ops One', cursive" },
+    { label: 'Teko',            value: "'Teko', sans-serif" },
+    { label: 'Audiowide',       value: "'Audiowide', cursive" },
+    { label: 'Nasalization',    value: "'Nasalization', sans-serif" },
+    // Script / Handwritten
+    { label: 'Dancing Script',  value: "'Dancing Script', cursive" },
+    { label: 'Pacifico',        value: "'Pacifico', cursive" },
+    { label: 'Righteous',       value: "'Righteous', cursive" },
+    // Serif
+    { label: 'Playfair Display',value: "'Playfair Display', serif" },
+    { label: 'Lora',            value: "'Lora', serif" },
+    // Pixel / Retro
+    { label: 'Press Start 2P',  value: "'Press Start 2P', cursive" },
+    { label: 'VT323',           value: "'VT323', monospace" },
 ];
 
 const MOCK_DATA = {
@@ -79,6 +110,48 @@ let isDirty         = false;
 
 // Drag state
 let dragState = null; // null | { layerId, startX, startY, origX, origY }
+
+// ── Undo / Redo History ───────────────────────────────────
+const MAX_HISTORY = 50;
+let _history    = []; // array of JSON snapshots of template.layers
+let _historyIdx = -1;
+
+function _snapshot() {
+    // Deep-clone the current layers state
+    const snap = JSON.stringify(template.layers);
+    // Discard any forward history when a new action branches off
+    _history = _history.slice(0, _historyIdx + 1);
+    _history.push(snap);
+    if (_history.length > MAX_HISTORY) {
+        _history.shift();
+    } else {
+        _historyIdx++;
+    }
+    _updateUndoRedoBtns();
+}
+
+function _undo() {
+    if (_historyIdx <= 0) return;
+    _historyIdx--;
+    template.layers = JSON.parse(_history[_historyIdx]);
+    renderAll();
+    _updateUndoRedoBtns();
+}
+
+function _redo() {
+    if (_historyIdx >= _history.length - 1) return;
+    _historyIdx++;
+    template.layers = JSON.parse(_history[_historyIdx]);
+    renderAll();
+    _updateUndoRedoBtns();
+}
+
+function _updateUndoRedoBtns() {
+    const undoBtn = document.getElementById('btn-undo');
+    const redoBtn = document.getElementById('btn-redo');
+    if (undoBtn) undoBtn.disabled = _historyIdx <= 0;
+    if (redoBtn) redoBtn.disabled = _historyIdx >= _history.length - 1;
+}
 
 // ── DOM refs ─────────────────────────────────────────────
 const elCanvas      = () => document.getElementById('editor-canvas');
@@ -236,13 +309,29 @@ function layerAnchor(layer) {
 }
 
 function snapLayerPosition(layer, x, y) {
-    const targetsX = [{ value: 0, label: 'left edge' }, { value: CARD_W / 2, label: 'center' }, { value: CARD_W, label: 'right edge' }];
-    const targetsY = [{ value: 0, label: 'top edge' }, { value: CARD_H / 2, label: 'middle' }, { value: CARD_H, label: 'bottom edge' }];
+    // Canvas edge and center snap targets
+    const targetsX = [
+        { value: 0,          label: 'left edge' },
+        { value: CARD_W / 2, label: 'center' },
+        { value: CARD_W,     label: 'right edge' },
+    ];
+    const targetsY = [
+        { value: 0,          label: 'top edge' },
+        { value: CARD_H / 2, label: 'middle' },
+        { value: CARD_H,     label: 'bottom edge' },
+    ];
 
+    // Add snap targets from every other visible layer:
+    // their left-anchor (x), horizontal center, and right-anchor,
+    // plus their top (y), vertical center, and bottom.
     template.layers?.forEach(other => {
         if (other.id === layer.id || !other.visible) return;
-        targetsX.push({ value: layerAnchor(other), label: `${other.label} aligned` });
-        targetsY.push({ value: other.y, label: `${other.label} aligned` });
+        const ox = other.x;
+        const oy = other.y;
+        targetsX.push({ value: ox,       label: `${other.label} left` });
+        targetsX.push({ value: ox + (other.fontSize || 0) / 2, label: `${other.label} center` });
+        targetsY.push({ value: oy,       label: `${other.label} top` });
+        targetsY.push({ value: oy + (other.fontSize || 0) / 2, label: `${other.label} center` });
     });
 
     const nearest = (value, targets) => targets.reduce((best, target) => {
@@ -477,6 +566,7 @@ function renderLayerList() {
             refreshLayerElement(layer.id);
             renderLayerList();
             if (selectedLayerId === layer.id) renderPropsPanel(layer.id);
+            _snapshot();
             markDirty();
         });
 
@@ -709,6 +799,10 @@ function _bindPropEvents(layer) {
     const bind = (id, prop, transform) => {
         const el = document.getElementById(id);
         if (!el) return;
+        el.addEventListener('change', (e) => {
+            // Snapshot on commit (change) so every keystroke doesn't flood history
+            _snapshot();
+        });
         el.addEventListener('input', (e) => {
             const val = transform ? transform(e.target.value) : e.target.value;
             layer[prop] = val;
@@ -733,6 +827,7 @@ function _bindPropEvents(layer) {
     // Static label text: save to layer.staticText (not a regular data field)
     const staticInp = document.getElementById('prop-static-text');
     if (staticInp) {
+        staticInp.addEventListener('change', () => { _snapshot(); });
         staticInp.addEventListener('input', (e) => {
             layer.staticText = e.target.value;
             refreshLayerElement(layer.id);
@@ -745,6 +840,7 @@ function _bindPropEvents(layer) {
     const colorPicker = document.getElementById('prop-color');
     const colorHex    = document.getElementById('prop-color-hex');
     if (colorPicker) {
+        colorPicker.addEventListener('change', () => { _snapshot(); });
         colorPicker.addEventListener('input', (e) => {
             layer.color = e.target.value;
             if (colorHex) colorHex.value = e.target.value;
@@ -753,6 +849,7 @@ function _bindPropEvents(layer) {
         });
     }
     if (colorHex) {
+        colorHex.addEventListener('change', () => { _snapshot(); });
         colorHex.addEventListener('input', (e) => {
             const v = e.target.value.trim();
             if (/^#[0-9a-f]{3,8}$/i.test(v)) {
@@ -774,13 +871,20 @@ function _bindPropEvents(layer) {
         refreshLayerElement(layer.id);
         markDirty();
     };
-    if (opRange) opRange.addEventListener('input', e => syncOp(e.target.value));
-    if (opNum)   opNum.addEventListener('input',   e => syncOp(e.target.value));
+    if (opRange) {
+        opRange.addEventListener('change', () => { _snapshot(); });
+        opRange.addEventListener('input', e => syncOp(e.target.value));
+    }
+    if (opNum) {
+        opNum.addEventListener('change', () => { _snapshot(); });
+        opNum.addEventListener('input',   e => syncOp(e.target.value));
+    }
 
     // Stroke color
     const strokePicker = document.getElementById('prop-stroke-color');
     const strokeHex    = document.getElementById('prop-stroke-hex');
     if (strokePicker) {
+        strokePicker.addEventListener('change', () => { _snapshot(); });
         strokePicker.addEventListener('input', (e) => {
             layer.stroke = e.target.value;
             if (strokeHex) strokeHex.value = e.target.value;
@@ -789,6 +893,7 @@ function _bindPropEvents(layer) {
         });
     }
     if (strokeHex) {
+        strokeHex.addEventListener('change', () => { _snapshot(); });
         strokeHex.addEventListener('input', (e) => {
             const v = e.target.value.trim();
             if (/^#[0-9a-f]{3,8}$/i.test(v)) {
@@ -808,6 +913,7 @@ function _bindPropEvents(layer) {
         useProfit.addEventListener('change', (e) => {
             layer.useProfit = e.target.checked;
             refreshLayerElement(layer.id);
+            _snapshot();
             markDirty();
         });
     }
@@ -819,6 +925,7 @@ function _bindPropEvents(layer) {
             layer.visible = e.target.checked;
             refreshLayerElement(layer.id);
             renderLayerList();
+            _snapshot();
             markDirty();
         });
     }
@@ -831,6 +938,7 @@ function _bindPropEvents(layer) {
             const inp = document.getElementById('prop-shadow');
             if (inp) inp.value = val;
             refreshLayerElement(layer.id);
+            _snapshot();
             markDirty();
         });
     });
@@ -873,6 +981,11 @@ function setupEvents() {
         if (!dragState) return;
         const el = Array.from(elCanvas()?.querySelectorAll('.canvas-layer') || []).find(node => node.dataset.id === dragState.layerId);
         if (el) el.classList.remove('dragging');
+        // Only snapshot if the layer actually moved
+        const layer = getLayer(dragState.layerId);
+        if (layer && (layer.x !== dragState.origX || layer.y !== dragState.origY)) {
+            _snapshot();
+        }
         dragState = null;
         clearAlignmentGuides();
     });
@@ -894,7 +1007,16 @@ function setupEvents() {
         markDirty();
     }, { passive: false });
 
-    document.addEventListener('touchend', () => { dragState = null; clearAlignmentGuides(); });
+    document.addEventListener('touchend', () => {
+        if (dragState) {
+            const layer = getLayer(dragState.layerId);
+            if (layer && (layer.x !== dragState.origX || layer.y !== dragState.origY)) {
+                _snapshot();
+            }
+        }
+        dragState = null;
+        clearAlignmentGuides();
+    });
 
     // Click on canvas bg (not a layer) → deselect
     elCanvas()?.addEventListener('click', (e) => {
@@ -945,6 +1067,7 @@ function setupEvents() {
         if (elPropsForm()) elPropsForm().style.display = 'none';
         if (elPropsName()) elPropsName().textContent = 'Properties';
         showToast('Layers reset to defaults.');
+        _snapshot();
         markDirty();
     });
 
@@ -964,6 +1087,7 @@ function setupEvents() {
         });
         renderAll();
         showToast(`✅ ${fixed} layers centered at card midpoint. Save to apply.`, 'success');
+        _snapshot();
         markDirty();
     });
 
@@ -995,8 +1119,13 @@ function setupEvents() {
         renderAll();
         selectLayer(newId);
         showToast('Static label added. Type your text in the Properties panel.');
+        _snapshot();
         markDirty();
     });
+
+    // ── Undo / Redo buttons ──
+    document.getElementById('btn-undo')?.addEventListener('click', () => { _undo(); });
+    document.getElementById('btn-redo')?.addEventListener('click', () => { _redo(); });
 
     document.getElementById('btn-save')?.addEventListener('click', () => {
         saveTemplate();
@@ -1031,6 +1160,18 @@ function setupEvents() {
             e.preventDefault();
             saveTemplate();
         }
+        // Undo: Ctrl+Z
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+            e.preventDefault();
+            _undo();
+            return;
+        }
+        // Redo: Ctrl+Y or Ctrl+Shift+Z
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+            e.preventDefault();
+            _redo();
+            return;
+        }
         // Arrow keys to nudge selected layer
         if (selectedLayerId && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
             const layer = getLayer(selectedLayerId);
@@ -1046,6 +1187,7 @@ function setupEvents() {
             if (px) px.value = layer.x;
             if (py) py.value = layer.y;
             if (elPosInfo()) elPosInfo().textContent = `X: ${layer.x}  Y: ${layer.y}`;
+            _snapshot();
             markDirty();
             e.preventDefault();
         }
@@ -1272,4 +1414,11 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 </style>`);
 
 // ── Start ──────────────────────────────────────────────────
-init();
+// Take an initial snapshot once layers are loaded so undo always has a base state
+const _origInit = init;
+async function _initWithSnapshot() {
+    await _origInit();
+    // After init, layers are set and renderAll() has been called — take base snapshot
+    if (template.layers) _snapshot();
+}
+_initWithSnapshot();

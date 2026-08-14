@@ -44,17 +44,17 @@ export const calcDCA = (trades) => {
     const holdAmount = totalEntryAmount - totalExitAmount;
     const holdValue  = holdAmount > 0 && avgEntryMC > 0 ? holdAmount * (avgExitMC || avgEntryMC) / avgEntryMC * (totalEntryAmount > 0 ? avgEntryMC : 1) : holdAmount;
 
-    // Realized P&L = totalExited - cost_basis_of_exits
-    const costBasisOfExits = avgEntryMC > 0 && totalExitAmount > 0
-        ? totalExitAmount * (avgEntryMC / (avgEntryMC || 1)) // simplified: exits proportion
-        : 0;
-    
-    // Accurate realized PnL
-    // If avg entry MC and avg exit MC known: realized P&L = exitAmount * (exitMC/entryMC - 1)
-    const realizedPnL = avgEntryMC > 0 && avgExitMC > 0
-        ? totalExitAmount * (avgExitMC / avgEntryMC - 1)
-        : 0;
+    // ── Realized P&L ────────────────────────────────────────
+    // Simple and correct: money out minus money in.
+    // totalExitAmount = sum of USD received from all sells
+    // totalEntryAmount = sum of USD spent on all buys
+    // Realized P&L = what you got back - what you put in
+    const realizedPnL = totalExitAmount - totalEntryAmount;
+
+    // ROI = profit as % of what was invested
     const roi = totalEntryAmount > 0 ? (realizedPnL / totalEntryAmount) * 100 : 0;
+
+    // Hold ROI = unrealized gain % based on MC movement
     const holdROI = avgEntryMC > 0 && avgExitMC > 0 ? (avgExitMC / avgEntryMC - 1) * 100 : 0;
 
     return {
