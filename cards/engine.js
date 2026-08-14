@@ -115,7 +115,7 @@ export class CardEngine {
 
         // ── Strict: NO fallback. If no designs, say so clearly. ──
         if (pool.length === 0) {
-            return this._errorCard(`কোনো ডিজাইন পাওয়া যায়নি এই রেঞ্জের জন্য।<br><small style="opacity:0.6;">No card templates configured for this tier (${tierId})</small>`);
+            return this._errorCard(`No card designs available for this range.<br><small style="opacity:0.6;">No card templates configured for tier: ${tierId}</small>`);
         }
 
         // ── If reroll requested and only 1 design exists → sentinel ──

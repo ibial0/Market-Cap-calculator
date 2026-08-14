@@ -948,6 +948,25 @@ function setupEvents() {
         markDirty();
     });
 
+    // ── Fix Alignment: center dynamic value layers ─────────
+    // Sets mul, roi, pStr to textAlign:center at x:800 (card midpoint)
+    // so numbers of any length stay centered relative to each other.
+    document.getElementById('btn-fix-center')?.addEventListener('click', () => {
+        if (!template.layers) return;
+        const CENTER_LAYERS = ['mul', 'roi', 'pStr', 'fin'];
+        let fixed = 0;
+        template.layers.forEach(layer => {
+            if (CENTER_LAYERS.includes(layer.id)) {
+                layer.textAlign = 'center';
+                layer.x = CARD_W / 2; // 800px — horizontal center
+                fixed++;
+            }
+        });
+        renderAll();
+        showToast(`✅ ${fixed} layers centered at card midpoint. Save to apply.`, 'success');
+        markDirty();
+    });
+
     // ── Add Static Label Layer ─────────────────────────────
     document.getElementById('btn-add-static-label')?.addEventListener('click', () => {
         if (!template.layers) return;

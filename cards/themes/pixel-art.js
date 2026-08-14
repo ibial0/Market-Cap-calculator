@@ -86,7 +86,7 @@ export default {
 
             <!-- TOP -->
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div style="border-left: 4px solid ${pal.accent}; padding-left: 20px;">
+                <div style="border-left: 4px solid ${pal.accent}; padding-left: 20px; display:inline-flex; flex-direction:column; align-items:center;">
                     <div style="font-size:${Math.min(tokSz, 80)}px;font-family:${typo.display};
                         font-weight:900;color:${pal.text};line-height:1;letter-spacing:0.02em;
                         text-shadow: 0 0 20px ${pal.accent}80;">${tok}</div>

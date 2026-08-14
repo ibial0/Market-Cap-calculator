@@ -364,7 +364,7 @@ export default {
 
         const usrEl = usr ? `<div style="font-size:22px;font-family:${typo.body};font-weight:500;
             color:${pal.text};opacity:0.5;margin-top:8px;white-space:nowrap;
-            overflow:hidden;text-overflow:ellipsis;">@${usr}</div>` : '';
+            text-align:center;">@${usr}</div>` : '';
 
         return `<div style="width:100%;height:100%;display:flex;box-sizing:border-box;">
 
@@ -386,7 +386,7 @@ export default {
 
                 <!-- TOP: Token + badge/user -->
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
-                    <div style="flex:1;min-width:0;overflow:hidden;">
+                    <div style="display:inline-flex;flex-direction:column;align-items:center;min-width:0;overflow:hidden;">
                         <div style="font-size:${Math.min(tokSz, 74)}px;font-family:${typo.display};
                             font-weight:${typo.displayWeight};color:${pal.accent};
                             line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tok}</div>

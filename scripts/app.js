@@ -560,7 +560,7 @@ if (generateBtn) {
         }
 
         if (realInit <= 0 || inv <= 0 || realTarget <= 0) {
-            _showToast('দয়া করে Initial MC, Target MC এবং Investment এর সঠিক মান দিন।', 'warning');
+            _showToast('Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
             return;
         }
 
@@ -645,7 +645,7 @@ async function generateRender(data, skipId) {
         if (html === CARD_ONLY_ONE_DESIGN) {
             spinner.style.display = 'none';
             isGenerating = false;
-            _showToast('এই রেঞ্জে মাত্র একটি ডিজাইন আছে। নতুন কোনো ডিজাইন এখন পাওয়া যাচ্ছে না।', 'info', 5000);
+            _showToast('Only one design is available for this range. No other designs found.', 'info', 5000);
             return;
         }
 
@@ -678,8 +678,8 @@ async function generateRender(data, skipId) {
         isGenerating = false;
 
         const msg = err.message?.includes('html2canvas')
-            ? 'Renderer লোড হয়নি। পেজ রিফ্রেশ করুন।'
-            : 'কার্ড তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।';
+            ? 'Renderer not loaded. Please refresh the page.'
+            : 'Card generation failed. Please try again.';
         _showToast(msg, 'error', 6000);
     }
 }

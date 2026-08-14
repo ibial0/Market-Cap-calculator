@@ -30,26 +30,29 @@ export const DEFAULT_LAYERS = [
         rotation: 0, visible: true, useProfit: false,
     },
     {
+        // Center-aligned at card midpoint so any number length stays centered
         id: 'mul', label: 'Multiplier (X)', field: 'mul',
-        x: 80,   y: 330, fontSize: 130, fontFamily: "'Outfit', sans-serif",
+        x: 800,  y: 300, fontSize: 130, fontFamily: "'Outfit', sans-serif",
         fontWeight: '900', color: '#00ff88', opacity: 1,
-        textAlign: 'left', letterSpacing: -2,
+        textAlign: 'center', letterSpacing: -2,
         textShadow: '0 0 48px rgba(0,255,136,0.5)', stroke: '#000000', strokeWidth: 0,
         rotation: 0, visible: true, useProfit: true,
     },
     {
+        // Also center-aligned to match multiplier
         id: 'roi', label: 'ROI %', field: 'roi',
-        x: 80,   y: 490, fontSize: 52,  fontFamily: "'Inter', sans-serif",
+        x: 800,  y: 470, fontSize: 52,  fontFamily: "'Inter', sans-serif",
         fontWeight: '700', color: '#00ff88', opacity: 1,
-        textAlign: 'left', letterSpacing: 0,
+        textAlign: 'center', letterSpacing: 0,
         textShadow: '', stroke: '#000000', strokeWidth: 0,
         rotation: 0, visible: false, useProfit: true,
     },
     {
+        // Also center-aligned to match multiplier
         id: 'pStr', label: 'Profit / Loss', field: 'pStr',
-        x: 1220, y: 796, fontSize: 32,  fontFamily: "'Inter', sans-serif",
+        x: 800,  y: 460, fontSize: 52,  fontFamily: "'Inter', sans-serif",
         fontWeight: '700', color: '#00ff88', opacity: 1,
-        textAlign: 'left', letterSpacing: 0,
+        textAlign: 'center', letterSpacing: 0,
         textShadow: '', stroke: '#000000', strokeWidth: 0,
         rotation: 0, visible: true, useProfit: true,
     },

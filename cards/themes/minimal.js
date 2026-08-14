@@ -81,7 +81,7 @@ export default {
                 
                 <!-- TOP: Token & User -->
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div>
+                    <div style="display:inline-flex;flex-direction:column;align-items:center;">
                         <div style="font-size:${Math.min(tokSz + 10, 80)}px;font-family:${typo.display};
                             font-weight:700;color:${pal.text};line-height:1;letter-spacing:-0.04em;">${tok}</div>
                         ${usr ? `<div style="font-size:20px;color:${pal.text};opacity:0.5;margin-top:8px;">@${usr}</div>` : ''}
