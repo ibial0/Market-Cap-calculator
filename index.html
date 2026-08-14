@@ -418,5 +418,45 @@
 
     <!-- Main JS Application Controller -->
     <script type="module" src="./scripts/app.js"></script>
+
+    <!-- PWA: Service Worker + Splash Screen Timeout -->
+    <script>
+        // ── Service Worker Registration ─────────────────────
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    // When a new SW is waiting, activate it immediately
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker?.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
+                }).catch(e => console.warn('[SW] Registration failed:', e));
+
+                // When a new SW takes control, reload to get fresh assets
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
+            });
+        }
+
+        // ── PWA Splash Screen Timeout ───────────────────────
+        // If the app loading overlay is still visible after 6 seconds
+        // (e.g., Firebase is unreachable on cold PWA launch),
+        // remove it forcefully so the user isn't stuck on the logo.
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const overlay = document.getElementById('app-loading-overlay');
+                if (overlay) {
+                    overlay.style.opacity = '0';
+                    overlay.style.transition = 'opacity 0.4s ease';
+                    setTimeout(() => overlay.remove(), 400);
+                }
+            }, 6000);
+        });
+    </script>
 </body>
 </html>

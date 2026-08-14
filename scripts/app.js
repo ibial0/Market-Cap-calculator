@@ -12,7 +12,25 @@ import { loadPNGTemplates } from '../cards/png-loader.js';
 
 // Keep a single readiness promise. Card generation waits for templates to be
 // loaded instead of racing Firestore/network startup on slower mobile devices.
-const cardAssetsReady = Promise.allSettled([loadCustomThemes(), loadPNGTemplates()]);
+// Timeout after 10s so slow Firebase doesn't freeze the entire app —
+// if templates fail, the app still works (no PNG cards, built-in themes only).
+let _assetsLoaded = false;
+const _ASSET_TIMEOUT = 10000;
+const cardAssetsReady = Promise.allSettled([
+    loadCustomThemes(),
+    loadPNGTemplates(),
+    new Promise(r => setTimeout(r, _ASSET_TIMEOUT)), // max wait
+]).then(() => { _assetsLoaded = true; });
+
+// ── Tab Visibility: Re-init if returning after long absence ──
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !_assetsLoaded) {
+        // Tab was hidden before assets finished loading.
+        // Re-trigger (png-loader deduplicates concurrent calls).
+        loadPNGTemplates().catch(() => {});
+        loadCustomThemes().catch(() => {});
+    }
+});
 
 // ═══════════════════════════════════════════════════════════
 //  DOM Elements
@@ -533,7 +551,6 @@ async function _captureCanvas(node, attempt = 1) {
 }
 
 let isGenerating = false;
-let currentCardId = null; // track the currently shown design ID
 const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
 
@@ -590,7 +607,7 @@ if (generateBtn) {
         generateBtn.style.opacity = '0.7';
 
         try {
-            await generateRender(data, null);
+            await generateRender(data, false); // false = first generate, not a reroll
         } finally {
             generateBtn.innerHTML = origHtml;
             generateBtn.disabled  = false;
@@ -612,7 +629,7 @@ if (rerollBtn) {
         rerollBtn.style.opacity = '0.7';
 
         try {
-            await generateRender(window.lastData, currentCardId);
+            await generateRender(window.lastData, true); // true = reroll
         } finally {
             rerollBtn.innerHTML = origHtml;
             rerollBtn.disabled  = false;
@@ -621,7 +638,7 @@ if (rerollBtn) {
     });
 }
 
-async function generateRender(data, skipId) {
+async function generateRender(data, isReroll) {
     isGenerating = true;
     window.lastData = data;
     const node    = document.getElementById('card-node');
@@ -639,21 +656,15 @@ async function generateRender(data, skipId) {
         if (typeof html2canvas === 'undefined') throw new Error('html2canvas not loaded');
 
         const engine = new CardEngine(data);
-        const html   = engine.buildHTML(skipId);
+        const html   = engine.buildHTML(isReroll);
 
-        // 3. Handle "only one design" reroll case
+        // 3. Handle "only one design" sentinel — show toast, keep current card visible
         if (html === CARD_ONLY_ONE_DESIGN) {
             spinner.style.display = 'none';
             isGenerating = false;
-            _showToast('Only one design is available for this range. No other designs found.', 'info', 5000);
+            _showToast('No other designs available for this range. Only one card is assigned here.', 'info', 5000);
             return;
         }
-
-        // Track current design ID for reroll anti-repeat
-        const idMatch = html.match(/id="card-root"|data-design-id="([^"]+)"/);
-        // Pull the design ID from the engine queue key (last stored)
-        // We read from session storage to find what was just picked
-        currentCardId = skipId; // engine already advanced queue
 
         node.innerHTML = html;
 
