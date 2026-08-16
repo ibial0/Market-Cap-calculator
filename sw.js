@@ -11,7 +11,7 @@
 //  waiting for the network for every static file.
 // ═══════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v8';
 const STATIC_CACHE  = `mc-static-${CACHE_VERSION}`;
 const API_CACHE     = `mc-api-${CACHE_VERSION}`;
 

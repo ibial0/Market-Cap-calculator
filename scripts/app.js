@@ -622,7 +622,6 @@ if (generateBtn) {
         };
 
         previewOverlay.classList.add('active');
-        currentCardId = null; // new generate — reset tracking
 
         const origHtml = generateBtn.innerHTML;
         generateBtn.innerHTML = 'Generating…';
