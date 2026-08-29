@@ -145,15 +145,19 @@ export function composePNGCard(template, data) {
         // Shadow
         const shadowCSS = layer.textShadow ? `text-shadow:${layer.textShadow};` : '';
 
-        // ── Auto-center: dynamic numeric layers ─────────────
-        // Layers like mul, roi, pStr, fin show user-specific values
-        // that change size (e.g., "5x" vs "12.50x"). Force center
-        // alignment at the layer's x coordinate so numbers never
-        // drift left/right when digits increase or decrease.
-        const AUTO_CENTER_FIELDS = ['mul', 'roi', 'pStr', 'fin'];
-        const effectiveAlign = AUTO_CENTER_FIELDS.includes(layer.id)
-            ? 'center'
-            : layer.textAlign;
+        // ── Auto-center: ALL dynamic text layers ─────────────
+        // User positions layers in the editor with mock data.
+        // When actual data has different length (e.g. "BITCOIN" vs
+        // "TREEGJUFV", or "12.50x" vs "0.50x"), left-aligned text
+        // shifts visually. Force center alignment for ALL layers
+        // so the x coordinate = center point of text. This ensures
+        // text ALWAYS stays at the position the user set, regardless
+        // of content length.
+        // Static labels (admin-set text that never changes) keep
+        // their original alignment since their content is fixed.
+        const effectiveAlign = (layer.field === 'static_label')
+            ? layer.textAlign
+            : 'center';
 
         // Position anchor based on effective text alignment
         let posCSS;

@@ -446,10 +446,17 @@ function buildLayerElement(layer) {
         ? `-webkit-text-stroke:${layer.strokeWidth}px ${layer.stroke || '#000'};paint-order:stroke fill;`
         : '';
 
+    // ── Force center alignment for ALL dynamic layers ────
+    // Must match png-engine.js so editor preview = generated output.
+    // Static labels keep their original alignment (content is fixed).
+    const effectiveAlign = (layer.field === 'static_label')
+        ? layer.textAlign
+        : 'center';
+
     let posCSS;
-    if (layer.textAlign === 'right') {
+    if (effectiveAlign === 'right') {
         posCSS = `right:${CARD_W - layer.x}px;top:${layer.y}px;`;
-    } else if (layer.textAlign === 'center') {
+    } else if (effectiveAlign === 'center') {
         posCSS = `left:${layer.x}px;top:${layer.y}px;transform:translateX(-50%)${layer.rotation ? ` rotate(${layer.rotation}deg)` : ''};`;
     } else {
         posCSS = `left:${layer.x}px;top:${layer.y}px;${layer.rotation ? `transform:rotate(${layer.rotation}deg);` : ''}`;
@@ -463,7 +470,7 @@ function buildLayerElement(layer) {
         font-weight:${layer.fontWeight};
         color:${color};
         opacity:${layer.opacity};
-        text-align:${layer.textAlign};
+        text-align:${effectiveAlign};
         letter-spacing:${layer.letterSpacing || 0}px;
         text-shadow:${layer.textShadow || 'none'};
         ${strokeCSS}
