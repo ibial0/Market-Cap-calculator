@@ -63,6 +63,9 @@ self.addEventListener('fetch', event => {
     // Skip non-http requests (chrome-extension, etc.)
     if (!url.startsWith('http')) return;
 
+    // ── Our own /api/* serverless functions → always network, never cache ──
+    if (url.includes('/api/')) return;
+
     // ── Firebase / Firestore / Auth → Network-First ────────
     if (
         url.includes('firebaseio.com') ||

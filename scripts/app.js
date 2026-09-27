@@ -9,6 +9,7 @@ import { initProfile } from '../ui/profile.js';
 import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
+import { initWallet } from './wallet.js';
 
 // Card asset readiness — RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
@@ -377,6 +378,7 @@ initProfile();
 initJournal();
 bindTradeModal();
 bindAnalysisModal();
+initWallet();
 
 // Close new-token-cancel-x button
 const newTokenCancelX = document.getElementById('new-token-cancel-x');
