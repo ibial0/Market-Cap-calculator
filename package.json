@@ -1,8 +1,4 @@
 {
   "name": "crypto-mc-calc",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "build": "echo 'No build step required for static frontend'"
-  }
+  "version": "1.0.0"
 }
