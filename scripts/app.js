@@ -10,7 +10,7 @@ import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
 import { initWallet } from './wallet.js';
-import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount } from '../cards/bg-loader.js';
+import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount, getAllBackgrounds } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
 import { EMOTIONS } from '../cards/emotions.js';
 
@@ -820,7 +820,6 @@ if (changeBgBtn) {
 }
 
 // ── Populate Sidebar Grid ──────────────────────────────────
-import { getAllBackgrounds } from '../cards/bg-loader.js';
 
 function _populateSidebar() {
     if (!bgSidebarGrid) return;
