@@ -53,6 +53,36 @@ export function getNextBackground() {
 }
 
 /**
+ * Get a random background filtered by emotion category.
+ * Falls back to any background if none match the emotion.
+ * @param {string} emotionId - Emotion category ID (e.g. 'legendary', 'rekt')
+ * @returns {{ id:string, dataUrl:string, imageUrl:string, emotion:string }|null}
+ */
+export function getNextBackgroundByEmotion(emotionId) {
+    if (_cache.length === 0) return null;
+
+    // Filter by emotion
+    const filtered = _cache.filter(bg => bg.emotion === emotionId);
+
+    if (filtered.length === 0) {
+        // Fallback: return any background
+        return getNextBackground();
+    }
+
+    if (filtered.length === 1) {
+        _lastShownId = filtered[0].id;
+        return filtered[0];
+    }
+
+    // Pick random from filtered, avoid last shown
+    let pool = filtered.filter(bg => bg.id !== _lastShownId);
+    if (pool.length === 0) pool = filtered;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    _lastShownId = pick.id;
+    return pick;
+}
+
+/**
  * Check if there are more backgrounds to show (different from current).
  * Used to decide whether to show "Change Background" or "No more available".
  * @param {string|null} currentBgId - ID of the currently displayed background
@@ -67,6 +97,11 @@ export function hasMoreBackgrounds(currentBgId) {
 /** Returns the total number of available backgrounds. */
 export function getBackgroundCount() {
     return _cache.length;
+}
+
+/** Returns all cached backgrounds (for sidebar gallery). */
+export function getAllBackgrounds() {
+    return [..._cache];
 }
 
 /** True if the initial load has completed (success or failure). */
@@ -104,24 +139,31 @@ async function _doLoad() {
             if (data.isActive !== false) items.push(data);
         });
 
-        // Pre-fetch images as data URLs in parallel
+        // Process images — if already a data URL (base64), use directly;
+        // otherwise fetch as blob (backward compatibility with remote URLs)
         await Promise.all(items.map(async (bg) => {
             const url = bg.imageUrl || bg.bgUrl || '';
             if (!url) return;
 
-            try {
-                const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                const blob = await resp.blob();
-                bg.dataUrl = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(new Error('FileReader error'));
-                    reader.readAsDataURL(blob);
-                });
-            } catch (err) {
-                console.warn('[BgLoader] Image fetch failed for', bg.id, '—', err.message);
-                bg.dataUrl = url; // fallback to remote URL
+            if (url.startsWith('data:')) {
+                // Already a data URL (stored directly in Firestore)
+                bg.dataUrl = url;
+            } else {
+                // Remote URL — fetch as blob and convert
+                try {
+                    const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    const blob = await resp.blob();
+                    bg.dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('FileReader error'));
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (err) {
+                    console.warn('[BgLoader] Image fetch failed for', bg.id, '—', err.message);
+                    bg.dataUrl = url;
+                }
             }
 
             _cache.push(bg);
