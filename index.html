@@ -188,6 +188,24 @@
             </div>
         </div>
 
+        <!-- Token Logo Upload (Optional) -->
+        <div class="token-logo-upload-row" id="token-logo-row">
+            <div class="token-logo-area" id="token-logo-area">
+                <img id="token-logo-preview" class="token-logo-img hidden" alt="Token Logo">
+                <div id="token-logo-placeholder" class="token-logo-placeholder">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z"/><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>
+                </div>
+                <input type="file" id="token-logo-upload" accept="image/*" style="display:none">
+            </div>
+            <div class="token-logo-info">
+                <span class="token-logo-label">Token Logo</span>
+                <span class="token-logo-sub">Optional — tap to upload</span>
+            </div>
+            <button class="token-logo-remove hidden" id="token-logo-remove" aria-label="Remove logo">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+        </div>
+
         <!-- Show Name Toggle -->
         <div class="show-name-toggle-row" id="show-name-row">
             <div>
@@ -388,13 +406,26 @@
                 <img id="preview-img" class="preview-image" alt="Generated Card">
             </div>
             
-            <div style="display:flex; gap: 0.8rem;">
-                <button class="btn-primary" id="btn-download" style="flex:2;">
-                    Download High-Res
+            <div style="display:flex; gap: 0.6rem;">
+                <button class="btn-primary" id="btn-copy" style="flex:1; background: var(--accent-primary); color: #0a0f1c;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94A49 49 0 0012 2.25a49 49 0 00-6.336.318C4.125 2.797 3 4.103 3 5.608V12a3 3 0 003 3h1.5V9.375A3.375 3.375 0 0110.875 6h-3.373z" clip-rule="evenodd"/><path d="M10.875 18.75a2.625 2.625 0 01-2.625-2.625V9.375A2.625 2.625 0 0110.875 6.75h7.875c.621 0 1.218.21 1.706.593.387.305.694.705.894 1.157v8.625a2.625 2.625 0 01-2.625 2.625h-7.875z"/></svg>
+                    Copy
                 </button>
-                <button class="btn-primary" id="btn-reroll" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); box-shadow: none;">
-                    Reroll
+                <button class="btn-primary" id="btn-download" style="flex:1;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
+                    Download
                 </button>
+            </div>
+            <div style="display:flex; gap: 0.6rem; margin-top: 0.5rem;">
+                <button id="btn-change-bg" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); box-shadow: none; border-radius:14px; padding:0.9rem; font-size:0.95rem; font-weight:700; font-family:var(--font-display); cursor:pointer; display:flex; justify-content:center; align-items:center; gap:0.5rem; transition: transform 0.1s ease;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903H14.25a.75.75 0 000 1.5h6a.75.75 0 00.75-.75v-6a.75.75 0 00-1.5 0v4.356l-1.903-1.903A9 9 0 003.306 9.67a.75.75 0 101.45.388zm14.49 3.882a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h4.955a.75.75 0 000-1.5h-6a.75.75 0 00-.75.75v6a.75.75 0 001.5 0v-4.356l1.903 1.903A9 9 0 0020.694 14.33a.75.75 0 10-1.45-.388z" clip-rule="evenodd"/></svg>
+                    Change Background
+                </button>
+                <button id="btn-upload-bg" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); box-shadow: none; border-radius:14px; padding:0.9rem; font-size:0.95rem; font-weight:700; font-family:var(--font-display); cursor:pointer; display:flex; justify-content:center; align-items:center; gap:0.5rem; transition: transform 0.1s ease;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
+                    Upload Background
+                </button>
+                <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
             </div>
         </div>
     </div>

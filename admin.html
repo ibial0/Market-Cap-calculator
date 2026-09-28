@@ -55,6 +55,14 @@
                     </svg>
                     PNG Templates
                 </button>
+                <button class="nav-item" id="nav-bg" data-section="bg">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <image href="" />
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                    </svg>
+                    Card Backgrounds
+                </button>
             </nav>
             <div class="sidebar-footer">
                 <button id="logout-btn" class="btn-logout">
@@ -115,6 +123,23 @@
                 </div>
                 <div id="png-grid" class="designs-grid">
                     <!-- PNG template cards injected by admin.js -->
+                </div>
+            </div>
+
+            <!-- ═══ Card Backgrounds section (new) ═══ -->
+            <div id="bg-section" style="display:none;">
+                <div class="content-header" style="position:sticky;top:0;z-index:20;">
+                    <div>
+                        <h2 style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;margin:0;">Card Backgrounds</h2>
+                        <p class="text-muted">Upload background images for PnL trading cards (recommended: 1600×900px)</p>
+                    </div>
+                    <div class="bg-upload-area header-actions" style="display:flex;gap:10px;align-items:center;">
+                        <input type="file" id="admin-bg-file" accept="image/*" class="text-input" style="padding:8px;">
+                        <button class="btn-primary" id="admin-bg-upload-btn">Upload Background</button>
+                    </div>
+                </div>
+                <div class="bg-gallery designs-grid" id="admin-bg-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:20px 0;">
+                    <!-- Dynamically populated -->
                 </div>
             </div>
 

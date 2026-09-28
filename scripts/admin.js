@@ -9,8 +9,11 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-    collection, getDocs, doc, setDoc, deleteDoc, getDoc
+    collection, getDocs, doc, setDoc, deleteDoc, getDoc, serverTimestamp, addDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+    getStorage, ref, uploadString, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import { composeCard } from '../cards/renderer.js';
 import { getAllThemes, BUILTIN_METADATA, loadCustomThemes } from '../cards/themes/index.js';
 import { TIER_DEFS, TIER_ORDER } from '../cards/config.js';
@@ -923,16 +926,20 @@ let allPngTemplates = []; // loaded from Firestore
 // ── Section Navigation ─────────────────────────────────────
 const navDesigns = document.getElementById('nav-designs');
 const navPng     = document.getElementById('nav-png');
+const navBg      = document.getElementById('nav-bg');
 const secDesigns = document.getElementById('section-designs');
 const secPng     = document.getElementById('section-png');
+const secBg      = document.getElementById('bg-section');
 const contentHeader = document.querySelector('header.content-header');
 
 if (navDesigns) {
     navDesigns.addEventListener('click', () => {
         navDesigns.classList.add('active');
         navPng?.classList.remove('active');
+        navBg?.classList.remove('active');
         secDesigns.style.display = '';
         secPng.style.display = 'none';
+        if(secBg) secBg.style.display = 'none';
         if (contentHeader) contentHeader.style.display = '';
     });
 }
@@ -941,10 +948,25 @@ if (navPng) {
     navPng.addEventListener('click', async () => {
         navPng.classList.add('active');
         navDesigns?.classList.remove('active');
+        navBg?.classList.remove('active');
         secDesigns.style.display = 'none';
         secPng.style.display = '';
+        if(secBg) secBg.style.display = 'none';
         if (contentHeader) contentHeader.style.display = 'none';
         await loadPNGSection();
+    });
+}
+
+if (navBg) {
+    navBg.addEventListener('click', async () => {
+        navBg.classList.add('active');
+        navDesigns?.classList.remove('active');
+        navPng?.classList.remove('active');
+        secDesigns.style.display = 'none';
+        secPng.style.display = 'none';
+        if(secBg) secBg.style.display = '';
+        if (contentHeader) contentHeader.style.display = 'none';
+        await loadBgSection();
     });
 }
 
@@ -1042,4 +1064,144 @@ function renderPNGGrid() {
     
     // Scale thumbnails responsively
     _resizeThumbs();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CARD BACKGROUNDS SECTION
+//  Upload and manage background images.
+// ═══════════════════════════════════════════════════════════
+
+const bgUploadBtn = document.getElementById('admin-bg-upload-btn');
+const bgFileInput = document.getElementById('admin-bg-file');
+
+if (bgUploadBtn && bgFileInput) {
+    bgUploadBtn.addEventListener('click', async () => {
+        const file = bgFileInput.files[0];
+        if (!file) {
+            alert('Please select an image file first.');
+            return;
+        }
+
+        bgUploadBtn.disabled = true;
+        bgUploadBtn.textContent = 'Uploading...';
+
+        try {
+            // 1. Read file as data URL
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            await new Promise(resolve => reader.onload = resolve);
+            const dataUrl = reader.result;
+
+            // 2. Upload to Firebase Storage
+            const storage = getStorage();
+            const timestamp = Date.now();
+            const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const storagePath = `card_backgrounds/${timestamp}_${filename}`;
+            const storageRef = ref(storage, storagePath);
+            
+            await uploadString(storageRef, dataUrl, 'data_url');
+            const imageUrl = await getDownloadURL(storageRef);
+
+            // 3. Save to Firestore
+            await addDoc(collection(db, 'card_backgrounds'), {
+                imageUrl,
+                isActive: true,
+                createdAt: serverTimestamp(),
+                storagePath
+            });
+
+            // 4. Reset & refresh
+            bgFileInput.value = '';
+            alert('Background uploaded successfully!');
+            await loadBgSection();
+
+        } catch (e) {
+            console.error('[Admin] Upload error:', e);
+            alert('Failed to upload background: ' + e.message);
+        } finally {
+            bgUploadBtn.disabled = false;
+            bgUploadBtn.textContent = 'Upload Background';
+        }
+    });
+}
+
+async function loadBgSection() {
+    const grid = document.getElementById('admin-bg-gallery');
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:#94a3b8;">Loading backgrounds...</div>';
+
+    try {
+        const snap = await getDocs(collection(db, 'card_backgrounds'));
+        const backgrounds = [];
+        snap.forEach(d => backgrounds.push({ id: d.id, ...d.data() }));
+        
+        // Sort by created at descending if possible, or just id
+        backgrounds.sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+                return b.createdAt.toMillis() - a.createdAt.toMillis();
+            }
+            return b.id.localeCompare(a.id);
+        });
+
+        if (backgrounds.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:#94a3b8;">
+                    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">No Backgrounds Found</div>
+                    <div style="font-size:14px;">Use the upload button above to add backgrounds.</div>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = '';
+        backgrounds.forEach(bg => {
+            const card = document.createElement('div');
+            card.className = 'bg-card';
+            card.style.cssText = 'background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155;display:flex;flex-direction:column;';
+            
+            card.innerHTML = `
+                <div style="height:150px;background:url('${bg.imageUrl}') center/cover;border-bottom:1px solid #334155;"></div>
+                <div style="padding:12px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${bg.id.substring(0,8)}...</span>
+                    <button class="btn-danger bg-delete-btn" data-id="${bg.id}" data-path="${bg.storagePath || ''}" style="padding:6px 12px;font-size:12px;">Delete</button>
+                </div>
+            `;
+            
+            card.querySelector('.bg-delete-btn').addEventListener('click', async (e) => {
+                const id = e.target.dataset.id;
+                const path = e.target.dataset.path;
+                
+                if (!confirm('Are you sure you want to delete this background?')) return;
+                
+                e.target.disabled = true;
+                e.target.textContent = 'Deleting...';
+                
+                try {
+                    // Delete from Firestore
+                    await deleteDoc(doc(db, 'card_backgrounds', id));
+                    
+                    // Try to delete from Storage if path exists
+                    if (path) {
+                        try {
+                            const storage = getStorage();
+                            await deleteObject(ref(storage, path));
+                        } catch (storageErr) {
+                            console.warn('Could not delete file from storage:', storageErr);
+                        }
+                    }
+                    
+                    await loadBgSection();
+                } catch (err) {
+                    alert('Failed to delete: ' + err.message);
+                    e.target.disabled = false;
+                    e.target.textContent = 'Delete';
+                }
+            });
+            
+            grid.appendChild(card);
+        });
+
+    } catch (e) {
+        console.error('[Admin] Load backgrounds error:', e);
+        grid.innerHTML = `<div style="grid-column:1/-1;color:#f87171;padding:40px;">Error loading backgrounds: ${e.message}</div>`;
+    }
 }

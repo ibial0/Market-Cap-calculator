@@ -148,7 +148,7 @@ async function fetchChainTokens(address, networkId, apiKey) {
 }
 
 // ── Main Handler ───────────────────────────────────────────
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // CORS / method guard
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
