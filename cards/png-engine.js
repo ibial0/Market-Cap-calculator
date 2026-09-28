@@ -245,13 +245,16 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     const isProfit = data.profit >= 0;
     const rate = data.showBdt ? (data.bdtRate || 1) : 1;
 
-    // ── Colors (matched to reference) ────────────────────
-    const accentColor = isProfit ? '#22c55e' : '#ef4444';
-    const boxBg       = isProfit ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.18)';
-    const boxBorder   = isProfit ? 'rgba(34,197,94,0.30)' : 'rgba(239,68,68,0.30)';
+    // ── Colors — bright, vivid, eye-catching ─────────────
+    const accentColor = isProfit ? '#00e676' : '#ff5252';
+    const boxBg       = isProfit ? 'rgba(0,230,118,0.20)' : 'rgba(255,82,82,0.20)';
+    const boxBorder   = isProfit ? 'rgba(0,230,118,0.35)' : 'rgba(255,82,82,0.35)';
 
     // ── Format values ────────────────────────────────────
-    const multiplier = 'x' + data.multiplier.toFixed(2);
+    // Loss multiplier: show inverse (670K→131K = x5.11 red, not x0.20)
+    const rawMul = data.multiplier;
+    const displayMul = isProfit ? rawMul : (rawMul > 0 ? (1 / rawMul) : 0);
+    const multiplier = 'x' + displayMul.toFixed(2);
     const entryMC    = fmtNum(data.initMC, rate);
     const exitMC     = fmtNum(data.targetMC, rate);
     const tokenName  = (data.tokenName || '').toUpperCase();
@@ -314,15 +317,15 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
           " crossorigin="anonymous" loading="eager" decoding="sync">`
         : '';
 
-    // ── Dark gradient overlay (left-side shadow for text readability) ──
+    // ── Dark gradient overlay (subtle, for text readability) ──
     const overlayHtml = `<div style="
         position:absolute;inset:0;
         background:linear-gradient(
             to right,
-            rgba(0,0,0,0.45) 0%,
-            rgba(0,0,0,0.25) 35%,
-            rgba(0,0,0,0.08) 55%,
-            rgba(0,0,0,0) 70%
+            rgba(0,0,0,0.35) 0%,
+            rgba(0,0,0,0.18) 35%,
+            rgba(0,0,0,0.05) 55%,
+            rgba(0,0,0,0) 65%
         );
         z-index:5;
         pointer-events:none;
