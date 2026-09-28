@@ -17,6 +17,7 @@ import {
 import { composeCard } from '../cards/renderer.js';
 import { getAllThemes, BUILTIN_METADATA, loadCustomThemes } from '../cards/themes/index.js';
 import { TIER_DEFS, TIER_ORDER } from '../cards/config.js';
+import { EMOTIONS } from '../cards/emotions.js';
 
 // ── DOM References ─────────────────────────────────────────
 const authView   = document.getElementById('auth-view');
@@ -1089,11 +1090,87 @@ if (bgFileLabel && bgFileInput) {
     });
 }
 
+// ── Admin Emotion Picker (for upload tagging) ──
+let _adminSelectedEmotion = null;
+const adminEmPicker = document.getElementById('admin-emotion-picker');
+if (adminEmPicker) {
+    EMOTIONS.forEach(em => {
+        const pill = document.createElement('div');
+        pill.style.cssText = `
+            padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;
+            cursor:pointer;border:1.5px solid #334155;background:#0f172a;color:#94a3b8;
+            display:flex;align-items:center;gap:5px;transition:all 0.2s ease;user-select:none;
+        `;
+        pill.innerHTML = `<span style="font-size:15px;">${em.emoji}</span><span>${em.label}</span>`;
+        pill.dataset.id = em.id;
+
+        pill.addEventListener('click', () => {
+            if (_adminSelectedEmotion === em.id) {
+                _adminSelectedEmotion = null;
+                pill.style.borderColor = '#334155';
+                pill.style.background = '#0f172a';
+                pill.style.color = '#94a3b8';
+            } else {
+                adminEmPicker.querySelectorAll('[data-id]').forEach(p => {
+                    p.style.borderColor = '#334155';
+                    p.style.background = '#0f172a';
+                    p.style.color = '#94a3b8';
+                });
+                _adminSelectedEmotion = em.id;
+                pill.style.borderColor = '#38bdf8';
+                pill.style.background = 'rgba(56,189,248,0.12)';
+                pill.style.color = '#e2e8f0';
+            }
+        });
+        adminEmPicker.appendChild(pill);
+    });
+}
+
+// ── Admin Gallery Filter ──
+let _adminFilterEmotion = 'all';
+const adminEmFilter = document.getElementById('admin-emotion-filter');
+if (adminEmFilter) {
+    // "All" button already in HTML, add emotion filters
+    EMOTIONS.forEach(em => {
+        const pill = document.createElement('div');
+        pill.className = 'adm-em-filter';
+        pill.dataset.filter = em.id;
+        pill.style.cssText = `
+            padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
+            cursor:pointer;border:1px solid #475569;background:#1e293b;color:#94a3b8;
+            transition:all 0.2s ease;
+        `;
+        pill.textContent = `${em.emoji} ${em.label}`;
+        adminEmFilter.appendChild(pill);
+    });
+
+    adminEmFilter.addEventListener('click', async (e) => {
+        const target = e.target.closest('[data-filter]');
+        if (!target) return;
+        _adminFilterEmotion = target.dataset.filter;
+        adminEmFilter.querySelectorAll('[data-filter]').forEach(p => {
+            p.classList.remove('active');
+            p.style.borderColor = '#475569';
+            p.style.background = '#1e293b';
+            p.style.color = '#94a3b8';
+        });
+        target.classList.add('active');
+        target.style.borderColor = '#38bdf8';
+        target.style.background = 'rgba(56,189,248,0.12)';
+        target.style.color = '#e2e8f0';
+        await loadBgSection();
+    });
+}
+
 if (bgUploadBtn && bgFileInput) {
     bgUploadBtn.addEventListener('click', async () => {
         const file = bgFileInput.files[0];
         if (!file) {
             alert('Please select an image file first.');
+            return;
+        }
+        if (!_adminSelectedEmotion) {
+            alert('Please select an emotion category first.');
             return;
         }
 
@@ -1111,9 +1188,10 @@ if (bgUploadBtn && bgFileInput) {
             //    Firestore doc limit is ~1MB, so we compress to fit
             const compressedDataUrl = await _compressBgImage(rawDataUrl, 1600, 900, 0.75);
 
-            // 3. Save directly to Firestore (no Firebase Storage needed!)
+            // 3. Save directly to Firestore with emotion tag
             await addDoc(collection(db, 'card_backgrounds'), {
                 imageUrl: compressedDataUrl,
+                emotion: _adminSelectedEmotion,
                 isActive: true,
                 createdAt: serverTimestamp(),
             });
@@ -1124,6 +1202,15 @@ if (bgUploadBtn && bgFileInput) {
                 bgFileName.textContent = 'Select image...';
                 bgFileLabel.style.borderColor = '#475569';
                 bgFileLabel.style.color = '#94a3b8';
+            }
+            // Reset emotion picker
+            _adminSelectedEmotion = null;
+            if (adminEmPicker) {
+                adminEmPicker.querySelectorAll('[data-id]').forEach(p => {
+                    p.style.borderColor = '#334155';
+                    p.style.background = '#0f172a';
+                    p.style.color = '#94a3b8';
+                });
             }
             alert('Background uploaded successfully!');
             await loadBgSection();
@@ -1173,7 +1260,7 @@ async function loadBgSection() {
         const backgrounds = [];
         snap.forEach(d => backgrounds.push({ id: d.id, ...d.data() }));
         
-        // Sort by created at descending if possible, or just id
+        // Sort by created at descending
         backgrounds.sort((a, b) => {
             if (a.createdAt && b.createdAt) {
                 return b.createdAt.toMillis() - a.createdAt.toMillis();
@@ -1181,23 +1268,38 @@ async function loadBgSection() {
             return b.id.localeCompare(a.id);
         });
 
-        if (backgrounds.length === 0) {
+        // Filter by emotion if filter is active
+        const filtered = _adminFilterEmotion === 'all'
+            ? backgrounds
+            : backgrounds.filter(bg => bg.emotion === _adminFilterEmotion);
+
+        if (filtered.length === 0) {
             grid.innerHTML = `
                 <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:#94a3b8;">
-                    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">No Backgrounds Found</div>
+                    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${
+                        _adminFilterEmotion === 'all' ? 'No Backgrounds Found' : 'No backgrounds for this emotion'
+                    }</div>
                     <div style="font-size:14px;">Use the upload button above to add backgrounds.</div>
                 </div>`;
             return;
         }
 
         grid.innerHTML = '';
-        backgrounds.forEach(bg => {
+        filtered.forEach(bg => {
             const card = document.createElement('div');
             card.className = 'bg-card';
             card.style.cssText = 'background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155;display:flex;flex-direction:column;';
             
+            // Find emotion label
+            const emObj = EMOTIONS.find(e => e.id === bg.emotion);
+            const emBadge = emObj
+                ? `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#7dd3fc;font-weight:600;">${emObj.emoji} ${emObj.label}</span>`
+                : `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(148,163,184,0.12);color:#94a3b8;font-weight:600;">No tag</span>`;
+
             card.innerHTML = `
-                <div style="height:150px;background:url('${bg.imageUrl}') center/cover;border-bottom:1px solid #334155;"></div>
+                <div style="height:150px;background:url('${bg.imageUrl}') center/cover;border-bottom:1px solid #334155;position:relative;">
+                    <div style="position:absolute;top:8px;left:8px;">${emBadge}</div>
+                </div>
                 <div style="padding:12px;display:flex;justify-content:space-between;align-items:center;">
                     <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${bg.id.substring(0,8)}...</span>
                     <button class="btn-danger bg-delete-btn" data-id="${bg.id}" style="padding:6px 12px;font-size:12px;">Delete</button>

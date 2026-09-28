@@ -154,6 +154,28 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Emotion selector for upload -->
+                <div style="padding:10px 0 6px;">
+                    <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:8px;">Select emotion category before uploading:</div>
+                    <div id="admin-emotion-picker" style="display:flex;flex-wrap:wrap;gap:6px;">
+                        <!-- Populated by admin.js -->
+                    </div>
+                </div>
+
+                <!-- Filter gallery by emotion -->
+                <div style="padding:6px 0 4px;">
+                    <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px;">Filter gallery:</div>
+                    <div id="admin-emotion-filter" style="display:flex;flex-wrap:wrap;gap:5px;">
+                        <div class="adm-em-filter active" data-filter="all" style="
+                            padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
+                            cursor:pointer;border:1px solid #475569;background:#1e293b;color:#94a3b8;
+                            transition:all 0.2s ease;
+                        ">All</div>
+                        <!-- More populated by admin.js -->
+                    </div>
+                </div>
+
                 <div class="bg-gallery designs-grid" id="admin-bg-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:20px 0;">
                     <!-- Dynamically populated -->
                 </div>

@@ -10,8 +10,9 @@ import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
 import { initWallet } from './wallet.js';
-import { loadBackgrounds, getNextBackground, hasMoreBackgrounds, getBackgroundCount } from '../cards/bg-loader.js';
+import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
+import { EMOTIONS } from '../cards/emotions.js';
 
 // Card asset readiness — RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
@@ -84,6 +85,36 @@ if (tokenLogoRemove) {
         tokenLogoPlaceholder?.classList.remove('hidden');
         tokenLogoRemove.classList.add('hidden');
         if (tokenLogoUpload) tokenLogoUpload.value = '';
+    });
+}
+
+// ── Emotion Picker ──────────────────────────────────────────
+let _selectedEmotion = null; // null means "any/random"
+
+const emotionPicker = document.getElementById('emotion-picker');
+if (emotionPicker) {
+    // Render emotion pills
+    EMOTIONS.forEach(em => {
+        const pill = document.createElement('div');
+        pill.className = 'emotion-pill';
+        pill.dataset.id = em.id;
+        pill.dataset.type = em.type;
+        pill.innerHTML = `<span class="ep-emoji">${em.emoji}</span><span>${em.label}</span>`;
+
+        pill.addEventListener('click', () => {
+            // Toggle: clicking same pill deselects it
+            if (_selectedEmotion === em.id) {
+                _selectedEmotion = null;
+                pill.classList.remove('active');
+            } else {
+                // Deselect previous
+                emotionPicker.querySelectorAll('.emotion-pill.active').forEach(p => p.classList.remove('active'));
+                _selectedEmotion = em.id;
+                pill.classList.add('active');
+            }
+        });
+
+        emotionPicker.appendChild(pill);
     });
 }
 
@@ -805,7 +836,9 @@ async function generateRender(data, _unused) {
 
         // 2. Get background image if not already set
         if (!_currentBgSrc) {
-            const bg = getNextBackground();
+            const bg = _selectedEmotion
+                ? getNextBackgroundByEmotion(_selectedEmotion)
+                : getNextBackground();
             if (bg) {
                 _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
                 _currentBgId = bg.id;

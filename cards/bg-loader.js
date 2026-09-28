@@ -53,6 +53,36 @@ export function getNextBackground() {
 }
 
 /**
+ * Get a random background filtered by emotion category.
+ * Falls back to any background if none match the emotion.
+ * @param {string} emotionId - Emotion category ID (e.g. 'legendary', 'rekt')
+ * @returns {{ id:string, dataUrl:string, imageUrl:string, emotion:string }|null}
+ */
+export function getNextBackgroundByEmotion(emotionId) {
+    if (_cache.length === 0) return null;
+
+    // Filter by emotion
+    const filtered = _cache.filter(bg => bg.emotion === emotionId);
+
+    if (filtered.length === 0) {
+        // Fallback: return any background
+        return getNextBackground();
+    }
+
+    if (filtered.length === 1) {
+        _lastShownId = filtered[0].id;
+        return filtered[0];
+    }
+
+    // Pick random from filtered, avoid last shown
+    let pool = filtered.filter(bg => bg.id !== _lastShownId);
+    if (pool.length === 0) pool = filtered;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    _lastShownId = pick.id;
+    return pick;
+}
+
+/**
  * Check if there are more backgrounds to show (different from current).
  * Used to decide whether to show "Change Background" or "No more available".
  * @param {string|null} currentBgId - ID of the currently displayed background
