@@ -206,30 +206,6 @@
             </button>
         </div>
 
-        <!-- Show Name Toggle -->
-        <div class="show-name-toggle-row" id="show-name-row">
-            <div>
-                <div class="show-name-toggle-label">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Show my name on card
-                </div>
-                <div class="show-name-toggle-sub" id="show-name-preview">
-                    <span id="card-name-preview-text">No name set — Go to Profile to set your name</span>
-                </div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="show-name-toggle" checked>
-                <span class="slider"></span>
-            </label>
-        </div>
-        <!-- ── Emotion Picker ── -->
-        <div class="emotion-picker-section">
-            <div class="emotion-picker-label">Pick a vibe for your card</div>
-            <div class="emotion-picker-track" id="emotion-picker">
-                <!-- Populated by app.js -->
-            </div>
-        </div>
-
         <button class="btn-primary" id="btn-generate">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /><path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877zM3.265 14.102l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877z" /></svg>
             Generate Trading Card
@@ -400,12 +376,34 @@
         </div>
     </div>
 
+    <!-- ══ Emotion Picker Popup ══ -->
+    <div class="modal-overlay" id="emotion-popup" style="display:none;">
+        <div class="modal-content" style="max-width:480px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Pick a vibe 🎭</h2>
+                <button class="close-btn" id="close-emotion-popup"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
+            </div>
+            <div class="emotion-picker-track" id="emotion-picker" style="flex-wrap:wrap;max-height:340px;overflow-y:auto;padding:8px 0 12px;">
+                <!-- Populated by app.js -->
+            </div>
+            <button class="btn-primary" id="btn-emotion-go" style="width:100%;margin-top:12px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /></svg>
+                Generate Card
+            </button>
+        </div>
+    </div>
+
     <!-- Preview Modal -->
     <div class="modal-overlay" id="preview-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="position:relative;">
             <div class="modal-header">
                 <h2 class="modal-title">Trading Card</h2>
-                <button class="close-btn" id="close-preview"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button class="close-btn" id="btn-toggle-sidebar" title="Browse Backgrounds" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="color:var(--text-secondary);"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg>
+                    </button>
+                    <button class="close-btn" id="close-preview"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
+                </div>
             </div>
             
             <div class="preview-container">
@@ -433,6 +431,19 @@
                     Upload Background
                 </button>
                 <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
+            </div>
+
+            <!-- ══ Background Gallery Sidebar ══ -->
+            <div class="bg-sidebar" id="bg-sidebar" style="display:none;">
+                <div class="bg-sidebar-header">
+                    <span style="font-weight:700;font-size:14px;">Backgrounds</span>
+                    <button class="close-btn" id="close-sidebar" style="width:28px;height:28px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+                <div class="bg-sidebar-grid" id="bg-sidebar-grid">
+                    <!-- Populated by app.js -->
+                </div>
             </div>
         </div>
     </div>

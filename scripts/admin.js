@@ -1296,15 +1296,44 @@ async function loadBgSection() {
                 ? `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#7dd3fc;font-weight:600;">${emObj.emoji} ${emObj.label}</span>`
                 : `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(148,163,184,0.12);color:#94a3b8;font-weight:600;">No tag</span>`;
 
+            // Build emotion select options
+            const emOptions = EMOTIONS.map(e =>
+                `<option value="${e.id}" ${e.id === bg.emotion ? 'selected' : ''}>${e.emoji} ${e.label}</option>`
+            ).join('');
+
             card.innerHTML = `
                 <div style="height:150px;background:url('${bg.imageUrl}') center/cover;border-bottom:1px solid #334155;position:relative;">
                     <div style="position:absolute;top:8px;left:8px;">${emBadge}</div>
                 </div>
-                <div style="padding:12px;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${bg.id.substring(0,8)}...</span>
-                    <button class="btn-danger bg-delete-btn" data-id="${bg.id}" style="padding:6px 12px;font-size:12px;">Delete</button>
+                <div style="padding:8px 12px;">
+                    <select class="bg-emotion-select" data-id="${bg.id}" style="
+                        width:100%;padding:5px 8px;border-radius:8px;font-size:11px;font-weight:600;
+                        background:#0f172a;color:#94a3b8;border:1px solid #334155;cursor:pointer;
+                        margin-bottom:8px;
+                    ">${emOptions}</select>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${bg.id.substring(0,8)}...</span>
+                        <button class="btn-danger bg-delete-btn" data-id="${bg.id}" style="padding:6px 12px;font-size:12px;">Delete</button>
+                    </div>
                 </div>
             `;
+
+            // Emotion edit handler
+            card.querySelector('.bg-emotion-select').addEventListener('change', async (e) => {
+                const select = e.target;
+                const bgId = select.dataset.id;
+                const newEmotion = select.value;
+                select.disabled = true;
+                try {
+                    await setDoc(doc(db, 'card_backgrounds', bgId), { emotion: newEmotion }, { merge: true });
+                    select.style.borderColor = '#00e676';
+                    setTimeout(() => { select.style.borderColor = '#334155'; }, 1000);
+                } catch (err) {
+                    alert('Failed to update emotion: ' + err.message);
+                } finally {
+                    select.disabled = false;
+                }
+            });
             
             card.querySelector('.bg-delete-btn').addEventListener('click', async (e) => {
                 const id = e.target.dataset.id;

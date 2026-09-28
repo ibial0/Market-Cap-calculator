@@ -88,12 +88,16 @@ if (tokenLogoRemove) {
     });
 }
 
-// ── Emotion Picker ──────────────────────────────────────────
+// ── Emotion Picker (Popup) ──────────────────────────────────
 let _selectedEmotion = null; // null means "any/random"
 
-const emotionPicker = document.getElementById('emotion-picker');
+const emotionPopup   = document.getElementById('emotion-popup');
+const emotionPicker  = document.getElementById('emotion-picker');
+const btnEmotionGo   = document.getElementById('btn-emotion-go');
+const closeEmPopup   = document.getElementById('close-emotion-popup');
+
+// Render emotion pills inside the popup
 if (emotionPicker) {
-    // Render emotion pills
     EMOTIONS.forEach(em => {
         const pill = document.createElement('div');
         pill.className = 'emotion-pill';
@@ -102,12 +106,10 @@ if (emotionPicker) {
         pill.innerHTML = `<span class="ep-emoji">${em.emoji}</span><span>${em.label}</span>`;
 
         pill.addEventListener('click', () => {
-            // Toggle: clicking same pill deselects it
             if (_selectedEmotion === em.id) {
                 _selectedEmotion = null;
                 pill.classList.remove('active');
             } else {
-                // Deselect previous
                 emotionPicker.querySelectorAll('.emotion-pill.active').forEach(p => p.classList.remove('active'));
                 _selectedEmotion = em.id;
                 pill.classList.add('active');
@@ -117,6 +119,31 @@ if (emotionPicker) {
         emotionPicker.appendChild(pill);
     });
 }
+
+// Close popup
+if (closeEmPopup) closeEmPopup.addEventListener('click', () => {
+    emotionPopup.style.display = 'none';
+});
+
+// ── Sidebar Gallery ──────────────────────────────────────────
+const bgSidebar       = document.getElementById('bg-sidebar');
+const bgSidebarGrid   = document.getElementById('bg-sidebar-grid');
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const closeSidebar     = document.getElementById('close-sidebar');
+
+function toggleSidebar() {
+    if (!bgSidebar) return;
+    if (bgSidebar.style.display === 'none') {
+        bgSidebar.style.display = 'flex';
+        _populateSidebar();
+    } else {
+        bgSidebar.style.display = 'none';
+    }
+}
+
+if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
+if (closeSidebar) closeSidebar.addEventListener('click', () => { bgSidebar.style.display = 'none'; });
+
 
 const resFinalValue = document.getElementById('res-final-value');
 const resFinalBdt   = document.getElementById('res-final-bdt');
@@ -689,11 +716,10 @@ if (generateBtn) {
         }
 
         const result = calculateROI(realInit, realTarget, inv);
-        const showName = document.getElementById('show-name-toggle')?.checked;
 
         const data = {
             tokenName:  State.tokenName,
-            userName:   showName ? State.userName : '',
+            userName:   '',
             initMC:     realInit,
             targetMC:   realTarget,
             inv,
@@ -705,25 +731,54 @@ if (generateBtn) {
             bdtRate:    State.bdtRate,
         };
 
-        // Reset background for fresh random pick
-        _currentBgSrc = null;
-        _currentBgId = null;
+        // Store data for after emotion selection
+        _pendingCardData = data;
 
-        previewOverlay.classList.add('active');
-
-        const origHtml = generateBtn.innerHTML;
-        generateBtn.innerHTML = 'Generating…';
-        generateBtn.disabled  = true;
-        generateBtn.style.opacity = '0.7';
-
-        try {
-            await generateRender(data, false); // false = first generate, not a reroll
-        } finally {
-            generateBtn.innerHTML = origHtml;
-            generateBtn.disabled  = false;
-            generateBtn.style.opacity = '1';
+        // Show emotion popup
+        if (emotionPopup) {
+            emotionPopup.style.display = 'flex';
+        } else {
+            // Fallback: generate directly if popup missing
+            _doGenerate(data);
         }
     });
+}
+
+let _pendingCardData = null;
+
+// "Generate Card" button inside the emotion popup
+if (btnEmotionGo) {
+    btnEmotionGo.addEventListener('click', async () => {
+        if (!_pendingCardData) return;
+        emotionPopup.style.display = 'none';
+        await _doGenerate(_pendingCardData);
+        _pendingCardData = null;
+    });
+}
+
+async function _doGenerate(data) {
+    if (isGenerating) return;
+
+    // Reset background for fresh random pick
+    _currentBgSrc = null;
+    _currentBgId = null;
+
+    previewOverlay.classList.add('active');
+    // Close sidebar if open
+    if (bgSidebar) bgSidebar.style.display = 'none';
+
+    const origHtml = generateBtn.innerHTML;
+    generateBtn.innerHTML = 'Generating…';
+    generateBtn.disabled  = true;
+    generateBtn.style.opacity = '0.7';
+
+    try {
+        await generateRender(data, false);
+    } finally {
+        generateBtn.innerHTML = origHtml;
+        generateBtn.disabled  = false;
+        generateBtn.style.opacity = '1';
+    }
 }
 
 // ── Change Background Button ────────────────────────────────
@@ -746,17 +801,66 @@ if (changeBgBtn) {
         changeBgBtn.disabled = true;
 
         try {
-            // Get next background from pool
-            const bg = getNextBackground();
+            // Get next background — stay within same emotion
+            const bg = _selectedEmotion
+                ? getNextBackgroundByEmotion(_selectedEmotion)
+                : getNextBackground();
             if (bg) {
                 _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
                 _currentBgId = bg.id;
             }
             await generateRender(window.lastData, false);
+            // Update sidebar active state
+            if (bgSidebar && bgSidebar.style.display !== 'none') _populateSidebar();
         } finally {
             changeBgBtn.innerHTML = origHtml;
             changeBgBtn.disabled = false;
         }
+    });
+}
+
+// ── Populate Sidebar Grid ──────────────────────────────────
+import { getAllBackgrounds } from '../cards/bg-loader.js';
+
+function _populateSidebar() {
+    if (!bgSidebarGrid) return;
+    const allBgs = getAllBackgrounds();
+    // Filter by current emotion if set
+    const filtered = _selectedEmotion
+        ? allBgs.filter(bg => bg.emotion === _selectedEmotion)
+        : allBgs;
+
+    bgSidebarGrid.innerHTML = '';
+    if (filtered.length === 0) {
+        bgSidebarGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#64748b;font-size:12px;padding:20px;">No backgrounds</div>';
+        return;
+    }
+
+    filtered.forEach(bg => {
+        const thumb = document.createElement('div');
+        thumb.className = 'bg-thumb' + (bg.id === _currentBgId ? ' active' : '');
+
+        // Find emotion emoji
+        const emObj = EMOTIONS.find(e => e.id === bg.emotion);
+        const badge = emObj ? `<span class="bg-thumb-badge">${emObj.emoji}</span>` : '';
+
+        thumb.innerHTML = `<img src="${bg.dataUrl || bg.imageUrl}" alt="bg" loading="lazy">${badge}`;
+
+        thumb.addEventListener('click', async () => {
+            if (isGenerating || !window.lastData) return;
+            _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
+            _currentBgId = bg.id;
+
+            // Update active state
+            bgSidebarGrid.querySelectorAll('.bg-thumb').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+
+            // Regenerate with this background
+            document.getElementById('preview-img').classList.remove('loaded');
+            await generateRender(window.lastData, false);
+        });
+
+        bgSidebarGrid.appendChild(thumb);
     });
 }
 

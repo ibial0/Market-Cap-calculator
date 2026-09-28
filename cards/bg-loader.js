@@ -99,6 +99,11 @@ export function getBackgroundCount() {
     return _cache.length;
 }
 
+/** Returns all cached backgrounds (for sidebar gallery). */
+export function getAllBackgrounds() {
+    return [..._cache];
+}
+
 /** True if the initial load has completed (success or failure). */
 export function backgroundsLoaded() {
     return _loaded;

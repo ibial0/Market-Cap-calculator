@@ -89,6 +89,79 @@
     background: var(--bg-primary);
     padding: 1rem;
     border-radius: 20px;
+    overflow: visible;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Background Gallery Sidebar
+   ═══════════════════════════════════════════════════════════ */
+.bg-sidebar {
+    position: absolute;
+    top: 0;
+    right: -220px;
+    width: 210px;
+    height: 100%;
+    background: var(--bg-primary, #0f172a);
+    border-left: 1px solid var(--border, #334155);
+    border-radius: 0 20px 20px 0;
+    z-index: 30;
+    animation: sidebarSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    display: flex;
+    flex-direction: column;
+}
+@keyframes sidebarSlideIn {
+    from { transform: translateX(220px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+.bg-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border, #334155);
+    flex-shrink: 0;
+}
+.bg-sidebar-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+}
+.bg-sidebar-grid::-webkit-scrollbar { width: 4px; }
+.bg-sidebar-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+.bg-thumb {
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+}
+.bg-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.bg-thumb:hover {
+    border-color: #38bdf8;
+    transform: scale(1.05);
+}
+.bg-thumb.active {
+    border-color: #00e676;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
+}
+.bg-thumb-badge {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    font-size: 12px;
+    line-height: 1;
 }
 
 .preview-container {
