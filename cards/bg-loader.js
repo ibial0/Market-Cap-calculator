@@ -104,24 +104,31 @@ async function _doLoad() {
             if (data.isActive !== false) items.push(data);
         });
 
-        // Pre-fetch images as data URLs in parallel
+        // Process images — if already a data URL (base64), use directly;
+        // otherwise fetch as blob (backward compatibility with remote URLs)
         await Promise.all(items.map(async (bg) => {
             const url = bg.imageUrl || bg.bgUrl || '';
             if (!url) return;
 
-            try {
-                const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                const blob = await resp.blob();
-                bg.dataUrl = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(new Error('FileReader error'));
-                    reader.readAsDataURL(blob);
-                });
-            } catch (err) {
-                console.warn('[BgLoader] Image fetch failed for', bg.id, '—', err.message);
-                bg.dataUrl = url; // fallback to remote URL
+            if (url.startsWith('data:')) {
+                // Already a data URL (stored directly in Firestore)
+                bg.dataUrl = url;
+            } else {
+                // Remote URL — fetch as blob and convert
+                try {
+                    const resp = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    const blob = await resp.blob();
+                    bg.dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('FileReader error'));
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (err) {
+                    console.warn('[BgLoader] Image fetch failed for', bg.id, '—', err.message);
+                    bg.dataUrl = url;
+                }
             }
 
             _cache.push(bg);

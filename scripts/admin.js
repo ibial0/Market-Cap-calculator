@@ -1073,6 +1073,21 @@ function renderPNGGrid() {
 
 const bgUploadBtn = document.getElementById('admin-bg-upload-btn');
 const bgFileInput = document.getElementById('admin-bg-file');
+const bgFileLabel = document.getElementById('bg-file-label');
+const bgFileName  = document.getElementById('bg-file-name');
+
+// Custom file picker: click label → open file dialog
+if (bgFileLabel && bgFileInput) {
+    bgFileLabel.addEventListener('click', () => bgFileInput.click());
+    bgFileInput.addEventListener('change', () => {
+        const file = bgFileInput.files[0];
+        if (bgFileName) {
+            bgFileName.textContent = file ? file.name : 'Select image...';
+            bgFileLabel.style.borderColor = file ? '#38bdf8' : '#475569';
+            bgFileLabel.style.color = file ? '#e2e8f0' : '#94a3b8';
+        }
+    });
+}
 
 if (bgUploadBtn && bgFileInput) {
     bgUploadBtn.addEventListener('click', async () => {
@@ -1090,28 +1105,26 @@ if (bgUploadBtn && bgFileInput) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             await new Promise(resolve => reader.onload = resolve);
-            const dataUrl = reader.result;
+            const rawDataUrl = reader.result;
 
-            // 2. Upload to Firebase Storage
-            const storage = getStorage();
-            const timestamp = Date.now();
-            const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const storagePath = `card_backgrounds/${timestamp}_${filename}`;
-            const storageRef = ref(storage, storagePath);
-            
-            await uploadString(storageRef, dataUrl, 'data_url');
-            const imageUrl = await getDownloadURL(storageRef);
+            // 2. Compress via canvas (max 1600×900, JPEG quality 0.75)
+            //    Firestore doc limit is ~1MB, so we compress to fit
+            const compressedDataUrl = await _compressBgImage(rawDataUrl, 1600, 900, 0.75);
 
-            // 3. Save to Firestore
+            // 3. Save directly to Firestore (no Firebase Storage needed!)
             await addDoc(collection(db, 'card_backgrounds'), {
-                imageUrl,
+                imageUrl: compressedDataUrl,
                 isActive: true,
                 createdAt: serverTimestamp(),
-                storagePath
             });
 
             // 4. Reset & refresh
             bgFileInput.value = '';
+            if (bgFileName) {
+                bgFileName.textContent = 'Select image...';
+                bgFileLabel.style.borderColor = '#475569';
+                bgFileLabel.style.color = '#94a3b8';
+            }
             alert('Background uploaded successfully!');
             await loadBgSection();
 
@@ -1120,8 +1133,33 @@ if (bgUploadBtn && bgFileInput) {
             alert('Failed to upload background: ' + e.message);
         } finally {
             bgUploadBtn.disabled = false;
-            bgUploadBtn.textContent = 'Upload Background';
+            bgUploadBtn.textContent = 'Upload';
         }
+    });
+}
+
+/** Compress image via off-screen canvas to fit Firestore doc limit */
+function _compressBgImage(dataUrl, maxW, maxH, quality) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width, h = img.height;
+            // Scale down if larger than max dimensions
+            if (w > maxW || h > maxH) {
+                const ratio = Math.min(maxW / w, maxH / h);
+                w = Math.round(w * ratio);
+                h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const result = canvas.toDataURL('image/jpeg', quality);
+            resolve(result);
+        };
+        img.onerror = () => reject(new Error('Failed to load image for compression'));
+        img.src = dataUrl;
     });
 }
 
@@ -1162,13 +1200,12 @@ async function loadBgSection() {
                 <div style="height:150px;background:url('${bg.imageUrl}') center/cover;border-bottom:1px solid #334155;"></div>
                 <div style="padding:12px;display:flex;justify-content:space-between;align-items:center;">
                     <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${bg.id.substring(0,8)}...</span>
-                    <button class="btn-danger bg-delete-btn" data-id="${bg.id}" data-path="${bg.storagePath || ''}" style="padding:6px 12px;font-size:12px;">Delete</button>
+                    <button class="btn-danger bg-delete-btn" data-id="${bg.id}" style="padding:6px 12px;font-size:12px;">Delete</button>
                 </div>
             `;
             
             card.querySelector('.bg-delete-btn').addEventListener('click', async (e) => {
                 const id = e.target.dataset.id;
-                const path = e.target.dataset.path;
                 
                 if (!confirm('Are you sure you want to delete this background?')) return;
                 
@@ -1178,16 +1215,6 @@ async function loadBgSection() {
                 try {
                     // Delete from Firestore
                     await deleteDoc(doc(db, 'card_backgrounds', id));
-                    
-                    // Try to delete from Storage if path exists
-                    if (path) {
-                        try {
-                            const storage = getStorage();
-                            await deleteObject(ref(storage, path));
-                        } catch (storageErr) {
-                            console.warn('Could not delete file from storage:', storageErr);
-                        }
-                    }
                     
                     await loadBgSection();
                 } catch (err) {

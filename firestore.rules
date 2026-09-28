@@ -17,5 +17,13 @@ service cloud.firestore {
       allow write: if request.auth != null
         && request.auth.uid == 'AERHxc73wQQdEql9vwazjUYG1J93';
     }
+
+    // Card Backgrounds — readable by anyone (public site loads them for PnL cards),
+    // writable only by admin
+    match /card_backgrounds/{bgId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == 'AERHxc73wQQdEql9vwazjUYG1J93';
+    }
   }
 }
