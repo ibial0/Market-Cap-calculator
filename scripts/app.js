@@ -10,12 +10,14 @@ import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
 import { initWallet } from './wallet.js';
+import { loadBackgrounds, getNextBackground, hasMoreBackgrounds, getBackgroundCount } from '../cards/bg-loader.js';
+import { composeSimpleCard } from '../cards/png-engine.js';
 
 // Card asset readiness — RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
 // Previously this was allSettled([..., timeout]) which ALWAYS waited 10 full seconds!
 let _assetsLoaded = false;
-const _assetLoad = Promise.allSettled([loadCustomThemes(), loadPNGTemplates()]);
+const _assetLoad = Promise.allSettled([loadCustomThemes(), loadPNGTemplates(), loadBackgrounds()]);
 const _assetTimeout = new Promise(r => setTimeout(r, 10000));
 const cardAssetsReady = Promise.race([_assetLoad, _assetTimeout])
     .then(() => { _assetsLoaded = true; });
@@ -35,6 +37,55 @@ const elInitMC   = document.getElementById('initial-mc');
 const elTargetMC = document.getElementById('target-mc');
 const elInv      = document.getElementById('investment');
 const elToken    = document.getElementById('token-name');
+
+// Token logo state
+let _tokenLogoDataUrl = null;
+
+// Current background state (for change-bg feature)
+let _currentBgSrc = null;
+let _currentBgId = null;
+
+// Token logo upload handler
+const tokenLogoArea   = document.getElementById('token-logo-area');
+const tokenLogoUpload = document.getElementById('token-logo-upload');
+const tokenLogoPreview = document.getElementById('token-logo-preview');
+const tokenLogoPlaceholder = document.getElementById('token-logo-placeholder');
+const tokenLogoRemove = document.getElementById('token-logo-remove');
+
+if (tokenLogoArea) {
+    tokenLogoArea.addEventListener('click', () => tokenLogoUpload?.click());
+}
+
+if (tokenLogoUpload) {
+    tokenLogoUpload.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            _tokenLogoDataUrl = reader.result;
+            if (tokenLogoPreview) {
+                tokenLogoPreview.src = reader.result;
+                tokenLogoPreview.classList.remove('hidden');
+            }
+            tokenLogoPlaceholder?.classList.add('hidden');
+            tokenLogoRemove?.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+if (tokenLogoRemove) {
+    tokenLogoRemove.addEventListener('click', () => {
+        _tokenLogoDataUrl = null;
+        if (tokenLogoPreview) {
+            tokenLogoPreview.src = '';
+            tokenLogoPreview.classList.add('hidden');
+        }
+        tokenLogoPlaceholder?.classList.remove('hidden');
+        tokenLogoRemove.classList.add('hidden');
+        if (tokenLogoUpload) tokenLogoUpload.value = '';
+    });
+}
 
 const resFinalValue = document.getElementById('res-final-value');
 const resFinalBdt   = document.getElementById('res-final-bdt');
@@ -623,6 +674,10 @@ if (generateBtn) {
             bdtRate:    State.bdtRate,
         };
 
+        // Reset background for fresh random pick
+        _currentBgSrc = null;
+        _currentBgId = null;
+
         previewOverlay.classList.add('active');
 
         const origHtml = generateBtn.innerHTML;
@@ -640,29 +695,97 @@ if (generateBtn) {
     });
 }
 
-const rerollBtn = document.getElementById('btn-reroll');
-if (rerollBtn) {
-    rerollBtn.addEventListener('click', async () => {
+// ── Change Background Button ────────────────────────────────
+const changeBgBtn = document.getElementById('btn-change-bg');
+if (changeBgBtn) {
+    changeBgBtn.addEventListener('click', async () => {
         if (isGenerating) return;
         if (!window.lastData) return;
+
+        // Check if more backgrounds are available
+        if (!hasMoreBackgrounds(_currentBgId)) {
+            _showToast('No more backgrounds available. Upload your own or ask the admin to add more.', 'info', 4000);
+            return;
+        }
+
         document.getElementById('preview-img').classList.remove('loaded');
 
-        const origHtml = rerollBtn.innerHTML;
-        rerollBtn.innerHTML = 'Generating…';
-        rerollBtn.disabled  = true;
-        rerollBtn.style.opacity = '0.7';
+        const origHtml = changeBgBtn.innerHTML;
+        changeBgBtn.innerHTML = 'Changing…';
+        changeBgBtn.disabled = true;
 
         try {
-            await generateRender(window.lastData, true); // true = reroll
+            // Get next background from pool
+            const bg = getNextBackground();
+            if (bg) {
+                _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
+                _currentBgId = bg.id;
+            }
+            await generateRender(window.lastData, false);
         } finally {
-            rerollBtn.innerHTML = origHtml;
-            rerollBtn.disabled  = false;
-            rerollBtn.style.opacity = '1';
+            changeBgBtn.innerHTML = origHtml;
+            changeBgBtn.disabled = false;
         }
     });
 }
 
-async function generateRender(data, isReroll) {
+// ── Upload Background Button ────────────────────────────────
+const uploadBgBtn = document.getElementById('btn-upload-bg');
+const bgUploadInput = document.getElementById('bg-upload-input');
+
+if (uploadBgBtn) {
+    uploadBgBtn.addEventListener('click', () => bgUploadInput?.click());
+}
+
+if (bgUploadInput) {
+    bgUploadInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || isGenerating) return;
+        if (!window.lastData) return;
+
+        document.getElementById('preview-img').classList.remove('loaded');
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+            _currentBgSrc = reader.result;
+            _currentBgId = '__user_upload__';
+            await generateRender(window.lastData, false);
+        };
+        reader.readAsDataURL(file);
+        bgUploadInput.value = ''; // Reset for re-upload
+    });
+}
+
+// ── Copy to Clipboard Button ────────────────────────────────
+const copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+        const imgEl = document.getElementById('preview-img');
+        const imgSrc = imgEl?.src;
+        if (!imgSrc) return;
+
+        const origHtml = copyBtn.innerHTML;
+
+        try {
+            // Convert data URL to blob for clipboard
+            const response = await fetch(imgSrc);
+            const blob = await response.blob();
+
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+
+            copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/></svg> Copied!';
+            setTimeout(() => { copyBtn.innerHTML = origHtml; }, 2000);
+        } catch (err) {
+            console.warn('[Copy] Clipboard API failed:', err);
+            _showToast('Copy failed. Your browser may not support this feature.', 'warning', 3000);
+        }
+    });
+}
+
+// ── Generate Render (New Simple Card Design) ────────────────
+async function generateRender(data, _unused) {
     isGenerating = true;
     window.lastData = data;
     const node    = document.getElementById('card-node');
@@ -673,23 +796,24 @@ async function generateRender(data, isReroll) {
     img.classList.remove('loaded');
 
     try {
-        // 1. Wait for templates AND html2canvas to be ready in parallel
+        // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
             cardAssetsReady,
             _waitForHtml2Canvas(8000),
         ]);
         if (!h2cReady) throw new Error('html2canvas not loaded');
 
-        const engine = new CardEngine(data);
-        const html   = engine.buildHTML(isReroll);
-
-        // 3. Handle "only one design" sentinel — show toast, keep current card visible
-        if (html === CARD_ONLY_ONE_DESIGN) {
-            spinner.style.display = 'none';
-            isGenerating = false;
-            _showToast('No other designs available for this range. Only one card is assigned here.', 'info', 5000);
-            return;
+        // 2. Get background image if not already set
+        if (!_currentBgSrc) {
+            const bg = getNextBackground();
+            if (bg) {
+                _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
+                _currentBgId = bg.id;
+            }
         }
+
+        // 3. Compose the new simple card design
+        const html = composeSimpleCard(data, _currentBgSrc, _tokenLogoDataUrl);
 
         node.innerHTML = html;
 
@@ -721,6 +845,7 @@ async function generateRender(data, isReroll) {
     }
 }
 
+// ── Download Button ─────────────────────────────────────────
 const downloadBtn = document.getElementById('btn-download');
 if (downloadBtn) {
     downloadBtn.addEventListener('click', () => {
@@ -737,4 +862,3 @@ if (downloadBtn) {
 //  Initial calculation
 // ═══════════════════════════════════════════════════════════
 calculate();
-
