@@ -231,6 +231,7 @@ export function composePNGCard(template, data) {
 //    Middle: Hero multiplier with soft colored background box
 //    Bottom: Entry MC → Arrow → Exit MC (centered below hero)
 //  All elements centered relative to the hero multiplier.
+//  Dark gradient overlay on left side for text readability.
 // ═══════════════════════════════════════════════════════════
 
 /**
@@ -244,10 +245,10 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     const isProfit = data.profit >= 0;
     const rate = data.showBdt ? (data.bdtRate || 1) : 1;
 
-    // ── Colors ────────────────────────────────────────────
-    const accentColor = isProfit ? '#4ade80' : '#ef4444';
-    const boxBg       = isProfit ? 'rgba(74,222,128,0.13)' : 'rgba(239,68,68,0.13)';
-    const boxBorder   = isProfit ? 'rgba(74,222,128,0.22)' : 'rgba(239,68,68,0.22)';
+    // ── Colors (matched to reference) ────────────────────
+    const accentColor = isProfit ? '#22c55e' : '#ef4444';
+    const boxBg       = isProfit ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.18)';
+    const boxBorder   = isProfit ? 'rgba(34,197,94,0.30)' : 'rgba(239,68,68,0.30)';
 
     // ── Format values ────────────────────────────────────
     const multiplier = 'x' + data.multiplier.toFixed(2);
@@ -258,17 +259,17 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     // ── Dynamic font size for hero multiplier ────────────
     const mulLen = multiplier.length;
     let mulFontSize;
-    if (mulLen <= 5)       mulFontSize = 128;
-    else if (mulLen <= 6)  mulFontSize = 112;
-    else if (mulLen <= 7)  mulFontSize = 96;
-    else if (mulLen <= 8)  mulFontSize = 84;
-    else if (mulLen <= 10) mulFontSize = 70;
-    else                   mulFontSize = 58;
+    if (mulLen <= 5)       mulFontSize = 154;
+    else if (mulLen <= 6)  mulFontSize = 136;
+    else if (mulLen <= 7)  mulFontSize = 118;
+    else if (mulLen <= 8)  mulFontSize = 102;
+    else if (mulLen <= 10) mulFontSize = 86;
+    else                   mulFontSize = 72;
 
     // ── Token logo HTML ──────────────────────────────────
     const logoHtml = tokenLogoSrc
         ? `<img src="${tokenLogoSrc}" style="
-            width:52px;height:52px;border-radius:14px;
+            width:64px;height:64px;border-radius:16px;
             object-fit:cover;flex-shrink:0;
             display:block;
           " crossorigin="anonymous">`
@@ -277,9 +278,10 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     // ── Token name HTML ──────────────────────────────────
     const nameHtml = tokenName
         ? `<span style="
-            font-size:38px;font-weight:900;color:#ffffff;
+            font-size:50px;font-weight:900;color:#ffffff;
             font-family:'Outfit',sans-serif;
-            letter-spacing:1px;white-space:nowrap;
+            letter-spacing:2px;white-space:nowrap;
+            text-shadow:0 2px 8px rgba(0,0,0,0.5);
           ">${_esc(tokenName)}</span>`
         : '';
 
@@ -287,18 +289,18 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     let tokenRowHtml = '';
     if (logoHtml || nameHtml) {
         tokenRowHtml = `<div style="
-            display:flex;align-items:center;gap:14px;
-            margin-bottom:20px;
+            display:flex;align-items:center;gap:18px;
+            margin-bottom:30px;
         ">${logoHtml}${nameHtml}</div>`;
     }
 
-    // ── Arrow SVG (matching reference style) ─────────────
-    const arrowSvg = `<svg width="56" height="18" viewBox="0 0 56 18" fill="none"
+    // ── Arrow SVG (large, matching reference) ────────────
+    const arrowSvg = `<svg width="80" height="24" viewBox="0 0 80 24" fill="none"
         xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-        <line x1="2" y1="9" x2="42" y2="9" stroke="${accentColor}"
-              stroke-width="2.5" stroke-linecap="round"/>
-        <path d="M38 3L48 9L38 15" stroke="${accentColor}"
-              stroke-width="2.5" stroke-linecap="round"
+        <line x1="2" y1="12" x2="60" y2="12" stroke="${accentColor}"
+              stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M54 4L68 12L54 20" stroke="${accentColor}"
+              stroke-width="3.5" stroke-linecap="round"
               stroke-linejoin="round" fill="none"/>
     </svg>`;
 
@@ -312,6 +314,20 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
           " crossorigin="anonymous" loading="eager" decoding="sync">`
         : '';
 
+    // ── Dark gradient overlay (left-side shadow for text readability) ──
+    const overlayHtml = `<div style="
+        position:absolute;inset:0;
+        background:linear-gradient(
+            to right,
+            rgba(0,0,0,0.45) 0%,
+            rgba(0,0,0,0.25) 35%,
+            rgba(0,0,0,0.08) 55%,
+            rgba(0,0,0,0) 70%
+        );
+        z-index:5;
+        pointer-events:none;
+    "></div>`;
+
     // ── Assemble card ────────────────────────────────────
     return `<div id="card-root" style="
         width:${CARD_W}px;
@@ -319,13 +335,14 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
         position:relative;
         overflow:hidden;
         box-sizing:border-box;
-        background:#4a4543;
+        background:#5a5550;
     ">
         ${bgHtml}
+        ${overlayHtml}
         <div style="
             position:absolute;inset:0;
             display:flex;align-items:center;
-            padding-left:80px;
+            padding-left:120px;
             z-index:10;
             pointer-events:none;
         ">
@@ -333,12 +350,14 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                 ${tokenRowHtml}
                 <div style="
                     background:${boxBg};
-                    border:1.5px solid ${boxBorder};
-                    border-radius:20px;
-                    padding:18px 48px;
+                    border:2px solid ${boxBorder};
+                    border-radius:24px;
+                    padding:24px 56px;
                     display:inline-flex;
                     align-items:center;
                     justify-content:center;
+                    backdrop-filter:blur(4px);
+                    -webkit-backdrop-filter:blur(4px);
                 ">
                     <span style="
                         font-size:${mulFontSize}px;
@@ -348,24 +367,27 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                         line-height:1.1;
                         letter-spacing:-2px;
                         white-space:nowrap;
+                        text-shadow:0 2px 12px rgba(0,0,0,0.3);
                     ">${_esc(multiplier)}</span>
                 </div>
                 <div style="
                     display:flex;align-items:center;
-                    gap:24px;margin-top:22px;
+                    gap:36px;margin-top:32px;
                 ">
                     <span style="
-                        font-size:36px;font-weight:800;
+                        font-size:48px;font-weight:800;
                         color:#ffffff;
                         font-family:'Inter',sans-serif;
                         white-space:nowrap;
+                        text-shadow:0 2px 8px rgba(0,0,0,0.5);
                     ">${_esc(entryMC)}</span>
                     ${arrowSvg}
                     <span style="
-                        font-size:36px;font-weight:800;
+                        font-size:48px;font-weight:800;
                         color:${accentColor};
                         font-family:'Inter',sans-serif;
                         white-space:nowrap;
+                        text-shadow:0 2px 8px rgba(0,0,0,0.3);
                     ">${_esc(exitMC)}</span>
                 </div>
             </div>
