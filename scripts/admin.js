@@ -1051,7 +1051,7 @@ saveTokenBtn?.addEventListener('click', async () => {
     saveTokenBtn.textContent = 'Saving…';
     try {
         const logoDataUrl = file
-            ? await compressImageFile(file, { maxSize: 256, removeBackground: true })
+            ? await compressImageFile(file, { maxSize: 256 })
             : editingToken.logoDataUrl;
         const tokenData = { name, logoDataUrl, isActive: true, updatedAt: serverTimestamp() };
 
