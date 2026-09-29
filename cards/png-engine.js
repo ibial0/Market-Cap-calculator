@@ -317,15 +317,16 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
           " crossorigin="anonymous" loading="eager" decoding="sync">`
         : '';
 
-    // ── Dark gradient overlay (subtle, for text readability) ──
+    // ── Dark gradient overlay (left side, BasedBot-style) ──
     const overlayHtml = `<div style="
         position:absolute;inset:0;
         background:linear-gradient(
             to right,
-            rgba(0,0,0,0.35) 0%,
-            rgba(0,0,0,0.18) 35%,
-            rgba(0,0,0,0.05) 55%,
-            rgba(0,0,0,0) 65%
+            rgba(0,0,0,0.50) 0%,
+            rgba(0,0,0,0.38) 25%,
+            rgba(0,0,0,0.18) 45%,
+            rgba(0,0,0,0.06) 60%,
+            rgba(0,0,0,0) 75%
         );
         z-index:5;
         pointer-events:none;
