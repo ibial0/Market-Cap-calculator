@@ -18,6 +18,7 @@ import { composeCard } from '../cards/renderer.js';
 import { getAllThemes, BUILTIN_METADATA, loadCustomThemes } from '../cards/themes/index.js';
 import { TIER_DEFS, TIER_ORDER } from '../cards/config.js';
 import { EMOTIONS } from '../cards/emotions.js';
+import { compressImageFile } from '../utils/image.js';
 
 // ── DOM References ─────────────────────────────────────────
 const authView   = document.getElementById('auth-view');
@@ -172,6 +173,7 @@ async function initDashboard() {
     designsGrid.innerHTML = '<div class="gallery-empty"><p>Loading designs…</p></div>';
     try {
         await loadAllData();
+        await loadTokenCatalogSection();
     } catch (e) {
         console.error('[Admin] initDashboard error:', e);
         designsGrid.innerHTML = `<div class="gallery-empty"><h3>Error</h3><p>${e.message}</p></div>`;
@@ -928,9 +930,11 @@ let allPngTemplates = []; // loaded from Firestore
 const navDesigns = document.getElementById('nav-designs');
 const navPng     = document.getElementById('nav-png');
 const navBg      = document.getElementById('nav-bg');
+const navTokens  = document.getElementById('nav-tokens');
 const secDesigns = document.getElementById('section-designs');
 const secPng     = document.getElementById('section-png');
 const secBg      = document.getElementById('bg-section');
+const secTokens  = document.getElementById('section-tokens');
 const contentHeader = document.querySelector('header.content-header');
 
 if (navDesigns) {
@@ -938,9 +942,11 @@ if (navDesigns) {
         navDesigns.classList.add('active');
         navPng?.classList.remove('active');
         navBg?.classList.remove('active');
+        navTokens?.classList.remove('active');
         secDesigns.style.display = '';
         secPng.style.display = 'none';
         if(secBg) secBg.style.display = 'none';
+        if(secTokens) secTokens.style.display = 'none';
         if (contentHeader) contentHeader.style.display = '';
     });
 }
@@ -950,9 +956,11 @@ if (navPng) {
         navPng.classList.add('active');
         navDesigns?.classList.remove('active');
         navBg?.classList.remove('active');
+        navTokens?.classList.remove('active');
         secDesigns.style.display = 'none';
         secPng.style.display = '';
         if(secBg) secBg.style.display = 'none';
+        if(secTokens) secTokens.style.display = 'none';
         if (contentHeader) contentHeader.style.display = 'none';
         await loadPNGSection();
     });
@@ -963,11 +971,174 @@ if (navBg) {
         navBg.classList.add('active');
         navDesigns?.classList.remove('active');
         navPng?.classList.remove('active');
+        navTokens?.classList.remove('active');
         secDesigns.style.display = 'none';
         secPng.style.display = 'none';
         if(secBg) secBg.style.display = '';
+        if(secTokens) secTokens.style.display = 'none';
         if (contentHeader) contentHeader.style.display = 'none';
         await loadBgSection();
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOKEN CATALOGUE
+//  Public tokens are stored in their own small Firestore collection so the
+//  calculator can load suggestions without an admin session.
+// ═══════════════════════════════════════════════════════════
+const tokenCatalogGrid = document.getElementById('token-catalog-grid');
+const tokenNameInput = document.getElementById('catalog-token-name');
+const tokenSymbolInput = document.getElementById('catalog-token-symbol');
+const tokenLogoInput = document.getElementById('catalog-token-logo');
+const tokenLogoLabel = document.getElementById('catalog-token-logo-label');
+const saveTokenBtn = document.getElementById('save-token-btn');
+const cancelTokenEditBtn = document.getElementById('cancel-token-edit-btn');
+let catalogTokens = [];
+let editingToken = null;
+
+if (navTokens) {
+    navTokens.addEventListener('click', async () => {
+        navTokens.classList.add('active');
+        navDesigns?.classList.remove('active');
+        navPng?.classList.remove('active');
+        navBg?.classList.remove('active');
+        secDesigns.style.display = 'none';
+        secPng.style.display = 'none';
+        if (secBg) secBg.style.display = 'none';
+        if (secTokens) secTokens.style.display = '';
+        if (contentHeader) contentHeader.style.display = 'none';
+        await loadTokenCatalogSection();
+    });
+}
+
+if (tokenLogoInput) {
+    tokenLogoInput.addEventListener('change', () => {
+        const file = tokenLogoInput.files?.[0];
+        if (tokenLogoLabel) tokenLogoLabel.textContent = file ? file.name : 'Choose logo image';
+    });
+}
+
+function resetTokenForm() {
+    editingToken = null;
+    tokenNameInput.value = '';
+    tokenSymbolInput.value = '';
+    tokenLogoInput.value = '';
+    if (tokenLogoLabel) tokenLogoLabel.textContent = 'Choose logo image';
+    if (saveTokenBtn) saveTokenBtn.textContent = 'Save Token';
+    cancelTokenEditBtn?.classList.add('hidden');
+}
+
+cancelTokenEditBtn?.addEventListener('click', resetTokenForm);
+
+saveTokenBtn?.addEventListener('click', async () => {
+    const name = tokenNameInput.value.trim();
+    const symbol = tokenSymbolInput.value.trim().replace(/^\$/, '').toUpperCase();
+    const file = tokenLogoInput.files?.[0];
+    if (!name) {
+        alert('Please enter a token name.');
+        tokenNameInput.focus();
+        return;
+    }
+    if (!file && !editingToken?.logoDataUrl) {
+        alert('Please choose a token logo.');
+        return;
+    }
+
+    const originalLabel = saveTokenBtn.textContent;
+    saveTokenBtn.disabled = true;
+    saveTokenBtn.textContent = 'Saving…';
+    try {
+        const logoDataUrl = file
+            ? await compressImageFile(file, { maxSize: 256, quality: 0.86 })
+            : editingToken.logoDataUrl;
+        const tokenData = { name, symbol, logoDataUrl, isActive: true, updatedAt: serverTimestamp() };
+
+        if (editingToken) {
+            await setDoc(doc(db, 'token_catalog', editingToken.id), tokenData, { merge: true });
+        } else {
+            tokenData.createdAt = serverTimestamp();
+            await addDoc(collection(db, 'token_catalog'), tokenData);
+        }
+        resetTokenForm();
+        await loadTokenCatalogSection();
+    } catch (error) {
+        console.error('[Admin] Token save failed:', error);
+        alert('Could not save token: ' + error.message);
+    } finally {
+        saveTokenBtn.disabled = false;
+        if (saveTokenBtn.textContent === 'Saving…') saveTokenBtn.textContent = originalLabel;
+    }
+});
+
+async function loadTokenCatalogSection() {
+    if (!tokenCatalogGrid) return;
+    tokenCatalogGrid.innerHTML = '<div class="gallery-empty"><p>Loading saved tokens…</p></div>';
+    try {
+        const snapshot = await getDocs(collection(db, 'token_catalog'));
+        catalogTokens = [];
+        snapshot.forEach(record => catalogTokens.push({ id: record.id, ...record.data() }));
+        catalogTokens.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        renderTokenCatalog();
+    } catch (error) {
+        console.error('[Admin] Token catalogue load failed:', error);
+        tokenCatalogGrid.innerHTML = `<div class="gallery-empty"><h3>Could not load tokens</h3><p>${error.message}</p></div>`;
+    }
+}
+
+function renderTokenCatalog() {
+    if (!tokenCatalogGrid) return;
+    if (!catalogTokens.length) {
+        tokenCatalogGrid.innerHTML = '<div class="gallery-empty"><h3>No tokens saved yet</h3><p>Add a token above and it will appear as a suggestion in the calculator.</p></div>';
+        return;
+    }
+
+    tokenCatalogGrid.replaceChildren();
+    catalogTokens.forEach(token => {
+        const item = document.createElement('article');
+        item.className = 'catalog-token-card';
+        const logo = document.createElement('img');
+        logo.className = 'catalog-token-logo';
+        logo.src = token.logoDataUrl;
+        logo.alt = '';
+        const details = document.createElement('div');
+        details.className = 'catalog-token-details';
+        const title = document.createElement('strong');
+        title.textContent = token.name || 'Untitled token';
+        const symbol = document.createElement('span');
+        symbol.textContent = token.symbol ? `$${String(token.symbol).replace(/^\$/, '')}` : 'No ticker';
+        details.append(title, symbol);
+
+        const actions = document.createElement('div');
+        actions.className = 'catalog-token-actions';
+        const edit = document.createElement('button');
+        edit.type = 'button'; edit.className = 'btn-secondary'; edit.textContent = 'Edit';
+        edit.addEventListener('click', () => {
+            editingToken = token;
+            tokenNameInput.value = token.name || '';
+            tokenSymbolInput.value = token.symbol || '';
+            tokenLogoInput.value = '';
+            if (tokenLogoLabel) tokenLogoLabel.textContent = 'Current logo will be kept';
+            saveTokenBtn.textContent = 'Update Token';
+            cancelTokenEditBtn?.classList.remove('hidden');
+            tokenNameInput.focus();
+        });
+        const remove = document.createElement('button');
+        remove.type = 'button'; remove.className = 'btn-danger-small'; remove.textContent = 'Delete';
+        remove.addEventListener('click', async () => {
+            if (!confirm(`Delete ${token.name || 'this token'} from suggestions?`)) return;
+            remove.disabled = true;
+            try {
+                await deleteDoc(doc(db, 'token_catalog', token.id));
+                if (editingToken?.id === token.id) resetTokenForm();
+                await loadTokenCatalogSection();
+            } catch (error) {
+                alert('Could not delete token: ' + error.message);
+                remove.disabled = false;
+            }
+        });
+        actions.append(edit, remove);
+        item.append(logo, details, actions);
+        tokenCatalogGrid.append(item);
     });
 }
 

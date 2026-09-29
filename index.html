@@ -181,10 +181,11 @@
 
         <!-- Meta Inputs: Token Name + Show Name Toggle -->
         <div class="meta-inputs">
-            <div class="input-group" style="flex:1;">
+            <div class="input-group token-autocomplete" style="flex:1;">
                 <div class="input-wrapper">
-                    <input type="text" id="token-name" class="amount-input" placeholder="Token (e.g. $SOL)">
+                    <input type="text" id="token-name" class="amount-input" placeholder="Search or enter a token (e.g. SOL)" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="token-suggestions" aria-expanded="false">
                 </div>
+                <div id="token-suggestions" class="token-suggestions hidden" role="listbox" aria-label="Token suggestions"></div>
             </div>
         </div>
 

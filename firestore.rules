@@ -25,5 +25,12 @@ service cloud.firestore {
       allow write: if request.auth != null
         && request.auth.uid == 'AERHxc73wQQdEql9vwazjUYG1J93';
     }
+
+    // Token catalogue — public calculator autocomplete, admin-managed records.
+    match /token_catalog/{tokenId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == 'AERHxc73wQQdEql9vwazjUYG1J93';
+    }
   }
 }

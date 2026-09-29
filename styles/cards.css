@@ -324,6 +324,41 @@
     background: rgba(239, 68, 68, 0.2);
 }
 
+/* Token catalogue autocomplete */
+.token-autocomplete { position: relative; z-index: 30; }
+.token-suggestions {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--bg-secondary) 94%, #0b1220);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+}
+.token-suggestion {
+    width: 100%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 13px;
+    color: var(--text-primary);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.16s ease;
+}
+.token-suggestion:last-child { border-bottom: 0; }
+.token-suggestion:hover, .token-suggestion.active { background: rgba(99, 102, 241, 0.14); }
+.token-suggestion-logo { width: 36px; height: 36px; object-fit: cover; border-radius: 10px; background: var(--bg-primary); }
+.token-suggestion-labels { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.token-suggestion-labels strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+.token-suggestion-labels small { color: var(--text-secondary); font-family: 'Roboto Mono', monospace; font-size: 0.72rem; }
+
 /* ═══════════════════════════════════════════════════════════
    Preview Action Buttons
    ═══════════════════════════════════════════════════════════ */

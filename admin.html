@@ -63,6 +63,12 @@
                     </svg>
                     Card Backgrounds
                 </button>
+                <button class="nav-item" id="nav-tokens" data-section="tokens">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="8"></circle><path d="M12 8v8M8 12h8"></path>
+                    </svg>
+                    Token Catalogue
+                </button>
             </nav>
             <div class="sidebar-footer">
                 <button id="logout-btn" class="btn-logout">
@@ -179,6 +185,36 @@
                 <div class="bg-gallery designs-grid" id="admin-bg-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:20px 0;">
                     <!-- Dynamically populated -->
                 </div>
+            </div>
+
+            <!-- ═══ Token catalogue section ═══ -->
+            <div id="section-tokens" style="display:none;">
+                <div class="catalog-heading">
+                    <div>
+                        <h2>Token Catalogue</h2>
+                        <p class="text-muted">Saved tokens appear as logo-backed suggestions in the calculator search.</p>
+                    </div>
+                </div>
+                <section class="catalog-form-panel" aria-label="Save token">
+                    <div class="input-group">
+                        <label for="catalog-token-name">Token Name</label>
+                        <input type="text" id="catalog-token-name" class="text-input" placeholder="e.g. Arbitrum" maxlength="80">
+                    </div>
+                    <div class="input-group">
+                        <label for="catalog-token-symbol">Ticker <span class="text-muted">(optional)</span></label>
+                        <input type="text" id="catalog-token-symbol" class="text-input" placeholder="e.g. ARB" maxlength="20" autocapitalize="characters">
+                    </div>
+                    <div class="input-group">
+                        <label for="catalog-token-logo">Token Logo</label>
+                        <label class="catalog-file-label" for="catalog-token-logo"><span id="catalog-token-logo-label">Choose logo image</span></label>
+                        <input type="file" id="catalog-token-logo" accept="image/*" hidden>
+                    </div>
+                    <div class="catalog-form-actions">
+                        <button type="button" id="cancel-token-edit-btn" class="btn-secondary hidden">Cancel</button>
+                        <button type="button" id="save-token-btn" class="btn-primary">Save Token</button>
+                    </div>
+                </section>
+                <div id="token-catalog-grid" class="catalog-token-grid"></div>
             </div>
 
         </main>

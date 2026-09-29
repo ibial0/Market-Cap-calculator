@@ -13,6 +13,8 @@ import { initWallet } from './wallet.js';
 import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount, getAllBackgrounds } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
 import { EMOTIONS } from '../cards/emotions.js';
+import { loadTokenCatalog, searchTokenCatalog } from '../cards/token-catalog.js';
+import { compressImageFile } from '../utils/image.js';
 
 // Card asset readiness — RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
@@ -22,6 +24,9 @@ const _assetLoad = Promise.allSettled([loadCustomThemes(), loadPNGTemplates(), l
 const _assetTimeout = new Promise(r => setTimeout(r, 10000));
 const cardAssetsReady = Promise.race([_assetLoad, _assetTimeout])
     .then(() => { _assetsLoaded = true; });
+
+// Suggestions are optional, so a catalogue connection problem never delays cards.
+loadTokenCatalog();
 
 // ── Tab Visibility: Re-init if returning after long absence ──
 document.addEventListener('visibilitychange', () => {
@@ -41,6 +46,7 @@ const elToken    = document.getElementById('token-name');
 
 // Token logo state
 let _tokenLogoDataUrl = null;
+let _tokenLogoSource = 'none'; // 'catalog', 'upload', or 'none'
 
 // Current background state (for change-bg feature)
 let _currentBgSrc = null;
@@ -52,38 +58,110 @@ const tokenLogoUpload = document.getElementById('token-logo-upload');
 const tokenLogoPreview = document.getElementById('token-logo-preview');
 const tokenLogoPlaceholder = document.getElementById('token-logo-placeholder');
 const tokenLogoRemove = document.getElementById('token-logo-remove');
+const tokenLogoSub = document.querySelector('.token-logo-sub');
+const tokenSuggestions = document.getElementById('token-suggestions');
+let _highlightedSuggestion = -1;
+
+function setTokenLogo(dataUrl, source = 'upload') {
+    _tokenLogoDataUrl = dataUrl || null;
+    _tokenLogoSource = dataUrl ? source : 'none';
+    if (tokenLogoPreview) {
+        tokenLogoPreview.src = dataUrl || '';
+        tokenLogoPreview.classList.toggle('hidden', !dataUrl);
+    }
+    tokenLogoPlaceholder?.classList.toggle('hidden', Boolean(dataUrl));
+    tokenLogoRemove?.classList.toggle('hidden', !dataUrl);
+    if (tokenLogoSub) {
+        tokenLogoSub.textContent = dataUrl
+            ? (source === 'catalog' ? 'Saved token logo selected' : 'Custom logo selected')
+            : 'Optional — tap to upload';
+    }
+}
+
+function saveTokenName(name) {
+    State.tokenName = name;
+    Storage.set('tokenName', name);
+}
+
+function hideTokenSuggestions() {
+    if (!tokenSuggestions) return;
+    tokenSuggestions.replaceChildren();
+    tokenSuggestions.classList.add('hidden');
+    elToken?.setAttribute('aria-expanded', 'false');
+    _highlightedSuggestion = -1;
+}
+
+function selectCatalogToken(token) {
+    if (!elToken) return;
+    elToken.value = token.name;
+    saveTokenName(token.name);
+    setTokenLogo(token.logoDataUrl, 'catalog');
+    hideTokenSuggestions();
+}
+
+function renderTokenSuggestions(query) {
+    if (!tokenSuggestions) return;
+    const matches = searchTokenCatalog(query);
+    tokenSuggestions.replaceChildren();
+    _highlightedSuggestion = -1;
+
+    matches.forEach((token, index) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'token-suggestion';
+        option.dataset.index = String(index);
+
+        const logo = document.createElement('img');
+        logo.className = 'token-suggestion-logo';
+        logo.src = token.logoDataUrl;
+        logo.alt = '';
+
+        const labels = document.createElement('span');
+        labels.className = 'token-suggestion-labels';
+        const name = document.createElement('strong');
+        name.textContent = token.name;
+        labels.append(name);
+        if (token.symbol) {
+            const symbol = document.createElement('small');
+            symbol.textContent = token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`;
+            labels.append(symbol);
+        }
+
+        option.append(logo, labels);
+        option.addEventListener('mousedown', event => {
+            // mousedown fires before the input blur, keeping touch/click selection reliable.
+            event.preventDefault();
+            selectCatalogToken(token);
+        });
+        tokenSuggestions.append(option);
+    });
+    tokenSuggestions.classList.toggle('hidden', matches.length === 0);
+    elToken?.setAttribute('aria-expanded', String(matches.length > 0));
+}
 
 if (tokenLogoArea) {
     tokenLogoArea.addEventListener('click', () => tokenLogoUpload?.click());
 }
 
 if (tokenLogoUpload) {
-    tokenLogoUpload.addEventListener('change', (e) => {
+    tokenLogoUpload.addEventListener('change', async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            _tokenLogoDataUrl = reader.result;
-            if (tokenLogoPreview) {
-                tokenLogoPreview.src = reader.result;
-                tokenLogoPreview.classList.remove('hidden');
-            }
-            tokenLogoPlaceholder?.classList.add('hidden');
-            tokenLogoRemove?.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+        try {
+            setTokenLogo(await compressImageFile(file), 'upload');
+        } catch (error) {
+            console.warn('[TokenLogo] Upload failed:', error.message);
+            _showToast(error.message || 'Could not use that logo. Please choose another image.', 'warning');
+        } finally {
+            // Allows choosing the same file again after removing or correcting it.
+            tokenLogoUpload.value = '';
+        }
     });
 }
 
 if (tokenLogoRemove) {
     tokenLogoRemove.addEventListener('click', () => {
-        _tokenLogoDataUrl = null;
-        if (tokenLogoPreview) {
-            tokenLogoPreview.src = '';
-            tokenLogoPreview.classList.add('hidden');
-        }
-        tokenLogoPlaceholder?.classList.remove('hidden');
-        tokenLogoRemove.classList.add('hidden');
+        setTokenLogo(null);
         if (tokenLogoUpload) tokenLogoUpload.value = '';
     });
 }
@@ -119,11 +197,6 @@ if (emotionPicker) {
         emotionPicker.appendChild(pill);
     });
 }
-
-// Close popup
-if (closeEmPopup) closeEmPopup.addEventListener('click', () => {
-    emotionPopup.style.display = 'none';
-});
 
 // ── Sidebar Gallery ──────────────────────────────────────────
 const bgSidebar       = document.getElementById('bg-sidebar');
@@ -278,8 +351,29 @@ const handleFocus = (e) => {
 
 if (elToken) {
     elToken.addEventListener('input', e => { 
-        State.tokenName = e.target.value; 
-        Storage.set('tokenName', State.tokenName); 
+        saveTokenName(e.target.value);
+        // A changed name should not silently retain the logo from a different
+        // catalogue token. Custom uploads remain intact.
+        if (_tokenLogoSource === 'catalog') setTokenLogo(null);
+        renderTokenSuggestions(e.target.value);
+    });
+    elToken.addEventListener('focus', () => renderTokenSuggestions(elToken.value));
+    elToken.addEventListener('blur', () => setTimeout(hideTokenSuggestions, 120));
+    elToken.addEventListener('keydown', event => {
+        const options = Array.from(tokenSuggestions?.querySelectorAll('.token-suggestion') || []);
+        if (!options.length) return;
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            _highlightedSuggestion = event.key === 'ArrowDown'
+                ? (_highlightedSuggestion + 1) % options.length
+                : (_highlightedSuggestion - 1 + options.length) % options.length;
+            options.forEach((option, index) => option.classList.toggle('active', index === _highlightedSuggestion));
+        } else if (event.key === 'Enter' && _highlightedSuggestion >= 0) {
+            event.preventDefault();
+            options[_highlightedSuggestion].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        } else if (event.key === 'Escape') {
+            hideTokenSuggestions();
+        }
     });
 }
 
@@ -738,6 +832,8 @@ if (generateBtn) {
 
         // Show emotion popup or generate directly
         if (emotionPopup) {
+            // Clear an old inline override left by previous app versions.
+            emotionPopup.style.removeProperty('display');
             emotionPopup.classList.add('active');
         } else {
             await _doGenerate(data);
@@ -771,7 +867,7 @@ async function _doGenerate(data) {
     _currentBgSrc = null;
     _currentBgId = null;
 
-    previewOverlay.classList.add('active');
+    previewOverlay?.classList.add('active');
     // Close sidebar if open
     if (bgSidebar) bgSidebar.style.display = 'none';
 
@@ -934,10 +1030,10 @@ async function generateRender(data, _unused) {
     const spinner = document.getElementById('preview-loading');
     const img     = document.getElementById('preview-img');
 
-    spinner.style.display = 'block';
-    img.classList.remove('loaded');
-
     try {
+        if (!node || !spinner || !img) throw new Error('Card preview is unavailable.');
+        spinner.style.display = 'block';
+        img.classList.remove('loaded');
         // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
             cardAssetsReady,
@@ -974,18 +1070,18 @@ async function generateRender(data, _unused) {
         });
 
         img.classList.add('loaded');
-        spinner.style.display = 'none';
-        isGenerating = false;
 
     } catch (err) {
         console.error('[Card] Render failed:', err);
-        spinner.style.display = 'none';
-        isGenerating = false;
-
         const msg = err.message?.includes('html2canvas')
             ? 'Renderer not loaded. Please refresh the page.'
             : 'Card generation failed. Please try again.';
         _showToast(msg, 'error', 6000);
+    } finally {
+        if (spinner) spinner.style.display = 'none';
+        // This must run for every failure path; otherwise subsequent Generate
+        // clicks are ignored because the app believes a render is still running.
+        isGenerating = false;
     }
 }
 
