@@ -1,4 +1,4 @@
-import { State } from '../config/state.js';
+﻿import { State } from '../config/state.js';
 import { Storage } from '../utils/storage.js';
 import { formatNumber, parseAmount } from '../utils/formatters.js';
 import { calculateROI } from '../calculator/core.js';
@@ -13,8 +13,10 @@ import { initWallet } from './wallet.js';
 import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount, getAllBackgrounds } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
 import { EMOTIONS } from '../cards/emotions.js';
+import { loadTokenCatalog, searchTokenCatalog } from '../cards/token-catalog.js';
+import { compressImageFile } from '../utils/image.js';
 
-// Card asset readiness — RACE between actual load and a max timeout.
+// Card asset readiness â€” RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
 // Previously this was allSettled([..., timeout]) which ALWAYS waited 10 full seconds!
 let _assetsLoaded = false;
@@ -23,7 +25,10 @@ const _assetTimeout = new Promise(r => setTimeout(r, 10000));
 const cardAssetsReady = Promise.race([_assetLoad, _assetTimeout])
     .then(() => { _assetsLoaded = true; });
 
-// ── Tab Visibility: Re-init if returning after long absence ──
+// Suggestions are optional, so a catalogue connection problem never delays cards.
+loadTokenCatalog();
+
+// â”€â”€ Tab Visibility: Re-init if returning after long absence â”€â”€
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !_assetsLoaded) {
         loadPNGTemplates().catch(() => {});
@@ -31,9 +36,9 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  DOM Elements
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const elInitMC   = document.getElementById('initial-mc');
 const elTargetMC = document.getElementById('target-mc');
 const elInv      = document.getElementById('investment');
@@ -41,6 +46,7 @@ const elToken    = document.getElementById('token-name');
 
 // Token logo state
 let _tokenLogoDataUrl = null;
+let _tokenLogoSource = 'none'; // 'catalog', 'upload', or 'none'
 
 // Current background state (for change-bg feature)
 let _currentBgSrc = null;
@@ -52,43 +58,110 @@ const tokenLogoUpload = document.getElementById('token-logo-upload');
 const tokenLogoPreview = document.getElementById('token-logo-preview');
 const tokenLogoPlaceholder = document.getElementById('token-logo-placeholder');
 const tokenLogoRemove = document.getElementById('token-logo-remove');
+const tokenLogoSub = document.querySelector('.token-logo-sub');
+const tokenSuggestions = document.getElementById('token-suggestions');
+let _highlightedSuggestion = -1;
+
+function setTokenLogo(dataUrl, source = 'upload') {
+    _tokenLogoDataUrl = dataUrl || null;
+    _tokenLogoSource = dataUrl ? source : 'none';
+    if (tokenLogoPreview) {
+        tokenLogoPreview.src = dataUrl || '';
+        tokenLogoPreview.classList.toggle('hidden', !dataUrl);
+    }
+    tokenLogoPlaceholder?.classList.toggle('hidden', Boolean(dataUrl));
+    tokenLogoRemove?.classList.toggle('hidden', !dataUrl);
+    if (tokenLogoSub) {
+        tokenLogoSub.textContent = dataUrl
+            ? (source === 'catalog' ? 'Saved token logo selected' : 'Custom logo selected')
+            : 'Optional â€” tap to upload';
+    }
+}
+
+function saveTokenName(name) {
+    State.tokenName = name;
+    Storage.set('tokenName', name);
+}
+
+function hideTokenSuggestions() {
+    if (!tokenSuggestions) return;
+    tokenSuggestions.replaceChildren();
+    tokenSuggestions.classList.add('hidden');
+    elToken?.setAttribute('aria-expanded', 'false');
+    _highlightedSuggestion = -1;
+}
+
+function selectCatalogToken(token) {
+    if (!elToken) return;
+    const name = String(token.name || '').toUpperCase();
+    elToken.value = name;
+    saveTokenName(name);
+    setTokenLogo(token.logoDataUrl, 'catalog');
+    hideTokenSuggestions();
+}
+
+function renderTokenSuggestions(query) {
+    if (!tokenSuggestions) return;
+    const matches = searchTokenCatalog(query);
+    tokenSuggestions.replaceChildren();
+    _highlightedSuggestion = -1;
+
+    matches.forEach((token, index) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'token-suggestion';
+        option.dataset.index = String(index);
+
+        const logo = document.createElement('img');
+        logo.className = 'token-suggestion-logo';
+        logo.src = token.logoDataUrl;
+        logo.alt = '';
+
+        const labels = document.createElement('span');
+        labels.className = 'token-suggestion-labels';
+        const name = document.createElement('strong');
+        name.textContent = String(token.name || '').toUpperCase();
+        labels.append(name);
+        option.append(logo, labels);
+        option.addEventListener('mousedown', event => {
+            // mousedown fires before the input blur, keeping touch/click selection reliable.
+            event.preventDefault();
+            selectCatalogToken(token);
+        });
+        tokenSuggestions.append(option);
+    });
+    tokenSuggestions.classList.toggle('hidden', matches.length === 0);
+    elToken?.setAttribute('aria-expanded', String(matches.length > 0));
+}
 
 if (tokenLogoArea) {
     tokenLogoArea.addEventListener('click', () => tokenLogoUpload?.click());
 }
 
 if (tokenLogoUpload) {
-    tokenLogoUpload.addEventListener('change', (e) => {
+    tokenLogoUpload.addEventListener('change', async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            _tokenLogoDataUrl = reader.result;
-            if (tokenLogoPreview) {
-                tokenLogoPreview.src = reader.result;
-                tokenLogoPreview.classList.remove('hidden');
-            }
-            tokenLogoPlaceholder?.classList.add('hidden');
-            tokenLogoRemove?.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+        try {
+            setTokenLogo(await compressImageFile(file), 'upload');
+        } catch (error) {
+            console.warn('[TokenLogo] Upload failed:', error.message);
+            _showToast(error.message || 'Could not use that logo. Please choose another image.', 'warning');
+        } finally {
+            // Allows choosing the same file again after removing or correcting it.
+            tokenLogoUpload.value = '';
+        }
     });
 }
 
 if (tokenLogoRemove) {
     tokenLogoRemove.addEventListener('click', () => {
-        _tokenLogoDataUrl = null;
-        if (tokenLogoPreview) {
-            tokenLogoPreview.src = '';
-            tokenLogoPreview.classList.add('hidden');
-        }
-        tokenLogoPlaceholder?.classList.remove('hidden');
-        tokenLogoRemove.classList.add('hidden');
+        setTokenLogo(null);
         if (tokenLogoUpload) tokenLogoUpload.value = '';
     });
 }
 
-// ── Emotion Picker (Popup) ──────────────────────────────────
+// â”€â”€ Emotion Picker (Popup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _selectedEmotion = null; // null means "any/random"
 
 const emotionPopup   = document.getElementById('emotion-popup');
@@ -120,12 +193,7 @@ if (emotionPicker) {
     });
 }
 
-// Close popup
-if (closeEmPopup) closeEmPopup.addEventListener('click', () => {
-    emotionPopup.style.display = 'none';
-});
-
-// ── Sidebar Gallery ──────────────────────────────────────────
+// â”€â”€ Sidebar Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const bgSidebar       = document.getElementById('bg-sidebar');
 const bgSidebarGrid   = document.getElementById('bg-sidebar-grid');
 const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
@@ -156,15 +224,15 @@ const resMultiplier = document.getElementById('res-multiplier');
 let dcaInitRows   = []; // [{mc, mcUnit, amount}]
 let dcaTargetRows = [];
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Init inputs from State
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 if (elToken) elToken.value = State.tokenName;
 _updateNamePreview();
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Core Calculate
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const calculate = () => {
     const dcaInitActive   = document.getElementById('dca-init-toggle')?.checked;
     const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
@@ -210,9 +278,9 @@ const calculate = () => {
         resRoi.className    = 'result-value ' + (result.roi >= 0 ? 'value-green' : 'value-red');
         
         if (State.showBdt) {
-            resFinalBdt.innerText = `৳ ${formatNumber(result.finalValue * State.bdtRate)}`;
+            resFinalBdt.innerText = `à§³ ${formatNumber(result.finalValue * State.bdtRate)}`;
             resFinalBdt.classList.remove('hidden');
-            resProfitBdt.innerText = `৳ ${formatNumber(result.profit * State.bdtRate)}`;
+            resProfitBdt.innerText = `à§³ ${formatNumber(result.profit * State.bdtRate)}`;
             resProfitBdt.classList.remove('hidden');
             resProfitBdt.style.color = result.profit >= 0 ? 'var(--success)' : 'var(--danger)';
         } else {
@@ -231,7 +299,7 @@ const calculate = () => {
     }
 };
 
-// ─── DCA Avg Calculation ──────────────────────────────────
+// â”€â”€â”€ DCA Avg Calculation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _calcDCAAvg = (rows) => {
     let totalWeight = 0, totalAmount = 0;
     rows.forEach(r => {
@@ -248,16 +316,16 @@ const _calcDCAAvg = (rows) => {
 const _updateDCAAvgDisplay = (elId, avgMC) => {
     const el = document.getElementById(elId);
     if (!el) return;
-    if (avgMC <= 0) { el.textContent = '—'; return; }
+    if (avgMC <= 0) { el.textContent = 'â€”'; return; }
     if (avgMC >= 1e9) el.textContent = `$${(avgMC / 1e9).toFixed(2)}B`;
     else if (avgMC >= 1e6) el.textContent = `$${(avgMC / 1e6).toFixed(2)}M`;
     else if (avgMC >= 1e3) el.textContent = `$${(avgMC / 1e3).toFixed(2)}K`;
     else el.textContent = `$${formatNumber(avgMC)}`;
 };
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Handlers
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const handleInput = () => calculate();
 const handleBlur = (e) => {
     let val = parseAmount(e.target.value);
@@ -278,14 +346,35 @@ const handleFocus = (e) => {
 
 if (elToken) {
     elToken.addEventListener('input', e => { 
-        State.tokenName = e.target.value; 
-        Storage.set('tokenName', State.tokenName); 
+        saveTokenName(e.target.value);
+        // A changed name should not silently retain the logo from a different
+        // catalogue token. Custom uploads remain intact.
+        if (_tokenLogoSource === 'catalog') setTokenLogo(null);
+        renderTokenSuggestions(e.target.value);
+    });
+    elToken.addEventListener('focus', () => renderTokenSuggestions(elToken.value));
+    elToken.addEventListener('blur', () => setTimeout(hideTokenSuggestions, 120));
+    elToken.addEventListener('keydown', event => {
+        const options = Array.from(tokenSuggestions?.querySelectorAll('.token-suggestion') || []);
+        if (!options.length) return;
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            _highlightedSuggestion = event.key === 'ArrowDown'
+                ? (_highlightedSuggestion + 1) % options.length
+                : (_highlightedSuggestion - 1 + options.length) % options.length;
+            options.forEach((option, index) => option.classList.toggle('active', index === _highlightedSuggestion));
+        } else if (event.key === 'Enter' && _highlightedSuggestion >= 0) {
+            event.preventDefault();
+            options[_highlightedSuggestion].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        } else if (event.key === 'Escape') {
+            hideTokenSuggestions();
+        }
     });
 }
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Multiplier Toggles (single mode)
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const setupToggles = (groupId, stateKey) => {
     const btns = document.querySelectorAll(`#${groupId} .mul-btn`);
     btns.forEach(btn => {
@@ -300,9 +389,9 @@ const setupToggles = (groupId, stateKey) => {
 setupToggles('init-toggles', 'initMul');
 setupToggles('target-toggles', 'targetMul');
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  DCA Toggle Setup
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const setupDCAToggle = (toggleId, singleId, multiId, rowsContainerId, addBtnId, rows, avgContainerId) => {
     const toggle   = document.getElementById(toggleId);
     const single   = document.getElementById(singleId);
@@ -344,7 +433,7 @@ const setupDCAToggle = (toggleId, singleId, multiId, rowsContainerId, addBtnId, 
 setupDCAToggle('dca-init-toggle', 'init-single', 'init-multi', 'init-dca-rows', 'add-init-dca-row', dcaInitRows, 'init-dca-avg');
 setupDCAToggle('dca-target-toggle', 'target-single', 'target-multi', 'target-dca-rows', 'add-target-dca-row', dcaTargetRows, 'target-dca-avg');
 
-// ─── Render DCA Rows ──────────────────────────────────────
+// â”€â”€â”€ Render DCA Rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const renderDCARows = (containerId, rows, onChange) => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -364,7 +453,7 @@ const renderDCARows = (containerId, rows, onChange) => {
             <span class="prefix">$</span>
             <input type="number" class="amount-input dca-amt-inp" data-index="${i}" placeholder="0" value="${row.amount}" inputmode="decimal" min="0">
         </div>
-        ${rows.length > 1 ? `<button class="dca-remove-btn" data-index="${i}">×</button>` : ''}
+        ${rows.length > 1 ? `<button class="dca-remove-btn" data-index="${i}">Ã—</button>` : ''}
     </div>`).join('');
 
     // Bind events
@@ -396,9 +485,9 @@ const renderDCARows = (containerId, rows, onChange) => {
     });
 };
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Show Name Toggle
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const showNameToggle = document.getElementById('show-name-toggle');
 if (showNameToggle) {
     showNameToggle.checked = State.showUserName;
@@ -415,33 +504,48 @@ function _updateNamePreview() {
     if (name) {
         previewEl.textContent = `"${name}" will appear on your card`;
     } else {
-        previewEl.textContent = 'No name set — Go to Profile to set your name';
+        previewEl.textContent = 'No name set â€” Go to Profile to set your name';
     }
 }
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Tab Navigation
-// ═══════════════════════════════════════════════════════════
-const tabBtns   = document.querySelectorAll('.tab-btn');
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+const menuNavBtns = document.querySelectorAll('.menu-nav-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
+const profileMenuOverlayLocal = document.getElementById('profile-menu-overlay');
 
-tabBtns.forEach(btn => {
+menuNavBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const target = btn.dataset.tab;
-        tabBtns.forEach(b => b.classList.remove('active'));
+        menuNavBtns.forEach(b => {
+            b.style.borderColor = 'var(--border)';
+            b.style.color = 'var(--text-secondary)';
+        });
         tabPanels.forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(`tab-${target}`)?.classList.add('active');
+        
+        btn.style.borderColor = 'var(--accent-primary)';
+        btn.style.color = 'var(--accent-primary)';
+        document.getElementById('tab-' + target)?.classList.add('active');
+        
+        if (profileMenuOverlayLocal) profileMenuOverlayLocal.classList.remove('active');
     });
+});
+
+const calcNavBtn = document.querySelector('.menu-nav-btn[data-tab="calculator"]');
+if (calcNavBtn) {
+    calcNavBtn.style.borderColor = 'var(--accent-primary)';
+    calcNavBtn.style.color = 'var(--accent-primary)';
+}
 });
 
 // Switch to calculator tab from journal analysis
 window.addEventListener('journal-generate-card', (e) => {
     const { token, dca } = e.detail;
     // Switch to calculator
-    tabBtns.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.menu-nav-btn').forEach(b => { b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text-secondary)'; });
     tabPanels.forEach(p => p.classList.remove('active'));
-    document.querySelector('[data-tab="calculator"]')?.classList.add('active');
+    const calcBtn = document.querySelector('.menu-nav-btn[data-tab="calculator"]'); if (calcBtn) { calcBtn.style.borderColor = 'var(--accent-primary)'; calcBtn.style.color = 'var(--accent-primary)'; }
     document.getElementById('tab-calculator')?.classList.add('active');
     // Pre-fill token name
     if (elToken) { elToken.value = token.tokenName; State.tokenName = token.tokenName; }
@@ -478,9 +582,9 @@ window.addEventListener('journal-generate-card', (e) => {
     calculate();
 });
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Init subsystems
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 initTheme();
 initModals(calculate);
 initProfile();
@@ -502,24 +606,24 @@ document.getElementById('profile-save-btn')?.addEventListener('click', () => {
     setTimeout(_updateNamePreview, 900);
 });
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Service Worker
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
     });
 }
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Card Generation Logic
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // Detect mobile for performance tuning
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
     || window.innerWidth <= 768;
 
-// ── Toast Notification (replaces all alert() calls) ────────
+// â”€â”€ Toast Notification (replaces all alert() calls) â”€â”€â”€â”€â”€â”€â”€â”€
 function _showToast(msg, type = 'error', durationMs = 4000) {
     let container = document.getElementById('card-toast-container');
     if (!container) {
@@ -534,10 +638,10 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
     }
 
     const colors = {
-        error:   { bg: '#1e1e2e', border: '#ff4b4b', icon: '⚠️' },
-        info:    { bg: '#1e1e2e', border: '#38bdf8', icon: 'ℹ️' },
-        warning: { bg: '#1e1e2e', border: '#f59e0b', icon: '⚡' },
-        success: { bg: '#1e1e2e', border: '#10b981', icon: '✅' },
+        error:   { bg: '#1e1e2e', border: '#ff4b4b', icon: 'âš ï¸' },
+        info:    { bg: '#1e1e2e', border: '#38bdf8', icon: 'â„¹ï¸' },
+        warning: { bg: '#1e1e2e', border: '#f59e0b', icon: 'âš¡' },
+        success: { bg: '#1e1e2e', border: '#10b981', icon: 'âœ…' },
     };
     const c = colors[type] || colors.error;
 
@@ -563,7 +667,7 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
     }, durationMs);
 }
 
-// ── Image pre-fetch as blob URL (CORS workaround for mobile) ──
+// â”€â”€ Image pre-fetch as blob URL (CORS workaround for mobile) â”€â”€
 async function _fetchAsBlob(url) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 8000); // 8 second max
@@ -579,7 +683,7 @@ async function _fetchAsBlob(url) {
     }
 }
 
-// ── Wait for an img element to fully decode ────────────────
+// â”€â”€ Wait for an img element to fully decode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _waitForImg(el, timeoutMs) {
     if (el.complete && el.naturalWidth > 0) return Promise.resolve(true);
     return new Promise(resolve => {
@@ -590,7 +694,7 @@ function _waitForImg(el, timeoutMs) {
     });
 }
 
-// ── Wait for html2canvas to be ready (loaded with defer) ──
+// â”€â”€ Wait for html2canvas to be ready (loaded with defer) â”€â”€
 // html2canvas uses `defer` so it may not be available the instant
 // the module runs. Poll every 100ms until it appears or timeout.
 function _waitForHtml2Canvas(timeoutMs = 8000) {
@@ -606,7 +710,7 @@ function _waitForHtml2Canvas(timeoutMs = 8000) {
     });
 }
 
-// ── Core html2canvas capture with retry ─────────────────────
+// â”€â”€ Core html2canvas capture with retry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function _captureCanvas(node, attempt = 1) {
     const maxAttempts = 3;
     const scale = isMobile ? 1.0 : 2.0; // Lower scale on mobile to prevent OOM
@@ -738,6 +842,8 @@ if (generateBtn) {
 
         // Show emotion popup or generate directly
         if (emotionPopup) {
+            // Clear an old inline override left by previous app versions.
+            emotionPopup.style.removeProperty('display');
             emotionPopup.classList.add('active');
         } else {
             await _doGenerate(data);
@@ -771,12 +877,12 @@ async function _doGenerate(data) {
     _currentBgSrc = null;
     _currentBgId = null;
 
-    previewOverlay.classList.add('active');
+    previewOverlay?.classList.add('active');
     // Close sidebar if open
     if (bgSidebar) bgSidebar.style.display = 'none';
 
     const origHtml = generateBtn.innerHTML;
-    generateBtn.innerHTML = 'Generating…';
+    generateBtn.innerHTML = 'Generatingâ€¦';
     generateBtn.disabled  = true;
     generateBtn.style.opacity = '0.7';
 
@@ -789,7 +895,7 @@ async function _doGenerate(data) {
     }
 }
 
-// ── Change Background Button ────────────────────────────────
+// â”€â”€ Change Background Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const changeBgBtn = document.getElementById('btn-change-bg');
 if (changeBgBtn) {
     changeBgBtn.addEventListener('click', async () => {
@@ -805,11 +911,11 @@ if (changeBgBtn) {
         document.getElementById('preview-img').classList.remove('loaded');
 
         const origHtml = changeBgBtn.innerHTML;
-        changeBgBtn.innerHTML = 'Changing…';
+        changeBgBtn.innerHTML = 'Changingâ€¦';
         changeBgBtn.disabled = true;
 
         try {
-            // Get next background — stay within same emotion
+            // Get next background â€” stay within same emotion
             const bg = _selectedEmotion
                 ? getNextBackgroundByEmotion(_selectedEmotion)
                 : getNextBackground();
@@ -827,7 +933,7 @@ if (changeBgBtn) {
     });
 }
 
-// ── Populate Sidebar Grid ──────────────────────────────────
+// â”€â”€ Populate Sidebar Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function _populateSidebar() {
     if (!bgSidebarGrid) return;
@@ -871,7 +977,7 @@ function _populateSidebar() {
     });
 }
 
-// ── Upload Background Button ────────────────────────────────
+// â”€â”€ Upload Background Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const uploadBgBtn = document.getElementById('btn-upload-bg');
 const bgUploadInput = document.getElementById('bg-upload-input');
 
@@ -898,7 +1004,7 @@ if (bgUploadInput) {
     });
 }
 
-// ── Copy to Clipboard Button ────────────────────────────────
+// â”€â”€ Copy to Clipboard Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const copyBtn = document.getElementById('btn-copy');
 if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
@@ -926,7 +1032,7 @@ if (copyBtn) {
     });
 }
 
-// ── Generate Render (New Simple Card Design) ────────────────
+// â”€â”€ Generate Render (New Simple Card Design) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function generateRender(data, _unused) {
     isGenerating = true;
     window.lastData = data;
@@ -934,10 +1040,10 @@ async function generateRender(data, _unused) {
     const spinner = document.getElementById('preview-loading');
     const img     = document.getElementById('preview-img');
 
-    spinner.style.display = 'block';
-    img.classList.remove('loaded');
-
     try {
+        if (!node || !spinner || !img) throw new Error('Card preview is unavailable.');
+        spinner.style.display = 'block';
+        img.classList.remove('loaded');
         // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
             cardAssetsReady,
@@ -974,22 +1080,22 @@ async function generateRender(data, _unused) {
         });
 
         img.classList.add('loaded');
-        spinner.style.display = 'none';
-        isGenerating = false;
 
     } catch (err) {
         console.error('[Card] Render failed:', err);
-        spinner.style.display = 'none';
-        isGenerating = false;
-
         const msg = err.message?.includes('html2canvas')
             ? 'Renderer not loaded. Please refresh the page.'
             : 'Card generation failed. Please try again.';
         _showToast(msg, 'error', 6000);
+    } finally {
+        if (spinner) spinner.style.display = 'none';
+        // This must run for every failure path; otherwise subsequent Generate
+        // clicks are ignored because the app believes a render is still running.
+        isGenerating = false;
     }
 }
 
-// ── Download Button ─────────────────────────────────────────
+// â”€â”€ Download Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const downloadBtn = document.getElementById('btn-download');
 if (downloadBtn) {
     downloadBtn.addEventListener('click', () => {
@@ -1002,7 +1108,9 @@ if (downloadBtn) {
     });
 }
 
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Initial calculation
-// ═══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 calculate();
+
+
