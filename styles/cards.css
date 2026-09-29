@@ -274,6 +274,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
     border-radius: 14px;
 }
 
@@ -354,7 +355,7 @@
 }
 .token-suggestion:last-child { border-bottom: 0; }
 .token-suggestion:hover, .token-suggestion.active { background: rgba(99, 102, 241, 0.14); }
-.token-suggestion-logo { width: 36px; height: 36px; object-fit: cover; border-radius: 10px; background: var(--bg-primary); }
+.token-suggestion-logo { width: 36px; height: 36px; object-fit: cover; border-radius: 50%; background: transparent; }
 .token-suggestion-labels { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
 .token-suggestion-labels strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
 .token-suggestion-labels small { color: var(--text-secondary); font-family: 'Roboto Mono', monospace; font-size: 0.72rem; }

@@ -13,7 +13,7 @@ export function loadTokenCatalog() {
             const snapshot = await getDocs(collection(db, 'token_catalog'));
             catalog = [];
             snapshot.forEach(record => {
-                const token = { id: record.id, ...record.data() };
+                const token = { id: record.id, ...record.data(), name: String(record.data().name || '').toUpperCase() };
                 if (token.isActive !== false && token.name && token.logoDataUrl) catalog.push(token);
             });
             catalog.sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -41,13 +41,9 @@ export function searchTokenCatalog(query, limit = 8) {
 
 function matchScore(token, query) {
     const name = normalize(token.name);
-    const symbol = normalize(token.symbol);
-    if (symbol === query) return 1000;
-    if (name === query) return 980;
-    if (symbol.startsWith(query)) return 900 - symbol.length;
-    if (name.startsWith(query)) return 800 - name.length;
+    if (name === query) return 1000;
+    if (name.startsWith(query)) return 900 - name.length;
     if (name.split(/\s+/).some(word => word.startsWith(query))) return 700;
-    if (symbol.includes(query)) return 500;
     if (name.includes(query)) return 400;
     return 0;
 }

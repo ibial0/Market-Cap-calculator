@@ -93,8 +93,9 @@ function hideTokenSuggestions() {
 
 function selectCatalogToken(token) {
     if (!elToken) return;
-    elToken.value = token.name;
-    saveTokenName(token.name);
+    const name = String(token.name || '').toUpperCase();
+    elToken.value = name;
+    saveTokenName(name);
     setTokenLogo(token.logoDataUrl, 'catalog');
     hideTokenSuggestions();
 }
@@ -119,14 +120,8 @@ function renderTokenSuggestions(query) {
         const labels = document.createElement('span');
         labels.className = 'token-suggestion-labels';
         const name = document.createElement('strong');
-        name.textContent = token.name;
+        name.textContent = String(token.name || '').toUpperCase();
         labels.append(name);
-        if (token.symbol) {
-            const symbol = document.createElement('small');
-            symbol.textContent = token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`;
-            labels.append(symbol);
-        }
-
         option.append(logo, labels);
         option.addEventListener('mousedown', event => {
             // mousedown fires before the input blur, keeping touch/click selection reliable.

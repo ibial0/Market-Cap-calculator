@@ -9,7 +9,7 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-    collection, getDocs, doc, setDoc, deleteDoc, getDoc, serverTimestamp, addDoc
+    collection, getDocs, doc, setDoc, deleteDoc, getDoc, serverTimestamp, addDoc, deleteField
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
     getStorage, ref, uploadString, getDownloadURL, deleteObject
@@ -988,7 +988,6 @@ if (navBg) {
 // ═══════════════════════════════════════════════════════════
 const tokenCatalogGrid = document.getElementById('token-catalog-grid');
 const tokenNameInput = document.getElementById('catalog-token-name');
-const tokenSymbolInput = document.getElementById('catalog-token-symbol');
 const tokenLogoInput = document.getElementById('catalog-token-logo');
 const tokenLogoLabel = document.getElementById('catalog-token-logo-label');
 const saveTokenBtn = document.getElementById('save-token-btn');
@@ -1018,10 +1017,14 @@ if (tokenLogoInput) {
     });
 }
 
+tokenNameInput?.addEventListener('input', () => {
+    // Keep the saved catalogue consistent even when the admin types lowercase.
+    tokenNameInput.value = tokenNameInput.value.toUpperCase();
+});
+
 function resetTokenForm() {
     editingToken = null;
     tokenNameInput.value = '';
-    tokenSymbolInput.value = '';
     tokenLogoInput.value = '';
     if (tokenLogoLabel) tokenLogoLabel.textContent = 'Choose logo image';
     if (saveTokenBtn) saveTokenBtn.textContent = 'Save Token';
@@ -1031,8 +1034,7 @@ function resetTokenForm() {
 cancelTokenEditBtn?.addEventListener('click', resetTokenForm);
 
 saveTokenBtn?.addEventListener('click', async () => {
-    const name = tokenNameInput.value.trim();
-    const symbol = tokenSymbolInput.value.trim().replace(/^\$/, '').toUpperCase();
+    const name = tokenNameInput.value.trim().toUpperCase();
     const file = tokenLogoInput.files?.[0];
     if (!name) {
         alert('Please enter a token name.');
@@ -1049,11 +1051,13 @@ saveTokenBtn?.addEventListener('click', async () => {
     saveTokenBtn.textContent = 'Saving…';
     try {
         const logoDataUrl = file
-            ? await compressImageFile(file, { maxSize: 256, quality: 0.86 })
+            ? await compressImageFile(file, { maxSize: 256, removeBackground: true })
             : editingToken.logoDataUrl;
-        const tokenData = { name, symbol, logoDataUrl, isActive: true, updatedAt: serverTimestamp() };
+        const tokenData = { name, logoDataUrl, isActive: true, updatedAt: serverTimestamp() };
 
         if (editingToken) {
+            // Remove the legacy ticker field when an older record is edited.
+            tokenData.symbol = deleteField();
             await setDoc(doc(db, 'token_catalog', editingToken.id), tokenData, { merge: true });
         } else {
             tokenData.createdAt = serverTimestamp();
@@ -1103,10 +1107,8 @@ function renderTokenCatalog() {
         const details = document.createElement('div');
         details.className = 'catalog-token-details';
         const title = document.createElement('strong');
-        title.textContent = token.name || 'Untitled token';
-        const symbol = document.createElement('span');
-        symbol.textContent = token.symbol ? `$${String(token.symbol).replace(/^\$/, '')}` : 'No ticker';
-        details.append(title, symbol);
+        title.textContent = String(token.name || 'Untitled token').toUpperCase();
+        details.append(title);
 
         const actions = document.createElement('div');
         actions.className = 'catalog-token-actions';
@@ -1114,8 +1116,7 @@ function renderTokenCatalog() {
         edit.type = 'button'; edit.className = 'btn-secondary'; edit.textContent = 'Edit';
         edit.addEventListener('click', () => {
             editingToken = token;
-            tokenNameInput.value = token.name || '';
-            tokenSymbolInput.value = token.symbol || '';
+            tokenNameInput.value = String(token.name || '').toUpperCase();
             tokenLogoInput.value = '';
             if (tokenLogoLabel) tokenLogoLabel.textContent = 'Current logo will be kept';
             saveTokenBtn.textContent = 'Update Token';

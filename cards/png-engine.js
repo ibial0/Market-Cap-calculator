@@ -272,7 +272,7 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     // ── Token logo HTML ──────────────────────────────────
     const logoHtml = tokenLogoSrc
         ? `<img src="${tokenLogoSrc}" style="
-            width:64px;height:64px;border-radius:16px;
+            width:64px;height:64px;border-radius:50%;
             object-fit:cover;flex-shrink:0;
             display:block;
           " crossorigin="anonymous">`
