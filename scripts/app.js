@@ -688,6 +688,9 @@ let isGenerating = false;
 const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
 
+// Must be declared before generateBtn handler
+let _pendingCardData = null;
+
 if (generateBtn) {
     generateBtn.addEventListener('click', async () => {
         if (isGenerating) return;
@@ -731,27 +734,32 @@ if (generateBtn) {
             bdtRate:    State.bdtRate,
         };
 
-        // Store data for after emotion selection
         _pendingCardData = data;
 
-        // Show emotion popup
+        // Show emotion popup or generate directly
         if (emotionPopup) {
-            emotionPopup.style.display = 'flex';
+            emotionPopup.classList.add('active');
         } else {
-            // Fallback: generate directly if popup missing
-            _doGenerate(data);
+            await _doGenerate(data);
         }
     });
 }
-
-let _pendingCardData = null;
 
 // "Generate Card" button inside the emotion popup
 if (btnEmotionGo) {
     btnEmotionGo.addEventListener('click', async () => {
         if (!_pendingCardData) return;
-        emotionPopup.style.display = 'none';
-        await _doGenerate(_pendingCardData);
+        emotionPopup.classList.remove('active');
+        const dataToGenerate = _pendingCardData;
+        _pendingCardData = null;
+        await _doGenerate(dataToGenerate);
+    });
+}
+
+// Close emotion popup (X button)
+if (closeEmPopup) {
+    closeEmPopup.addEventListener('click', () => {
+        emotionPopup.classList.remove('active');
         _pendingCardData = null;
     });
 }
