@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MC Calc - Crypto PnL Calculator</title>
+    <title>MC Calc - PnL Card Generator</title>
     <meta name="description" content="Track crypto market cap ROI, DCA entries/exits, and generate trading cards.">
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
@@ -23,7 +23,7 @@
 </head>
 <body>
 
-    <!-- ═══════════════════════════════════ HEADER ═══════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â HEADER Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <header>
         <div class="logo">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -47,28 +47,15 @@
             <!-- Profile Menu Button -->
             <button class="profile-btn" id="profile-menu-btn" aria-label="Profile">
                 <img id="header-avatar" class="hidden" alt="Profile">
-                <div id="header-avatar-placeholder" class="profile-btn-placeholder">👤</div>
+                <div id="header-avatar-placeholder" class="profile-btn-placeholder">Ã°Å¸â€˜Â¤</div>
             </button>
         </div>
     </header>
 
-    <!-- ═══════════════════════════════════════════════════════════ TAB NAV ═══════════════════════════════════════════════════════════ -->
-    <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="calculator">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.5 6h-15v13.5h15V6zm-9.75 10.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-7.5h3v7.5zM5.25 4.5h13.5V3H5.25v1.5z"/></svg>
-            Calculator
-        </button>
-        <button class="tab-btn" data-tab="journal">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75zM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 01-1.875-1.875V8.625zM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 013 19.875v-6.75z"/></svg>
-            My Trades
-        </button>
-        <button class="tab-btn" data-tab="wallet">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.273 5.625A4.483 4.483 0 015.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 3H5.25a3 3 0 00-2.977 2.625zM2.273 8.125A4.483 4.483 0 015.25 7h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 5.5H5.25a3 3 0 00-2.977 2.625zM5.25 9a3 3 0 00-3 3v6a3 3 0 003 3h13.5a3 3 0 003-3v-6a3 3 0 00-3-3H5.25zm10.5 4.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"/></svg>
-            Wallet
-        </button>
-    </nav>
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â TAB NAV Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
+    <!-- Top navigation removed -->
 
-    <!-- ═══════════════════════════════════ CALCULATOR TAB ═══════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CALCULATOR TAB Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <div id="tab-calculator" class="tab-panel active">
     <main>
         <div class="glass-panel calculator-form">
@@ -104,7 +91,7 @@
                     </button>
                     <div class="dca-avg-display" id="init-dca-avg">
                         <span>Avg Entry MC:</span>
-                        <span class="dca-avg-val" id="init-avg-val">—</span>
+                        <span class="dca-avg-val" id="init-avg-val">Ã¢â‚¬â€</span>
                     </div>
                 </div>
             </div>
@@ -140,7 +127,7 @@
                     </button>
                     <div class="dca-avg-display" id="target-dca-avg">
                         <span>Avg Exit MC:</span>
-                        <span class="dca-avg-val" id="target-avg-val">—</span>
+                        <span class="dca-avg-val" id="target-avg-val">Ã¢â‚¬â€</span>
                     </div>
                 </div>
             </div>
@@ -161,12 +148,12 @@
                 <div class="result-item full-width">
                     <div class="result-label">Final Value</div>
                     <div class="result-value" id="res-final-value">$0.00</div>
-                    <div class="result-sub hidden" id="res-final-bdt">৳ 0.00</div>
+                    <div class="result-sub hidden" id="res-final-bdt">Ã Â§Â³ 0.00</div>
                 </div>
                 <div class="result-item">
                     <div class="result-label">Profit / Loss</div>
                     <div class="result-value" id="res-profit">$0.00</div>
-                    <div class="result-sub hidden" id="res-profit-bdt">৳ 0.00</div>
+                    <div class="result-sub hidden" id="res-profit-bdt">Ã Â§Â³ 0.00</div>
                 </div>
                 <div class="result-item">
                     <div class="result-label">ROI</div>
@@ -200,7 +187,7 @@
             </div>
             <div class="token-logo-info">
                 <span class="token-logo-label">Token Logo</span>
-                <span class="token-logo-sub">Optional — tap to upload</span>
+                <span class="token-logo-sub">Optional Ã¢â‚¬â€ tap to upload</span>
             </div>
             <button class="token-logo-remove hidden" id="token-logo-remove" aria-label="Remove logo">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
@@ -214,7 +201,7 @@
     </main>
     </div>
 
-    <!-- ═══════════════════════════════════ JOURNAL TAB ═══════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â JOURNAL TAB Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <div id="tab-journal" class="tab-panel">
         <div class="journal-section">
             <div class="journal-toolbar">
@@ -228,7 +215,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════ WALLET ANALYTICS TAB ═══════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â WALLET ANALYTICS TAB Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
     <div id="tab-wallet" class="tab-panel">
         <div class="wallet-section">
 
@@ -242,7 +229,7 @@
                             type="text"
                             id="wallet-addr-input"
                             class="wallet-addr-input"
-                            placeholder="0x… paste your EVM wallet address"
+                            placeholder="0xÃ¢â‚¬Â¦ paste your EVM wallet address"
                             autocomplete="off"
                             spellcheck="false"
                             maxlength="42"
@@ -257,13 +244,13 @@
                     <label class="input-label" for="wallet-network-select">Network</label>
                     <div class="network-selector">
                         <select id="wallet-network-select" class="network-select">
-                            <option value="all">🌐 All Networks</option>
-                            <option value="ethereum">🔷 Ethereum Mainnet</option>
-                            <option value="bnb">🟡 BNB Smart Chain</option>
-                            <option value="base">🔵 Base</option>
-                            <option value="arbitrum">🔵 Arbitrum One</option>
-                            <option value="polygon">🟣 Polygon PoS</option>
-                            <option value="optimism">🔴 Optimism</option>
+                            <option value="all">Ã°Å¸Å’Â All Networks</option>
+                            <option value="ethereum">Ã°Å¸â€Â· Ethereum Mainnet</option>
+                            <option value="bnb">Ã°Å¸Å¸Â¡ BNB Smart Chain</option>
+                            <option value="base">Ã°Å¸â€Âµ Base</option>
+                            <option value="arbitrum">Ã°Å¸â€Âµ Arbitrum One</option>
+                            <option value="polygon">Ã°Å¸Å¸Â£ Polygon PoS</option>
+                            <option value="optimism">Ã°Å¸â€Â´ Optimism</option>
                         </select>
                     </div>
                 </div>
@@ -286,7 +273,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════ MODALS ═══════════════════════════════════ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â MODALS Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â -->
 
     <!-- Profile Menu Modal -->
     <div class="modal-overlay" id="profile-menu-overlay">
@@ -299,9 +286,24 @@
             <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:1.5rem; margin-top:0.5rem;">
                 <div class="profile-btn" style="width:72px; height:72px; margin-bottom:0.8rem; cursor:default;">
                     <img id="menu-avatar" class="hidden" alt="Profile" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
-                    <div id="menu-avatar-placeholder" class="profile-btn-placeholder" style="width:72px; height:72px; font-size:2rem;">👤</div>
+                    <div id="menu-avatar-placeholder" class="profile-btn-placeholder" style="width:72px; height:72px; font-size:2rem;">Ã°Å¸â€˜Â¤</div>
                 </div>
                 <div id="menu-user-name" style="font-family:var(--font-display); font-size:1.2rem; font-weight:800; color:var(--text-primary);">User</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+                <button class="btn-outline menu-nav-btn" data-tab="calculator" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.5 6h-15v13.5h15V6zm-9.75 10.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-7.5h3v7.5zM5.25 4.5h13.5V3H5.25v1.5z"/></svg>
+                    PnL Generator
+                </button>
+                <button class="btn-outline menu-nav-btn" data-tab="journal" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75zM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 01-1.875-1.875V8.625zM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 013 19.875v-6.75z"/></svg>
+                    My Trades
+                </button>
+                <button class="btn-outline menu-nav-btn" data-tab="wallet" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.273 5.625A4.483 4.483 0 015.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 3H5.25a3 3 0 00-2.977 2.625zM2.273 8.125A4.483 4.483 0 015.25 7h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 5.5H5.25a3 3 0 00-2.977 2.625zM5.25 9a3 3 0 00-3 3v6a3 3 0 003 3h13.5a3 3 0 003-3v-6a3 3 0 00-3-3H5.25zm10.5 4.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"/></svg>
+                    Wallet
+                </button>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:0.6rem;">
@@ -328,7 +330,7 @@
             <div class="input-group">
                 <label class="input-label" style="margin-bottom:0.8rem;">Exchange Rate (USD to BDT)</label>
                 <div class="input-wrapper">
-                    <span class="prefix">৳</span>
+                    <span class="prefix">Ã Â§Â³</span>
                     <input type="number" id="setting-bdt-rate" class="amount-input" value="115" step="0.01">
                 </div>
             </div>
@@ -377,11 +379,11 @@
         </div>
     </div>
 
-    <!-- ══ Emotion Picker Popup ══ -->
+    <!-- Ã¢â€¢ÂÃ¢â€¢Â Emotion Picker Popup Ã¢â€¢ÂÃ¢â€¢Â -->
     <div class="modal-overlay" id="emotion-popup">
         <div class="modal-content" style="max-width:480px;">
             <div class="modal-header">
-                <h2 class="modal-title">Pick a vibe 🎭</h2>
+                <h2 class="modal-title">Pick a vibe Ã°Å¸Å½Â­</h2>
                 <button class="close-btn" id="close-emotion-popup"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
             </div>
             <div class="emotion-picker-track" id="emotion-picker" style="flex-wrap:wrap;max-height:340px;overflow-y:auto;padding:8px 0 12px;">
@@ -434,7 +436,7 @@
                 <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
             </div>
 
-            <!-- ══ Background Gallery Sidebar ══ -->
+            <!-- Ã¢â€¢ÂÃ¢â€¢Â Background Gallery Sidebar Ã¢â€¢ÂÃ¢â€¢Â -->
             <div class="bg-sidebar" id="bg-sidebar" style="display:none;">
                 <div class="bg-sidebar-header">
                     <span style="font-weight:700;font-size:14px;">Backgrounds</span>
@@ -533,7 +535,7 @@
 
     <!-- PWA: Service Worker + Splash Screen Timeout -->
     <script>
-        // ── Service Worker Registration ─────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Service Worker Registration Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -555,7 +557,7 @@
             });
         }
 
-        // ── PWA Splash Screen Timeout ───────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PWA Splash Screen Timeout Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         // If the app loading overlay is still visible after 6 seconds
         // (e.g., Firebase is unreachable on cold PWA launch),
         // remove it forcefully so the user isn't stuck on the logo.
@@ -572,3 +574,5 @@
     </script>
 </body>
 </html>
+
+
