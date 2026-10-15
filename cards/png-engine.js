@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════
 //  PNG CARD RENDERER
 //  Composes a 1600×900 HTML card from a PNG template + user data.
 //  The PNG background is an <img> layer, dynamic text layers are
@@ -255,8 +255,8 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     const rawMul = data.multiplier;
     const displayMul = isProfit ? rawMul : (rawMul > 0 ? (1 / rawMul) : 0);
     const multiplier = 'x' + displayMul.toFixed(2);
-    const entryMC    = fmtNum(data.initMC, rate);
-    const exitMC     = fmtNum(data.targetMC, rate);
+    const entryMC    = data.isPriceMode ? _fmtPrice(data.initMC, rate) : fmtNum(data.initMC, rate);
+    const exitMC     = data.isPriceMode ? _fmtPrice(data.targetMC, rate) : fmtNum(data.targetMC, rate);
     const tokenName  = (data.tokenName || '').toUpperCase();
 
     // ── Dynamic font size for hero multiplier ────────────
@@ -272,7 +272,7 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     // ── Token logo HTML ──────────────────────────────────
     const logoHtml = tokenLogoSrc
         ? `<img src="${tokenLogoSrc}" style="
-            width:64px;height:64px;border-radius:16px;
+            width:64px;height:64px;border-radius:50%;
             object-fit:cover;flex-shrink:0;
             display:block;
           " crossorigin="anonymous">`

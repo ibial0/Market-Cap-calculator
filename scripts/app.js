@@ -44,6 +44,65 @@ const elTargetMC = document.getElementById('target-mc');
 const elInv      = document.getElementById('investment');
 const elToken    = document.getElementById('token-name');
 
+// Calculation Mode state: 'mc' (Market Cap) or 'price' (Price)
+let _calcMode = Storage.get('calcMode', 'mc');
+const modeMCBtn = document.getElementById('mode-mc-btn');
+const modePriceBtn = document.getElementById('mode-price-btn');
+
+function setCalcMode(mode) {
+    _calcMode = mode;
+    Storage.set('calcMode', mode);
+    const isPrice = mode === 'price';
+    
+    if (modeMCBtn && modePriceBtn) {
+        if (isPrice) {
+            modePriceBtn.style.background = 'var(--accent-primary)';
+            modePriceBtn.style.color = '#000';
+            modePriceBtn.style.fontWeight = '700';
+            modePriceBtn.style.boxShadow = '0 2px 8px rgba(0, 230, 118, 0.25)';
+            modeMCBtn.style.background = 'transparent';
+            modeMCBtn.style.color = 'var(--text-secondary)';
+            modeMCBtn.style.fontWeight = '600';
+            modeMCBtn.style.boxShadow = 'none';
+        } else {
+            modeMCBtn.style.background = 'var(--accent-primary)';
+            modeMCBtn.style.color = '#000';
+            modeMCBtn.style.fontWeight = '700';
+            modeMCBtn.style.boxShadow = '0 2px 8px rgba(0, 230, 118, 0.25)';
+            modePriceBtn.style.background = 'transparent';
+            modePriceBtn.style.color = 'var(--text-secondary)';
+            modePriceBtn.style.fontWeight = '600';
+            modePriceBtn.style.boxShadow = 'none';
+        }
+    }
+    
+    const lblInit = document.getElementById('lbl-initial');
+    const lblTarget = document.getElementById('lbl-target');
+    const lblInitDCA = document.getElementById('lbl-init-dca-avg');
+    const lblTargetDCA = document.getElementById('lbl-target-dca-avg');
+    
+    if (lblInit) lblInit.textContent = isPrice ? 'Entry Price' : 'Initial Market Cap';
+    if (lblTarget) lblTarget.textContent = isPrice ? 'Target Price' : 'Target Market Cap';
+    if (lblInitDCA) lblInitDCA.textContent = isPrice ? 'Avg Entry Price:' : 'Avg Entry MC:';
+    if (lblTargetDCA) lblTargetDCA.textContent = isPrice ? 'Avg Exit Price:' : 'Avg Exit MC:';
+    
+    const initToggles = document.getElementById('init-toggles');
+    const targetToggles = document.getElementById('target-toggles');
+    if (initToggles) initToggles.style.display = isPrice ? 'none' : 'flex';
+    if (targetToggles) targetToggles.style.display = isPrice ? 'none' : 'flex';
+    
+    const dcaInitActive = document.getElementById('dca-init-toggle')?.checked;
+    const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
+    if (dcaInitActive) renderDCARows('init-dca-rows', dcaInitRows, calculate);
+    if (dcaTargetActive) renderDCARows('target-dca-rows', dcaTargetRows, calculate);
+    
+    calculate();
+}
+
+if (modeMCBtn) modeMCBtn.addEventListener('click', () => setCalcMode('mc'));
+if (modePriceBtn) modePriceBtn.addEventListener('click', () => setCalcMode('price'));
+
+
 // Token logo state
 let _tokenLogoDataUrl = null;
 let _tokenLogoSource = 'none'; // 'catalog', 'upload', or 'none'
@@ -251,7 +310,7 @@ const calculate = () => {
         }
     } else {
         const initVal = parseAmount(elInitMC?.value);
-        realInit = initVal * State.initMul;
+        realInit = _calcMode === 'price' ? initVal : initVal * State.initMul;
     }
 
     if (dcaTargetActive && dcaTargetRows.length > 0) {
@@ -259,7 +318,7 @@ const calculate = () => {
         _updateDCAAvgDisplay('target-avg-val', realTarget);
     } else {
         const targetVal = parseAmount(elTargetMC?.value);
-        realTarget = targetVal * State.targetMul;
+        realTarget = _calcMode === 'price' ? targetVal : targetVal * State.targetMul;
     }
 
     State.initVal   = realInit;
@@ -303,7 +362,8 @@ const calculate = () => {
 const _calcDCAAvg = (rows) => {
     let totalWeight = 0, totalAmount = 0;
     rows.forEach(r => {
-        const mc  = parseFloat(r.mc || 0) * parseFloat(r.unit || 1);
+        const unit = _calcMode === 'price' ? 1 : parseFloat(r.unit || 1);
+        const mc  = parseFloat(r.mc || 0) * unit;
         const amt = parseFloat(r.amount || 0);
         if (mc > 0 && amt > 0) {
             totalWeight += mc * amt;
@@ -329,7 +389,13 @@ const _updateDCAAvgDisplay = (elId, avgMC) => {
 const handleInput = () => calculate();
 const handleBlur = (e) => {
     let val = parseAmount(e.target.value);
-    if (val > 0) e.target.value = formatNumber(val, 4);
+    if (val > 0) {
+        if (_calcMode === 'price') {
+            e.target.value = val < 1 ? val.toString() : formatNumber(val, 4);
+        } else {
+            e.target.value = formatNumber(val, 4);
+        }
+    }
 };
 const handleFocus = (e) => {
     let val = parseAmount(e.target.value);
@@ -442,9 +508,9 @@ const renderDCARows = (containerId, rows, onChange) => {
     <div class="dca-entry-row">
         <div class="input-wrapper">
             <span class="prefix">$</span>
-            <input type="number" class="amount-input dca-mc-inp" data-index="${i}" placeholder="0" value="${row.mc}" inputmode="decimal" min="0">
+            <input type="number" class="amount-input dca-mc-inp" data-index="${i}" placeholder="0" value="${row.mc}" inputmode="decimal" min="0" step="any">
         </div>
-        <select class="mc-unit-select dca-unit-sel" data-index="${i}">
+        <select class="mc-unit-select dca-unit-sel" data-index="${i}" style="${_calcMode === 'price' ? 'display:none;' : ''}">
             <option value="1000"    ${row.unit === '1000'       ? 'selected' : ''}>K</option>
             <option value="1000000" ${row.unit === '1000000'    ? 'selected' : ''}>M</option>
             <option value="1000000000" ${row.unit === '1000000000' ? 'selected' : ''}>B</option>
@@ -537,7 +603,6 @@ if (calcNavBtn) {
     calcNavBtn.style.borderColor = 'var(--accent-primary)';
     calcNavBtn.style.color = 'var(--accent-primary)';
 }
-});
 
 // Switch to calculator tab from journal analysis
 window.addEventListener('journal-generate-card', (e) => {
@@ -808,17 +873,17 @@ if (generateBtn) {
         if (dcaInitActive && dcaInitRows.length > 0) {
             realInit = _calcDCAAvg(dcaInitRows);
         } else {
-            realInit = parseAmount(elInitMC?.value) * State.initMul;
+            realInit = _calcMode === 'price' ? parseAmount(elInitMC?.value) : parseAmount(elInitMC?.value) * State.initMul;
         }
 
         if (dcaTargetActive && dcaTargetRows.length > 0) {
             realTarget = _calcDCAAvg(dcaTargetRows);
         } else {
-            realTarget = parseAmount(elTargetMC?.value) * State.targetMul;
+            realTarget = _calcMode === 'price' ? parseAmount(elTargetMC?.value) : parseAmount(elTargetMC?.value) * State.targetMul;
         }
 
         if (realInit <= 0 || inv <= 0 || realTarget <= 0) {
-            _showToast('Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
+            _showToast(_calcMode === 'price' ? 'Please enter valid positive numbers for Entry Price, Target Price, and Investment.' : 'Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
             return;
         }
 
@@ -836,6 +901,7 @@ if (generateBtn) {
             multiplier: result.multiplier,
             showBdt:    State.showBdt,
             bdtRate:    State.bdtRate,
+            isPriceMode: _calcMode === 'price',
         };
 
         _pendingCardData = data;
@@ -1114,3 +1180,6 @@ if (downloadBtn) {
 calculate();
 
 
+
+// Apply initial calculation mode
+setTimeout(() => setCalcMode(_calcMode), 0);
