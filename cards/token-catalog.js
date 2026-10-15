@@ -13,12 +13,20 @@ export function loadTokenCatalog() {
             const snapshot = await getDocs(collection(db, 'token_catalog'));
             catalog = [];
             snapshot.forEach(record => {
-                const token = { id: record.id, ...record.data(), name: String(record.data().name || '').toUpperCase() };
-                if (token.isActive !== false && token.name && token.logoDataUrl) catalog.push(token);
+                const data = record.data();
+                const logo = data.logoDataUrl || data.logoUrl || data.imageUrl || data.logo || null;
+                const name = String(data.name || '').toUpperCase().trim();
+                if (data.isActive !== false && name) {
+                    catalog.push({
+                        id: record.id,
+                        ...data,
+                        name,
+                        logoDataUrl: logo
+                    });
+                }
             });
             catalog.sort((a, b) => String(a.name).localeCompare(String(b.name)));
         } catch (error) {
-            // The calculator must remain usable if the catalogue is unavailable.
             console.warn('[TokenCatalog] Could not load token suggestions:', error.message);
             catalog = [];
         }
