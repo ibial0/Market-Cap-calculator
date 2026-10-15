@@ -28,7 +28,7 @@ const cardAssetsReady = Promise.race([_assetLoad, _assetTimeout])
 // Suggestions are optional, so a catalogue connection problem never delays cards.
 loadTokenCatalog();
 
-// â”€â”€ Tab Visibility: Re-init if returning after long absence â”€â”€
+// // ── Tab Visibility: Re-init if returning after long absence // ──
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !_assetsLoaded) {
         loadPNGTemplates().catch(() => {});
@@ -220,7 +220,7 @@ if (tokenLogoRemove) {
     });
 }
 
-// â”€â”€ Emotion Picker (Popup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Emotion Picker (Popup) // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───â”€
 let _selectedEmotion = null; // null means "any/random"
 
 const emotionPopup   = document.getElementById('emotion-popup');
@@ -252,7 +252,7 @@ if (emotionPicker) {
     });
 }
 
-// â”€â”€ Sidebar Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Sidebar Gallery // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───
 const bgSidebar       = document.getElementById('bg-sidebar');
 const bgSidebarGrid   = document.getElementById('bg-sidebar-grid');
 const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
@@ -337,9 +337,9 @@ const calculate = () => {
         resRoi.className    = 'result-value ' + (result.roi >= 0 ? 'value-green' : 'value-red');
         
         if (State.showBdt) {
-            resFinalBdt.innerText = `à§³ ${formatNumber(result.finalValue * State.bdtRate)}`;
+            resFinalBdt.innerText = `৳ ${formatNumber(result.finalValue * State.bdtRate)}`;
             resFinalBdt.classList.remove('hidden');
-            resProfitBdt.innerText = `à§³ ${formatNumber(result.profit * State.bdtRate)}`;
+            resProfitBdt.innerText = `৳ ${formatNumber(result.profit * State.bdtRate)}`;
             resProfitBdt.classList.remove('hidden');
             resProfitBdt.style.color = result.profit >= 0 ? 'var(--success)' : 'var(--danger)';
         } else {
@@ -358,7 +358,7 @@ const calculate = () => {
     }
 };
 
-// â”€â”€â”€ DCA Avg Calculation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ─── DCA Avg Calculation // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───â”€
 const _calcDCAAvg = (rows) => {
     let totalWeight = 0, totalAmount = 0;
     rows.forEach(r => {
@@ -499,7 +499,7 @@ const setupDCAToggle = (toggleId, singleId, multiId, rowsContainerId, addBtnId, 
 setupDCAToggle('dca-init-toggle', 'init-single', 'init-multi', 'init-dca-rows', 'add-init-dca-row', dcaInitRows, 'init-dca-avg');
 setupDCAToggle('dca-target-toggle', 'target-single', 'target-multi', 'target-dca-rows', 'add-target-dca-row', dcaTargetRows, 'target-dca-avg');
 
-// â”€â”€â”€ Render DCA Rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ─── Render DCA Rows // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
 const renderDCARows = (containerId, rows, onChange) => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -519,7 +519,7 @@ const renderDCARows = (containerId, rows, onChange) => {
             <span class="prefix">$</span>
             <input type="number" class="amount-input dca-amt-inp" data-index="${i}" placeholder="0" value="${row.amount}" inputmode="decimal" min="0">
         </div>
-        ${rows.length > 1 ? `<button class="dca-remove-btn" data-index="${i}">Ã—</button>` : ''}
+        ${rows.length > 1 ? `<button class="dca-remove-btn" data-index="${i}">×</button>` : ''}
     </div>`).join('');
 
     // Bind events
@@ -688,7 +688,7 @@ if ('serviceWorker' in navigator) {
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
     || window.innerWidth <= 768;
 
-// â”€â”€ Toast Notification (replaces all alert() calls) â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Toast Notification (replaces all alert() calls) // ───// ───// ──
 function _showToast(msg, type = 'error', durationMs = 4000) {
     let container = document.getElementById('card-toast-container');
     if (!container) {
@@ -705,8 +705,8 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
     const colors = {
         error:   { bg: '#1e1e2e', border: '#ff4b4b', icon: 'âš ï¸' },
         info:    { bg: '#1e1e2e', border: '#38bdf8', icon: 'â„¹ï¸' },
-        warning: { bg: '#1e1e2e', border: '#f59e0b', icon: 'âš¡' },
-        success: { bg: '#1e1e2e', border: '#10b981', icon: 'âœ…' },
+        warning: { bg: '#1e1e2e', border: '#f59e0b', icon: '⚡' },
+        success: { bg: '#1e1e2e', border: '#10b981', icon: '✅' },
     };
     const c = colors[type] || colors.error;
 
@@ -732,7 +732,7 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
     }, durationMs);
 }
 
-// â”€â”€ Image pre-fetch as blob URL (CORS workaround for mobile) â”€â”€
+// // ── Image pre-fetch as blob URL (CORS workaround for mobile) // ──
 async function _fetchAsBlob(url) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 8000); // 8 second max
@@ -748,7 +748,7 @@ async function _fetchAsBlob(url) {
     }
 }
 
-// â”€â”€ Wait for an img element to fully decode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Wait for an img element to fully decode // ───// ───// ───// ───// ───â”€
 function _waitForImg(el, timeoutMs) {
     if (el.complete && el.naturalWidth > 0) return Promise.resolve(true);
     return new Promise(resolve => {
@@ -759,7 +759,7 @@ function _waitForImg(el, timeoutMs) {
     });
 }
 
-// â”€â”€ Wait for html2canvas to be ready (loaded with defer) â”€â”€
+// // ── Wait for html2canvas to be ready (loaded with defer) // ──
 // html2canvas uses `defer` so it may not be available the instant
 // the module runs. Poll every 100ms until it appears or timeout.
 function _waitForHtml2Canvas(timeoutMs = 8000) {
@@ -775,7 +775,7 @@ function _waitForHtml2Canvas(timeoutMs = 8000) {
     });
 }
 
-// â”€â”€ Core html2canvas capture with retry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Core html2canvas capture with retry // ───// ───// ───// ───// ───// ───// ───
 async function _captureCanvas(node, attempt = 1) {
     const maxAttempts = 3;
     const scale = isMobile ? 1.0 : 2.0; // Lower scale on mobile to prevent OOM
@@ -961,7 +961,7 @@ async function _doGenerate(data) {
     }
 }
 
-// â”€â”€ Change Background Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Change Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
 const changeBgBtn = document.getElementById('btn-change-bg');
 if (changeBgBtn) {
     changeBgBtn.addEventListener('click', async () => {
@@ -999,7 +999,7 @@ if (changeBgBtn) {
     });
 }
 
-// â”€â”€ Populate Sidebar Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Populate Sidebar Grid // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───â”€
 
 function _populateSidebar() {
     if (!bgSidebarGrid) return;
@@ -1043,7 +1043,7 @@ function _populateSidebar() {
     });
 }
 
-// â”€â”€ Upload Background Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Upload Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
 const uploadBgBtn = document.getElementById('btn-upload-bg');
 const bgUploadInput = document.getElementById('bg-upload-input');
 
@@ -1070,7 +1070,7 @@ if (bgUploadInput) {
     });
 }
 
-// â”€â”€ Copy to Clipboard Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Copy to Clipboard Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
 const copyBtn = document.getElementById('btn-copy');
 if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
@@ -1098,7 +1098,7 @@ if (copyBtn) {
     });
 }
 
-// â”€â”€ Generate Render (New Simple Card Design) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Generate Render (New Simple Card Design) // ───// ───// ───// ───// ───â”€
 async function generateRender(data, _unused) {
     isGenerating = true;
     window.lastData = data;
@@ -1161,7 +1161,7 @@ async function generateRender(data, _unused) {
     }
 }
 
-// â”€â”€ Download Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // ── Download Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
 const downloadBtn = document.getElementById('btn-download');
 if (downloadBtn) {
     downloadBtn.addEventListener('click', () => {
