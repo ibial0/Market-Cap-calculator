@@ -173,8 +173,12 @@ function renderTokenSuggestions(query) {
 
         const logo = document.createElement('img');
         logo.className = 'token-suggestion-logo';
-        logo.src = token.logoDataUrl;
-        logo.alt = '';
+        if (token.logoDataUrl) {
+            logo.src = token.logoDataUrl;
+            logo.alt = '';
+        } else {
+            logo.style.display = 'none';
+        }
 
         const labels = document.createElement('span');
         labels.className = 'token-suggestion-labels';
@@ -182,11 +186,16 @@ function renderTokenSuggestions(query) {
         name.textContent = String(token.name || '').toUpperCase();
         labels.append(name);
         option.append(logo, labels);
-        option.addEventListener('mousedown', event => {
-            // mousedown fires before the input blur, keeping touch/click selection reliable.
+
+        const selectHandler = (event) => {
             event.preventDefault();
+            event.stopPropagation();
             selectCatalogToken(token);
-        });
+        };
+        option.addEventListener('pointerdown', selectHandler);
+        option.addEventListener('mousedown', selectHandler);
+        option.addEventListener('click', selectHandler);
+
         tokenSuggestions.append(option);
     });
     tokenSuggestions.classList.toggle('hidden', matches.length === 0);
@@ -419,7 +428,7 @@ if (elToken) {
         renderTokenSuggestions(e.target.value);
     });
     elToken.addEventListener('focus', () => renderTokenSuggestions(elToken.value));
-    elToken.addEventListener('blur', () => setTimeout(hideTokenSuggestions, 120));
+    elToken.addEventListener('blur', () => setTimeout(hideTokenSuggestions, 250));
     elToken.addEventListener('keydown', event => {
         const options = Array.from(tokenSuggestions?.querySelectorAll('.token-suggestion') || []);
         if (!options.length) return;
@@ -905,15 +914,7 @@ if (generateBtn) {
         };
 
         _pendingCardData = data;
-
-        // Show emotion popup or generate directly
-        if (emotionPopup) {
-            // Clear an old inline override left by previous app versions.
-            emotionPopup.style.removeProperty('display');
-            emotionPopup.classList.add('active');
-        } else {
-            await _doGenerate(data);
-        }
+        await _doGenerate(data);
     });
 }
 
@@ -937,28 +938,19 @@ if (closeEmPopup) {
 }
 
 async function _doGenerate(data) {
-    if (isGenerating) return;
-
-    // Reset background for fresh random pick
     _currentBgSrc = null;
     _currentBgId = null;
 
-    previewOverlay?.classList.add('active');
-    // Close sidebar if open
+    const placeholder = document.getElementById('card-empty-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+
+    if (window.innerWidth < 960) {
+        document.getElementById('card-preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     if (bgSidebar) bgSidebar.style.display = 'none';
 
-    const origHtml = generateBtn.innerHTML;
-    generateBtn.innerHTML = 'Generatingâ€¦';
-    generateBtn.disabled  = true;
-    generateBtn.style.opacity = '0.7';
-
-    try {
-        await generateRender(data, false);
-    } finally {
-        generateBtn.innerHTML = origHtml;
-        generateBtn.disabled  = false;
-        generateBtn.style.opacity = '1';
-    }
+    await generateRender(data, false);
 }
 
 // // ── Change Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
@@ -1108,6 +1100,8 @@ async function generateRender(data, _unused) {
 
     try {
         if (!node || !spinner || !img) throw new Error('Card preview is unavailable.');
+        const placeholder = document.getElementById('card-empty-placeholder');
+        if (placeholder) placeholder.style.display = 'none';
         spinner.style.display = 'block';
         img.classList.remove('loaded');
         // 1. Wait for assets AND html2canvas

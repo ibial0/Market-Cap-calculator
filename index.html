@@ -52,176 +52,244 @@
         </div>
     </header>
 
-    <!-- ═══════════════════════════════════════════════════════════ TAB NAV ═══════════════════════════════════════════════════════════ -->
-    <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="calculator">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.5 6h-15v13.5h15V6zm-9.75 10.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-7.5h3v7.5zM5.25 4.5h13.5V3H5.25v1.5z"/></svg>
-            Calculator
-        </button>
-        <button class="tab-btn" data-tab="journal">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75zM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 01-1.875-1.875V8.625zM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 013 19.875v-6.75z"/></svg>
-            My Trades
-        </button>
-        <button class="tab-btn" data-tab="wallet">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.273 5.625A4.483 4.483 0 015.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 3H5.25a3 3 0 00-2.977 2.625zM2.273 8.125A4.483 4.483 0 015.25 7h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 5.5H5.25a3 3 0 00-2.977 2.625zM5.25 9a3 3 0 00-3 3v6a3 3 0 003 3h13.5a3 3 0 003-3v-6a3 3 0 00-3-3H5.25zm10.5 4.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"/></svg>
-            Wallet
-        </button>
-    </nav>
+    
+    <!-- Top nav tabs moved to profile menu -->
 
-    <!-- ═══════════════════════════════════ CALCULATOR TAB ═══════════════════════════════════ -->
+    
+    <!-- ═══════════════════════════════════ CALCULATOR TAB (SPLIT LAYOUT) ═══════════════════════════════════ -->
     <div id="tab-calculator" class="tab-panel active">
-    <main>
-        <div class="glass-panel calculator-form">
-            <!-- Calculation Mode: Market Cap vs Price -->
-            <div class="calc-mode-container" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--border);">
-                <button type="button" class="calc-mode-btn active" id="mode-mc-btn" data-mode="mc" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: var(--accent-primary); color: #000; box-shadow: 0 2px 8px rgba(0, 230, 118, 0.25);">
-                    Market Cap
-                </button>
-                <button type="button" class="calc-mode-btn" id="mode-price-btn" data-mode="price" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; background: transparent; color: var(--text-secondary);">
-                    Price
-                </button>
-            </div>
+        <div class="calc-split-layout">
+            <!-- Left Column: Form, Results, Token, Vibe & Generate -->
+            <div class="calc-left-col">
+                <div class="glass-panel calculator-form">
+                    <!-- Mode Switch: Market Cap vs Price -->
+                    <div class="calc-mode-container" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--border);">
+                        <button type="button" class="calc-mode-btn active" id="mode-mc-btn" data-mode="mc" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: var(--accent-primary); color: #000; box-shadow: 0 2px 8px rgba(0, 230, 118, 0.25);">
+                            Market Cap
+                        </button>
+                        <button type="button" class="calc-mode-btn" id="mode-price-btn" data-mode="price" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; background: transparent; color: var(--text-secondary);">
+                            Price
+                        </button>
+                    </div>
 
+                    <!-- Initial MC / Price -->
+                    <div class="input-group">
+                        <div class="input-label-row">
+                            <label class="input-label" id="lbl-initial">Initial Market Cap</label>
+                            <label class="dca-toggle-label">
+                                <span class="dca-toggle-text">Multi-Entry</span>
+                                <input type="checkbox" id="dca-init-toggle" class="dca-chk">
+                                <span class="toggle-switch-mini"></span>
+                            </label>
+                        </div>
+                        <!-- Single entry -->
+                        <div id="init-single">
+                            <div class="input-wrapper">
+                                <span class="prefix">$</span>
+                                <input type="text" id="initial-mc" class="amount-input" placeholder="0" inputmode="decimal">
+                                <div class="multiplier-group" id="init-toggles">
+                                    <button class="mul-btn active" data-val="1000">K</button>
+                                    <button class="mul-btn" data-val="1000000">M</button>
+                                    <button class="mul-btn" data-val="1000000000">B</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Multi entry (DCA) -->
+                        <div id="init-multi" class="hidden">
+                            <div id="init-dca-rows" class="dca-entries-container"></div>
+                            <button class="dca-add-row-btn" id="add-init-dca-row">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                Add Entry
+                            </button>
+                            <div class="dca-avg-display" id="init-dca-avg">
+                                <span id="lbl-init-dca-avg">Avg Entry MC:</span>
+                                <span class="dca-avg-val" id="init-avg-val">—</span>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Initial MC -->
-            <div class="input-group">
-                <div class="input-label-row">
-                    <label class="input-label" id="lbl-initial">Initial Market Cap</label>
-                    <label class="dca-toggle-label">
-                        <span class="dca-toggle-text">Multi-Entry</span>
-                        <input type="checkbox" id="dca-init-toggle" class="dca-chk">
-                        <span class="toggle-switch-mini"></span>
-                    </label>
-                </div>
-                <!-- Single entry -->
-                <div id="init-single">
-                    <div class="input-wrapper">
-                        <span class="prefix">$</span>
-                        <input type="text" id="initial-mc" class="amount-input" placeholder="0" inputmode="decimal">
-                        <div class="multiplier-group" id="init-toggles">
-                            <button class="mul-btn active" data-val="1000">K</button>
-                            <button class="mul-btn" data-val="1000000">M</button>
-                            <button class="mul-btn" data-val="1000000000">B</button>
+                    <!-- Target MC / Price -->
+                    <div class="input-group">
+                        <div class="input-label-row">
+                            <label class="input-label" id="lbl-target">Target Market Cap</label>
+                            <label class="dca-toggle-label">
+                                <span class="dca-toggle-text">Multi-Exit</span>
+                                <input type="checkbox" id="dca-target-toggle" class="dca-chk">
+                                <span class="toggle-switch-mini"></span>
+                            </label>
+                        </div>
+                        <!-- Single -->
+                        <div id="target-single">
+                            <div class="input-wrapper">
+                                <span class="prefix">$</span>
+                                <input type="text" id="target-mc" class="amount-input" placeholder="0" inputmode="decimal">
+                                <div class="multiplier-group" id="target-toggles">
+                                    <button class="mul-btn active" data-val="1000">K</button>
+                                    <button class="mul-btn" data-val="1000000">M</button>
+                                    <button class="mul-btn" data-val="1000000000">B</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Multi exit (DCA) -->
+                        <div id="target-multi" class="hidden">
+                            <div id="target-dca-rows" class="dca-entries-container"></div>
+                            <button class="dca-add-row-btn" id="add-target-dca-row">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                Add Exit
+                            </button>
+                            <div class="dca-avg-display" id="target-dca-avg">
+                                <span id="lbl-target-dca-avg">Avg Exit MC:</span>
+                                <span class="dca-avg-val" id="target-avg-val">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Investment -->
+                    <div class="input-group" style="margin-top: 1.5rem;">
+                        <label class="input-label">Investment Amount</label>
+                        <div class="input-wrapper">
+                            <span class="prefix">$</span>
+                            <input type="text" id="investment" class="amount-input" value="10" inputmode="decimal">
                         </div>
                     </div>
                 </div>
-                <!-- Multi entry (DCA) -->
-                <div id="init-multi" class="hidden">
-                    <div id="init-dca-rows" class="dca-entries-container"></div>
-                    <button class="dca-add-row-btn" id="add-init-dca-row">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                        Add Entry
-                    </button>
-                    <div class="dca-avg-display" id="init-dca-avg">
-                        <span id="lbl-init-dca-avg">Avg Entry MC:</span>
-                        <span class="dca-avg-val" id="init-avg-val">—</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Target MC -->
-            <div class="input-group">
-                <div class="input-label-row">
-                    <label class="input-label" id="lbl-target">Target Market Cap</label>
-                    <label class="dca-toggle-label">
-                        <span class="dca-toggle-text">Multi-Exit</span>
-                        <input type="checkbox" id="dca-target-toggle" class="dca-chk">
-                        <span class="toggle-switch-mini"></span>
-                    </label>
-                </div>
-                <!-- Single -->
-                <div id="target-single">
-                    <div class="input-wrapper">
-                        <span class="prefix">$</span>
-                        <input type="text" id="target-mc" class="amount-input" placeholder="0" inputmode="decimal">
-                        <div class="multiplier-group" id="target-toggles">
-                            <button class="mul-btn active" data-val="1000">K</button>
-                            <button class="mul-btn" data-val="1000000">M</button>
-                            <button class="mul-btn" data-val="1000000000">B</button>
+                <!-- Results Panel -->
+                <div class="glass-panel results-panel" style="margin-top: 1.25rem;">
+                    <div class="result-grid">
+                        <div class="result-item full-width">
+                            <div class="result-label">Final Value</div>
+                            <div class="result-value" id="res-final-value">$0.00</div>
+                            <div class="result-sub hidden" id="res-final-bdt">৳ 0.00</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Profit / Loss</div>
+                            <div class="result-value" id="res-profit">$0.00</div>
+                            <div class="result-sub hidden" id="res-profit-bdt">৳ 0.00</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">ROI</div>
+                            <div class="result-value" id="res-roi">0.00%</div>
+                        </div>
+                        <div class="result-item full-width" style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                            <div class="result-label">Multiplier</div>
+                            <div class="result-value" id="res-multiplier" style="color: var(--accent-primary);">0.00x</div>
                         </div>
                     </div>
                 </div>
-                <!-- Multi exit (DCA) -->
-                <div id="target-multi" class="hidden">
-                    <div id="target-dca-rows" class="dca-entries-container"></div>
-                    <button class="dca-add-row-btn" id="add-target-dca-row">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                        Add Exit
+
+                <!-- Meta Inputs: Token Name + Autocomplete Suggestions -->
+                <div class="meta-inputs" style="margin-top: 1.25rem;">
+                    <div class="input-group token-autocomplete" style="flex:1;">
+                        <div class="input-wrapper">
+                            <input type="text" id="token-name" class="amount-input" placeholder="Search or enter a token (e.g. SOL)" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="token-suggestions" aria-expanded="false">
+                        </div>
+                        <div id="token-suggestions" class="token-suggestions hidden" role="listbox" aria-label="Token suggestions"></div>
+                    </div>
+                </div>
+
+                <!-- Token Logo Upload (Optional) -->
+                <div class="token-logo-upload-row" id="token-logo-row" style="margin-top: 0.75rem;">
+                    <div class="token-logo-area" id="token-logo-area">
+                        <img id="token-logo-preview" class="token-logo-img hidden" alt="Token Logo">
+                        <div id="token-logo-placeholder" class="token-logo-placeholder">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z"/><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>
+                        </div>
+                        <input type="file" id="token-logo-upload" accept="image/*" style="display:none">
+                    </div>
+                    <div class="token-logo-info">
+                        <span class="token-logo-label">Token Logo</span>
+                        <span class="token-logo-sub">Optional — tap to upload</span>
+                    </div>
+                    <button class="token-logo-remove hidden" id="token-logo-remove" aria-label="Remove logo">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
                     </button>
-                    <div class="dca-avg-display" id="target-dca-avg">
-                        <span id="lbl-target-dca-avg">Avg Exit MC:</span>
-                        <span class="dca-avg-val" id="target-avg-val">—</span>
+                </div>
+
+                <!-- Vibe Selector (Inline) -->
+                <div class="emotion-picker-section" style="margin-top: 1.25rem;">
+                    <div class="emotion-picker-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:0.9rem; font-weight:700;">Pick a vibe 🎭</span>
+                        <span style="font-size:0.75rem; color:var(--text-secondary);">(Optional)</span>
+                    </div>
+                    <div class="emotion-picker-track" id="emotion-picker" style="display:flex; flex-wrap:wrap; gap:8px;">
+                        <!-- Populated by app.js -->
+                    </div>
+                </div>
+
+                <!-- Generate Trading Card Button -->
+                <button class="btn-primary" id="btn-generate" style="margin-top: 1.5rem; width:100%;">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /><path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877zM3.265 14.102l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877z" /></svg>
+                    Generate Trading Card
+                </button>
+            </div>
+
+            <!-- Right Column: Live Trading Card Workstation -->
+            <div class="calc-right-col" id="card-preview-panel">
+                <div class="card-panel-container" style="position:relative; overflow:hidden;">
+                    <div class="card-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
+                        <h2 style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--text-primary); margin:0;">Trading Card</h2>
+                        <button class="icon-btn" id="btn-toggle-sidebar" title="Browse Backgrounds" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="color:var(--text-secondary);"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- 16:9 Card Preview Box -->
+                    <div class="preview-container" id="main-preview-container" style="position:relative; width:100%; aspect-ratio:16/9; background:var(--bg-secondary); border-radius:12px; overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center;">
+                        <div class="loading-spinner" id="preview-loading" style="display:none;"></div>
+                        <img id="preview-img" class="preview-image" alt="Trading Card Preview">
+                        <div id="card-empty-placeholder" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--text-secondary); text-align:center; padding:1.5rem;">
+                            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.35;">
+                                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                                <path d="M8 21h8m-4-4v4"/>
+                            </svg>
+                            <span style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">Your Trading Card</span>
+                            <span style="font-size:0.8rem; max-width:260px; line-height:1.4; opacity:0.7;">Fill details on the left and tap "Generate Trading Card" to create your card</span>
+                        </div>
+                    </div>
+
+                    <!-- Primary Actions -->
+                    <div class="preview-actions" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:1rem;">
+                        <button class="btn-primary" id="btn-copy" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5h-6z"/><path d="M10.5 2.25A1.5 1.5 0 009 3.75v.75h6v-.75a1.5 1.5 0 00-1.5-1.5h-3z"/></svg>
+                            Copy
+                        </button>
+                        <button class="btn-primary" id="btn-download" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
+                            Download
+                        </button>
+                    </div>
+
+                    <!-- Secondary Actions -->
+                    <div class="preview-actions-secondary" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:0.75rem;">
+                        <button class="btn-secondary" id="btn-change-bg" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm14.49 3.882a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0014.388-3.084.75.75 0 10-1.45-.388z" clip-rule="evenodd"/></svg>
+                            Change Background
+                        </button>
+                        <button class="btn-secondary" id="btn-upload-bg" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
+                            Upload Background
+                        </button>
+                        <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
+                    </div>
+
+                    <!-- Background Gallery Sidebar -->
+                    <div class="bg-sidebar" id="bg-sidebar" style="display:none;">
+                        <div class="bg-sidebar-header">
+                            <span style="font-weight:700;font-size:14px;">Backgrounds</span>
+                            <button class="close-btn" id="close-sidebar" style="width:28px;height:28px;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                        <div class="bg-sidebar-grid" id="bg-sidebar-grid">
+                            <!-- Populated by app.js -->
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Investment -->
-            <div class="input-group" style="margin-top: 1.5rem;">
-                <label class="input-label">Investment Amount</label>
-                <div class="input-wrapper">
-                    <span class="prefix">$</span>
-                    <input type="text" id="investment" class="amount-input" value="10" inputmode="decimal">
-                </div>
-            </div>
         </div>
-
-        <!-- Results Panel -->
-        <div class="glass-panel results-panel">
-            <div class="result-grid">
-                <div class="result-item full-width">
-                    <div class="result-label">Final Value</div>
-                    <div class="result-value" id="res-final-value">$0.00</div>
-                    <div class="result-sub hidden" id="res-final-bdt">৳ 0.00</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">Profit / Loss</div>
-                    <div class="result-value" id="res-profit">$0.00</div>
-                    <div class="result-sub hidden" id="res-profit-bdt">৳ 0.00</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">ROI</div>
-                    <div class="result-value" id="res-roi">0.00%</div>
-                </div>
-                <div class="result-item full-width" style="border-top: 1px solid var(--border); padding-top: 1rem;">
-                    <div class="result-label">Multiplier</div>
-                    <div class="result-value" id="res-multiplier" style="color: var(--accent-primary);">0.00x</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Meta Inputs: Token Name + Show Name Toggle -->
-        <div class="meta-inputs">
-            <div class="input-group" style="flex:1;">
-                <div class="input-wrapper">
-                    <input type="text" id="token-name" class="amount-input" placeholder="Token (e.g. $SOL)">
-                </div>
-            </div>
-        </div>
-
-        <!-- Token Logo Upload (Optional) -->
-        <div class="token-logo-upload-row" id="token-logo-row">
-            <div class="token-logo-area" id="token-logo-area">
-                <img id="token-logo-preview" class="token-logo-img hidden" alt="Token Logo">
-                <div id="token-logo-placeholder" class="token-logo-placeholder">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z"/><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>
-                </div>
-                <input type="file" id="token-logo-upload" accept="image/*" style="display:none">
-            </div>
-            <div class="token-logo-info">
-                <span class="token-logo-label">Token Logo</span>
-                <span class="token-logo-sub">Optional — tap to upload</span>
-            </div>
-            <button class="token-logo-remove hidden" id="token-logo-remove" aria-label="Remove logo">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
-            </button>
-        </div>
-
-        <button class="btn-primary" id="btn-generate">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /><path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877zM3.265 14.102l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877z" /></svg>
-            Generate Trading Card
-        </button>
-    </main>
     </div>
+
 
     <!-- ═══════════════════════════════════ JOURNAL TAB ═══════════════════════════════════ -->
     <div id="tab-journal" class="tab-panel">
@@ -400,77 +468,7 @@
         </div>
     </div>
 
-    <!-- ══ Emotion Picker Popup ══ -->
-    <div class="modal-overlay" id="emotion-popup">
-        <div class="modal-content" style="max-width:480px;">
-            <div class="modal-header">
-                <h2 class="modal-title">Pick a vibe 🎭</h2>
-                <button class="close-btn" id="close-emotion-popup"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
-            </div>
-            <div class="emotion-picker-track" id="emotion-picker" style="flex-wrap:wrap;max-height:340px;overflow-y:auto;padding:8px 0 12px;">
-                <!-- Populated by app.js -->
-            </div>
-            <button class="btn-primary" id="btn-emotion-go" style="width:100%;margin-top:12px;">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /></svg>
-                Generate Card
-            </button>
-        </div>
-    </div>
-
-    <!-- Preview Modal -->
-    <div class="modal-overlay" id="preview-overlay">
-        <div class="modal-content" style="position:relative;">
-            <div class="modal-header">
-                <h2 class="modal-title">Trading Card</h2>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <button class="close-btn" id="btn-toggle-sidebar" title="Browse Backgrounds" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="color:var(--text-secondary);"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg>
-                    </button>
-                    <button class="close-btn" id="close-preview"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
-                </div>
-            </div>
-            
-            <div class="preview-container">
-                <div class="loading-spinner" id="preview-loading"></div>
-                <img id="preview-img" class="preview-image" alt="Generated Card">
-            </div>
-            
-            <div style="display:flex; gap: 0.6rem;">
-                <button class="btn-primary" id="btn-copy" style="flex:1; background: var(--accent-primary); color: #0a0f1c;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94A49 49 0 0012 2.25a49 49 0 00-6.336.318C4.125 2.797 3 4.103 3 5.608V12a3 3 0 003 3h1.5V9.375A3.375 3.375 0 0110.875 6h-3.373z" clip-rule="evenodd"/><path d="M10.875 18.75a2.625 2.625 0 01-2.625-2.625V9.375A2.625 2.625 0 0110.875 6.75h7.875c.621 0 1.218.21 1.706.593.387.305.694.705.894 1.157v8.625a2.625 2.625 0 01-2.625 2.625h-7.875z"/></svg>
-                    Copy
-                </button>
-                <button class="btn-primary" id="btn-download" style="flex:1;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
-                    Download
-                </button>
-            </div>
-            <div style="display:flex; gap: 0.6rem; margin-top: 0.5rem;">
-                <button id="btn-change-bg" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); box-shadow: none; border-radius:14px; padding:0.9rem; font-size:0.95rem; font-weight:700; font-family:var(--font-display); cursor:pointer; display:flex; justify-content:center; align-items:center; gap:0.5rem; transition: transform 0.1s ease;">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903H14.25a.75.75 0 000 1.5h6a.75.75 0 00.75-.75v-6a.75.75 0 00-1.5 0v4.356l-1.903-1.903A9 9 0 003.306 9.67a.75.75 0 101.45.388zm14.49 3.882a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h4.955a.75.75 0 000-1.5h-6a.75.75 0 00-.75.75v6a.75.75 0 001.5 0v-4.356l1.903 1.903A9 9 0 0020.694 14.33a.75.75 0 10-1.45-.388z" clip-rule="evenodd"/></svg>
-                    Change Background
-                </button>
-                <button id="btn-upload-bg" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); box-shadow: none; border-radius:14px; padding:0.9rem; font-size:0.95rem; font-weight:700; font-family:var(--font-display); cursor:pointer; display:flex; justify-content:center; align-items:center; gap:0.5rem; transition: transform 0.1s ease;">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
-                    Upload Background
-                </button>
-                <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
-            </div>
-
-            <!-- ══ Background Gallery Sidebar ══ -->
-            <div class="bg-sidebar" id="bg-sidebar" style="display:none;">
-                <div class="bg-sidebar-header">
-                    <span style="font-weight:700;font-size:14px;">Backgrounds</span>
-                    <button class="close-btn" id="close-sidebar" style="width:28px;height:28px;">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
-                    </button>
-                </div>
-                <div class="bg-sidebar-grid" id="bg-sidebar-grid">
-                    <!-- Populated by app.js -->
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- New Token Modal -->
     <div class="modal-overlay" id="new-token-modal">

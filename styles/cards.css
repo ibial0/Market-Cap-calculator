@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    Emotion Picker — Horizontal scrollable pill selector
    ═══════════════════════════════════════════════════════════ */
 .emotion-picker-section {
@@ -383,5 +383,51 @@
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         will-change: transform;
+    }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   Split-Screen Workstation Layout (Desktop side-by-side)
+   ═══════════════════════════════════════════════════════════ */
+.calc-split-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 480px) minmax(380px, 1fr);
+    gap: 2rem;
+    max-width: 1350px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+    align-items: start;
+}
+
+.calc-left-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.calc-right-col {
+    position: sticky;
+    top: 80px;
+    min-width: 0;
+}
+
+.card-panel-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-glass);
+}
+
+@media (max-width: 960px) {
+    .calc-split-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        max-width: 540px;
+        padding: 1rem 0.5rem 3rem;
+    }
+    .calc-right-col {
+        position: static;
     }
 }
