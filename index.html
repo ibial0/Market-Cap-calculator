@@ -59,11 +59,21 @@
     <div id="tab-calculator" class="tab-panel active">
     <main>
         <div class="glass-panel calculator-form">
+            <!-- Calculation Mode: Market Cap vs Price -->
+            <div class="calc-mode-container" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--border);">
+                <button type="button" class="calc-mode-btn active" id="mode-mc-btn" data-mode="mc" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: var(--accent-primary); color: #000; box-shadow: 0 2px 8px rgba(0, 230, 118, 0.25);">
+                    Market Cap
+                </button>
+                <button type="button" class="calc-mode-btn" id="mode-price-btn" data-mode="price" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; background: transparent; color: var(--text-secondary);">
+                    Price
+                </button>
+            </div>
+
 
             <!-- Initial MC -->
             <div class="input-group">
                 <div class="input-label-row">
-                    <label class="input-label">Initial Market Cap</label>
+                    <label class="input-label" id="lbl-initial">Initial Market Cap</label>
                     <label class="dca-toggle-label">
                         <span class="dca-toggle-text">Multi-Entry</span>
                         <input type="checkbox" id="dca-init-toggle" class="dca-chk">
@@ -90,7 +100,7 @@
                         Add Entry
                     </button>
                     <div class="dca-avg-display" id="init-dca-avg">
-                        <span>Avg Entry MC:</span>
+                        <span id="lbl-init-dca-avg">Avg Entry MC:</span>
                         <span class="dca-avg-val" id="init-avg-val">Ã¢â‚¬â€</span>
                     </div>
                 </div>
@@ -99,7 +109,7 @@
             <!-- Target MC -->
             <div class="input-group">
                 <div class="input-label-row">
-                    <label class="input-label">Target Market Cap</label>
+                    <label class="input-label" id="lbl-target">Target Market Cap</label>
                     <label class="dca-toggle-label">
                         <span class="dca-toggle-text">Multi-Exit</span>
                         <input type="checkbox" id="dca-target-toggle" class="dca-chk">
@@ -126,7 +136,7 @@
                         Add Exit
                     </button>
                     <div class="dca-avg-display" id="target-dca-avg">
-                        <span>Avg Exit MC:</span>
+                        <span id="lbl-target-dca-avg">Avg Exit MC:</span>
                         <span class="dca-avg-val" id="target-avg-val">Ã¢â‚¬â€</span>
                     </div>
                 </div>
