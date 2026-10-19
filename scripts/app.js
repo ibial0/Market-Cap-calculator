@@ -1,4 +1,4 @@
-﻿import { State } from '../config/state.js';
+import { State } from '../config/state.js';
 import { Storage } from '../utils/storage.js';
 import { formatNumber, parseAmount } from '../utils/formatters.js';
 import { calculateROI } from '../calculator/core.js';
@@ -229,56 +229,103 @@ if (tokenLogoRemove) {
     });
 }
 
-// // ── Emotion Picker (Popup) // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───â”€
+// // ── Reaction Popover (Facebook-style floating emoji picker) // ───────────────────
 let _selectedEmotion = null; // null means "any/random"
 
-const emotionPopup   = document.getElementById('emotion-popup');
-const emotionPicker  = document.getElementById('emotion-picker');
-const btnEmotionGo   = document.getElementById('btn-emotion-go');
-const closeEmPopup   = document.getElementById('close-emotion-popup');
+const reactionPopover  = document.getElementById('reaction-popover');
+const btnReactionPicker = document.getElementById('btn-reaction-picker');
+const emotionPicker     = document.getElementById('emotion-picker'); // legacy ref (removed from HTML)
 
-// Render emotion pills inside the popup
-if (emotionPicker) {
+// Render reaction emoji buttons inside the popover
+if (reactionPopover) {
     EMOTIONS.forEach(em => {
-        const pill = document.createElement('div');
-        pill.className = 'emotion-pill';
-        pill.dataset.id = em.id;
-        pill.dataset.type = em.type;
-        pill.innerHTML = `<span class="ep-emoji">${em.emoji}</span><span>${em.label}</span>`;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'reaction-emoji-btn';
+        btn.dataset.id = em.id;
+        btn.dataset.type = em.type;
+        btn.title = em.label;
+        btn.textContent = em.emoji;
 
-        pill.addEventListener('click', () => {
+        btn.addEventListener('click', () => {
             if (_selectedEmotion === em.id) {
+                // Deselect
                 _selectedEmotion = null;
-                pill.classList.remove('active');
+                btn.classList.remove('active');
+                if (btnReactionPicker) {
+                    btnReactionPicker.querySelector('span').textContent = '🎭';
+                    btnReactionPicker.classList.remove('has-emotion');
+                }
             } else {
-                emotionPicker.querySelectorAll('.emotion-pill.active').forEach(p => p.classList.remove('active'));
+                // Select
+                reactionPopover.querySelectorAll('.reaction-emoji-btn.active').forEach(b => b.classList.remove('active'));
                 _selectedEmotion = em.id;
-                pill.classList.add('active');
+                btn.classList.add('active');
+                if (btnReactionPicker) {
+                    btnReactionPicker.querySelector('span').textContent = em.emoji;
+                    btnReactionPicker.classList.add('has-emotion');
+                }
             }
+            // Refresh gallery if open
+            _populateSidebar();
         });
 
-        emotionPicker.appendChild(pill);
+        reactionPopover.appendChild(btn);
     });
 }
 
-// // ── Sidebar Gallery // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───
-const bgSidebar       = document.getElementById('bg-sidebar');
-const bgSidebarGrid   = document.getElementById('bg-sidebar-grid');
+// Toggle reaction popover visibility
+if (btnReactionPicker) {
+    btnReactionPicker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = reactionPopover?.classList.contains('open');
+        if (isOpen) {
+            reactionPopover.classList.remove('open');
+            btnReactionPicker.classList.remove('active');
+        } else {
+            reactionPopover?.classList.add('open');
+            btnReactionPicker.classList.add('active');
+        }
+    });
+}
+
+// Close popover when clicking outside
+document.addEventListener('click', (e) => {
+    if (reactionPopover?.classList.contains('open') &&
+        !reactionPopover.contains(e.target) &&
+        !btnReactionPicker?.contains(e.target)) {
+        reactionPopover.classList.remove('open');
+        btnReactionPicker?.classList.remove('active');
+    }
+});
+
+// // ── Background Gallery (Middle Column) // ─────────────────────────────────────
+const bgGalleryColumn  = document.getElementById('bg-gallery-column');
+const bgSidebarGrid    = document.getElementById('bg-sidebar-grid');
 const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
-const closeSidebar     = document.getElementById('close-sidebar');
+const closeGallery     = document.getElementById('close-gallery');
+const calcSplitLayout  = document.querySelector('.calc-split-layout');
+
+// Legacy references for backward compatibility
+const bgSidebar = bgGalleryColumn;
 
 function toggleSidebar() {
-    if (!bgSidebar) return;
-    if (bgSidebar.style.display === 'none') {
-        bgSidebar.style.display = 'flex';
+    if (!bgGalleryColumn) return;
+    const isHidden = bgGalleryColumn.style.display === 'none';
+    if (isHidden) {
+        bgGalleryColumn.style.display = '';
         _populateSidebar();
     } else {
-        bgSidebar.style.display = 'none';
+        bgGalleryColumn.style.display = 'none';
     }
 }
 
+function _hideGallery() {
+    if (bgGalleryColumn) bgGalleryColumn.style.display = 'none';
+}
+
 if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
-if (closeSidebar) closeSidebar.addEventListener('click', () => { bgSidebar.style.display = 'none'; });
+if (closeGallery) closeGallery.addEventListener('click', _hideGallery);
 
 
 const resFinalValue = document.getElementById('res-final-value');
@@ -918,24 +965,7 @@ if (generateBtn) {
     });
 }
 
-// "Generate Card" button inside the emotion popup
-if (btnEmotionGo) {
-    btnEmotionGo.addEventListener('click', async () => {
-        if (!_pendingCardData) return;
-        emotionPopup.classList.remove('active');
-        const dataToGenerate = _pendingCardData;
-        _pendingCardData = null;
-        await _doGenerate(dataToGenerate);
-    });
-}
-
-// Close emotion popup (X button)
-if (closeEmPopup) {
-    closeEmPopup.addEventListener('click', () => {
-        emotionPopup.classList.remove('active');
-        _pendingCardData = null;
-    });
-}
+// (Emotion popup handlers removed — now using reaction popover in card header)
 
 async function _doGenerate(data) {
     _currentBgSrc = null;
@@ -948,7 +978,7 @@ async function _doGenerate(data) {
         document.getElementById('card-preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    if (bgSidebar) bgSidebar.style.display = 'none';
+    _hideGallery();
 
     await generateRender(data, false);
 }
@@ -982,8 +1012,8 @@ if (changeBgBtn) {
                 _currentBgId = bg.id;
             }
             await generateRender(window.lastData, false);
-            // Update sidebar active state
-            if (bgSidebar && bgSidebar.style.display !== 'none') _populateSidebar();
+            // Update gallery active state if visible
+            if (bgGalleryColumn && bgGalleryColumn.style.display !== 'none') _populateSidebar();
         } finally {
             changeBgBtn.innerHTML = origHtml;
             changeBgBtn.disabled = false;

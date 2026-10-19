@@ -1,0 +1,79 @@
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP LAYOUT — PnL Generator page (screens wider than 1080px)
+
+   Recreates the manual Canva design exactly:
+     • Trading Card panel  → left side, comfortable margin from the edge
+     • Input panel         → right side, comfortable margin from the edge
+     • Wide empty gap in the middle (the Backgrounds gallery opens here)
+     • Both panels are vertically centered on the same horizontal line
+     • Both panels are drawn at ~83.5% of the old size, like in the design
+       (this is what --calc-zoom controls; make it bigger = panels bigger)
+
+   Phones / tablets (1080px and below) are NOT touched — they keep
+   the stacked layout from cards.css.
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 1081px) {
+
+    .calc-split-layout {
+        --calc-zoom: 0.835;               /* overall size of the two panels */
+
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;   /* left | empty gap | right */
+        align-items: center;              /* centers left & right panels on one horizontal line */
+        column-gap: 0;
+        max-width: none;
+        min-height: calc(100vh - 74px);   /* fills the screen under the header so centering works */
+        margin: 0;
+        padding: 1.5rem clamp(24px, 4.5vw, 120px);   /* space from the screen edges */
+        box-sizing: border-box;
+    }
+
+    /* LEFT — Trading Card  (690px × 0.835 ≈ 576px on screen) */
+    .calc-left-col {
+        grid-column: 1;
+        grid-row: 1;
+        width: 690px;
+        max-width: none;
+        zoom: var(--calc-zoom);
+        position: relative;               /* was sticky; not needed once centered */
+        top: auto;
+        max-height: none;
+    }
+
+    /* RIGHT — Inputs, results, generate button  (383px × 0.835 ≈ 320px on screen) */
+    .calc-right-col {
+        grid-column: 3;
+        grid-row: 1;
+        width: 383px;
+        max-width: none;
+        zoom: var(--calc-zoom);
+        max-height: none;                 /* no inner scrolling: stops the Results box being squeezed */
+        overflow: visible;
+        padding-right: 0;
+    }
+}
+
+/* Wide screens: the Backgrounds gallery opens inside the empty middle gap */
+@media (min-width: 1280px) {
+    .calc-middle-col {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: center;
+        align-self: center;
+        position: static;                 /* was fixed to the screen center and overlapped the card */
+        transform: none;
+        width: 100%;
+        max-width: 280px;
+        animation: galleryFadeIn 0.3s ease forwards;
+    }
+
+    .bg-gallery-panel {
+        max-height: calc(100vh - 140px);
+    }
+
+    @keyframes galleryFadeIn {
+        from { opacity: 0; transform: scale(0.96); }
+        to   { opacity: 1; transform: none; }
+    }
+}
