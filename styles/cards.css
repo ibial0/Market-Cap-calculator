@@ -89,50 +89,7 @@
     overflow: visible;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Background Gallery Sidebar
-   ═══════════════════════════════════════════════════════════ */
-.bg-sidebar {
-    position: absolute;
-    top: 0;
-    right: -220px;
-    width: 210px;
-    height: 100%;
-    background: var(--bg-primary, #0f172a);
-    border-left: 1px solid var(--border, #334155);
-    border-radius: 0 20px 20px 0;
-    z-index: 30;
-    animation: sidebarSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    display: flex;
-    flex-direction: column;
-}
-@keyframes sidebarSlideIn {
-    from { transform: translateX(220px); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
-}
-.bg-sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border, #334155);
-    flex-shrink: 0;
-}
-.bg-sidebar-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 52px;
-    gap: 8px;
-    padding: 10px;
-    overflow-y: auto;
-    flex: 1;
-    min-height: 0;
-    align-content: start;
-    scrollbar-width: thin;
-    scrollbar-color: #475569 transparent;
-}
-.bg-sidebar-grid::-webkit-scrollbar { width: 4px; }
-.bg-sidebar-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+/* (Old sidebar CSS removed - gallery now uses .bg-gallery-panel / .bg-gallery-grid) */
 .bg-thumb {
     aspect-ratio: 16/9;
     height: 52px;
@@ -386,10 +343,11 @@
 
 /* ═══════════════════════════════════════════════════════════
    Split-Screen Workstation Layout (Desktop side-by-side)
+   LEFT = Trading Card | MIDDLE = BG Gallery (on demand) | RIGHT = Inputs
    ═══════════════════════════════════════════════════════════ */
 .calc-split-layout {
     display: grid;
-    grid-template-columns: minmax(340px, 440px) minmax(380px, 1fr);
+    grid-template-columns: minmax(380px, 1fr) minmax(340px, 440px);
     gap: 1.5rem;
     max-width: 1300px;
     margin: 0 auto;
@@ -397,7 +355,19 @@
     align-items: start;
 }
 
+/* When middle gallery is visible, use 3-column layout */
+.calc-split-layout.gallery-open {
+    grid-template-columns: minmax(380px, 1fr) 180px minmax(340px, 440px);
+}
+
 .calc-left-col {
+    position: sticky;
+    top: 76px;
+    min-width: 0;
+    max-height: calc(100vh - 100px);
+}
+
+.calc-right-col {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -406,18 +376,68 @@
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
-    padding-right: 2px; /* prevent scrollbar from overlapping content */
+    padding-right: 2px;
 }
 
-.calc-left-col::-webkit-scrollbar { width: 4px; }
-.calc-left-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.calc-right-col::-webkit-scrollbar { width: 4px; }
+.calc-right-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-.calc-right-col {
+/* ═══════════════════════════════════════════════════════════
+   Middle Column — Background Gallery (slide-in)
+   ═══════════════════════════════════════════════════════════ */
+.calc-middle-col {
+    min-width: 0;
+    animation: gallerySlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes gallerySlideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.bg-gallery-panel {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px);
     position: sticky;
     top: 76px;
-    min-width: 0;
-    max-height: calc(100vh - 100px);
 }
+
+.bg-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.bg-gallery-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.bg-gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 48px;
+    gap: 6px;
+    padding: 8px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    align-content: start;
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+}
+
+.bg-gallery-grid::-webkit-scrollbar { width: 4px; }
+.bg-gallery-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
 
 .card-panel-container {
     background: var(--bg-primary);
@@ -429,35 +449,131 @@
     overflow: hidden;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Reaction Popover — Facebook-style floating emoji bar
+   ═══════════════════════════════════════════════════════════ */
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.reaction-toggle-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.reaction-toggle-btn:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+}
+
+.reaction-toggle-btn.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+.reaction-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 6px 10px;
+    gap: 4px;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    animation: popoverFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.reaction-popover.open {
+    display: flex;
+}
+
+@keyframes popoverFadeIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.reaction-emoji-btn {
+    width: 38px;
+    height: 38px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, border-color 0.2s ease;
+}
+
+.reaction-emoji-btn:hover {
+    transform: scale(1.35) translateY(-4px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.reaction-emoji-btn.active {
+    border-color: var(--accent-primary);
+    background: rgba(0, 242, 254, 0.12);
+    transform: scale(1.1);
+}
+
 @media (max-width: 960px) {
-    .calc-split-layout {
+    .calc-split-layout,
+    .calc-split-layout.gallery-open {
         grid-template-columns: 1fr;
         gap: 1.25rem;
         max-width: 680px;
         padding: 1rem 1rem 2rem;
     }
     .calc-left-col {
+        position: static;
         max-height: none;
-        overflow-y: visible;
     }
     .calc-right-col {
         position: static;
         max-height: none;
+        overflow-y: visible;
+    }
+    .calc-middle-col {
+        order: 2; /* Gallery between card and inputs on mobile */
+    }
+    .calc-right-col {
+        order: 3;
+    }
+    .bg-gallery-panel {
+        position: static;
+        max-height: 280px;
     }
 }
 
 @media (max-width: 520px) {
-    .calc-split-layout {
+    .calc-split-layout,
+    .calc-split-layout.gallery-open {
         grid-template-columns: 1fr;
         padding: 0.75rem 0.5rem 1.5rem;
         gap: 1rem;
     }
     .calc-left-col {
         max-height: none;
-        overflow-y: visible;
     }
     .calc-right-col {
         max-height: none;
+        overflow-y: visible;
     }
     /* Compact inputs for narrow screens */
     .glass-panel.calculator-form {
@@ -498,6 +614,15 @@
     .glass-panel.calculator-form,
     .glass-panel.results-panel {
         overflow: hidden;
+    }
+    /* Gallery compact */
+    .bg-gallery-panel {
+        max-height: 200px;
+    }
+    .bg-gallery-grid {
+        grid-auto-rows: 40px;
+        gap: 4px;
+        padding: 6px;
     }
 }
 

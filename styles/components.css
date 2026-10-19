@@ -404,7 +404,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 6px;
+    margin-top: 14px;
 }
 
 /* ── Profile Menu Navigation Buttons ────────────── */
