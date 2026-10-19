@@ -13,6 +13,9 @@
     --font-ui: 'Inter', sans-serif;
     --font-mono: 'Roboto Mono', monospace;
     --font-display: 'Outfit', sans-serif;
+    --font-main: 'Inter', sans-serif;
+    
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
 [data-theme="light"] {

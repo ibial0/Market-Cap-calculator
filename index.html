@@ -63,11 +63,11 @@
             <div class="calc-left-col">
                 <div class="glass-panel calculator-form">
                     <!-- Mode Switch: Market Cap vs Price -->
-                    <div class="calc-mode-container" style="display: flex; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 12px; margin-bottom: 1.25rem; border: 1px solid var(--border);">
-                        <button type="button" class="calc-mode-btn active" id="mode-mc-btn" data-mode="mc" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: var(--accent-primary); color: #000; box-shadow: 0 2px 8px rgba(0, 230, 118, 0.25);">
+                    <div class="calc-mode-container">
+                        <button type="button" class="calc-mode-btn active" id="mode-mc-btn" data-mode="mc">
                             Market Cap
                         </button>
-                        <button type="button" class="calc-mode-btn" id="mode-price-btn" data-mode="price" style="flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; background: transparent; color: var(--text-secondary);">
+                        <button type="button" class="calc-mode-btn" id="mode-price-btn" data-mode="price">
                             Price
                         </button>
                     </div>
@@ -145,7 +145,7 @@
                     </div>
                     
                     <!-- Investment -->
-                    <div class="input-group" style="margin-top: 1.5rem;">
+                    <div class="input-group" style="margin-top: 1rem;">
                         <label class="input-label">Investment Amount</label>
                         <div class="input-wrapper">
                             <span class="prefix">$</span>
@@ -155,31 +155,33 @@
                 </div>
 
                 <!-- Results Panel -->
-                <div class="glass-panel results-panel" style="margin-top: 1.25rem;">
-                    <div class="result-grid">
-                        <div class="result-item full-width">
+                <div class="glass-panel results-panel" style="margin-top: 0.875rem;">
+                    <div class="result-main-row">
+                        <div class="result-main-item">
                             <div class="result-label">Final Value</div>
-                            <div class="result-value" id="res-final-value">$0.00</div>
+                            <div class="result-value result-value-lg" id="res-final-value">$0.00</div>
                             <div class="result-sub hidden" id="res-final-bdt">৳ 0.00</div>
                         </div>
-                        <div class="result-item">
+                        <div class="result-main-item" style="text-align:right;">
+                            <div class="result-label">Multiplier</div>
+                            <div class="result-value result-value-lg" id="res-multiplier" style="color:var(--accent-primary);">0.00x</div>
+                        </div>
+                    </div>
+                    <div class="result-sub-row">
+                        <div class="result-sub-item">
                             <div class="result-label">Profit / Loss</div>
                             <div class="result-value" id="res-profit">$0.00</div>
                             <div class="result-sub hidden" id="res-profit-bdt">৳ 0.00</div>
                         </div>
-                        <div class="result-item">
+                        <div class="result-sub-item result-sub-divider">
                             <div class="result-label">ROI</div>
                             <div class="result-value" id="res-roi">0.00%</div>
-                        </div>
-                        <div class="result-item full-width" style="border-top: 1px solid var(--border); padding-top: 1rem;">
-                            <div class="result-label">Multiplier</div>
-                            <div class="result-value" id="res-multiplier" style="color: var(--accent-primary);">0.00x</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Meta Inputs: Token Name + Autocomplete Suggestions -->
-                <div class="meta-inputs" style="margin-top: 1.25rem;">
+                <div class="meta-inputs" style="margin-top: 0.875rem;">
                     <div class="input-group token-autocomplete" style="flex:1;">
                         <div class="input-wrapper">
                             <input type="text" id="token-name" class="amount-input" placeholder="Search or enter a token (e.g. SOL)" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="token-suggestions" aria-expanded="false">
@@ -189,7 +191,7 @@
                 </div>
 
                 <!-- Token Logo Upload (Optional) -->
-                <div class="token-logo-upload-row" id="token-logo-row" style="margin-top: 0.75rem;">
+                <div class="token-logo-upload-row" id="token-logo-row" style="margin-top: 0.5rem;">
                     <div class="token-logo-area" id="token-logo-area">
                         <img id="token-logo-preview" class="token-logo-img hidden" alt="Token Logo">
                         <div id="token-logo-placeholder" class="token-logo-placeholder">
@@ -207,67 +209,67 @@
                 </div>
 
                 <!-- Vibe Selector (Inline) -->
-                <div class="emotion-picker-section" style="margin-top: 1.25rem;">
-                    <div class="emotion-picker-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:0.9rem; font-weight:700;">Pick a vibe 🎭</span>
-                        <span style="font-size:0.75rem; color:var(--text-secondary);">(Optional)</span>
+                <div class="emotion-picker-section" style="margin-top: 0.875rem;">
+                    <div class="emotion-picker-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:0.85rem; font-weight:700;">Pick a vibe 🎭</span>
+                        <span style="font-size:0.72rem; color:var(--text-secondary);">(Optional)</span>
                     </div>
-                    <div class="emotion-picker-track" id="emotion-picker" style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <div class="emotion-picker-track" id="emotion-picker">
                         <!-- Populated by app.js -->
                     </div>
                 </div>
 
                 <!-- Generate Trading Card Button -->
-                <button class="btn-primary" id="btn-generate" style="margin-top: 1.5rem; width:100%;">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /><path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877zM3.265 14.102l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877z" /></svg>
+                <button class="btn-primary" id="btn-generate" style="margin-top: 1rem; width:100%;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /><path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877zM3.265 14.102l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877z" /></svg>
                     Generate Trading Card
                 </button>
             </div>
 
             <!-- Right Column: Live Trading Card Workstation -->
             <div class="calc-right-col" id="card-preview-panel">
-                <div class="card-panel-container" style="position:relative; overflow:hidden;">
-                    <div class="card-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
-                        <h2 style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--text-primary); margin:0;">Trading Card</h2>
-                        <button class="icon-btn" id="btn-toggle-sidebar" title="Browse Backgrounds" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="color:var(--text-secondary);"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg>
+                <div class="card-panel-container">
+                    <div class="card-panel-header">
+                        <h2 class="card-panel-title">Trading Card</h2>
+                        <button class="icon-btn sidebar-toggle-btn" id="btn-toggle-sidebar" title="Browse Backgrounds">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg>
                         </button>
                     </div>
 
                     <!-- 16:9 Card Preview Box -->
-                    <div class="preview-container" id="main-preview-container" style="position:relative; width:100%; aspect-ratio:16/9; background:var(--bg-secondary); border-radius:12px; overflow:hidden; border:1px solid var(--border); display:flex; align-items:center; justify-content:center;">
+                    <div class="preview-container" id="main-preview-container">
                         <div class="loading-spinner" id="preview-loading" style="display:none;"></div>
                         <img id="preview-img" class="preview-image" alt="Trading Card Preview">
-                        <div id="card-empty-placeholder" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--text-secondary); text-align:center; padding:1.5rem;">
-                            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.35;">
+                        <div id="card-empty-placeholder">
+                            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;">
                                 <rect x="2" y="3" width="20" height="14" rx="2"/>
                                 <path d="M8 21h8m-4-4v4"/>
                             </svg>
-                            <span style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">Your Trading Card</span>
-                            <span style="font-size:0.8rem; max-width:260px; line-height:1.4; opacity:0.7;">Fill details on the left and tap "Generate Trading Card" to create your card</span>
+                            <span class="empty-card-title">Your Trading Card</span>
+                            <span class="empty-card-desc">Fill details on the left and tap "Generate Trading Card" to create your card</span>
                         </div>
                     </div>
 
                     <!-- Primary Actions -->
-                    <div class="preview-actions" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:1rem;">
-                        <button class="btn-primary" id="btn-copy" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5h-6z"/><path d="M10.5 2.25A1.5 1.5 0 009 3.75v.75h6v-.75a1.5 1.5 0 00-1.5-1.5h-3z"/></svg>
+                    <div class="preview-actions">
+                        <button class="btn-primary" id="btn-copy">
+                            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5h-6z"/><path d="M10.5 2.25A1.5 1.5 0 009 3.75v.75h6v-.75a1.5 1.5 0 00-1.5-1.5h-3z"/></svg>
                             Copy
                         </button>
-                        <button class="btn-primary" id="btn-download" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
+                        <button class="btn-primary" id="btn-download">
+                            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
                             Download
                         </button>
                     </div>
 
                     <!-- Secondary Actions -->
-                    <div class="preview-actions-secondary" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:0.75rem;">
-                        <button class="btn-secondary" id="btn-change-bg" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm14.49 3.882a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0014.388-3.084.75.75 0 10-1.45-.388z" clip-rule="evenodd"/></svg>
+                    <div class="preview-actions-secondary">
+                        <button class="btn-secondary" id="btn-change-bg">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm14.49 3.882a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0014.388-3.084.75.75 0 10-1.45-.388z" clip-rule="evenodd"/></svg>
                             Change Background
                         </button>
-                        <button class="btn-secondary" id="btn-upload-bg" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
+                        <button class="btn-secondary" id="btn-upload-bg">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
                             Upload Background
                         </button>
                         <input type="file" id="bg-upload-input" accept="image/*" style="display:none">

@@ -2,23 +2,20 @@
    Emotion Picker — Horizontal scrollable pill selector
    ═══════════════════════════════════════════════════════════ */
 .emotion-picker-section {
-    margin: 16px 0 12px;
+    margin: 10px 0 8px;
 }
 .emotion-picker-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary, #94a3b8);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     letter-spacing: 0.3px;
 }
 .emotion-picker-track {
     display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 6px 2px 10px;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 0 6px;
 }
 .emotion-picker-track::-webkit-scrollbar {
     display: none;
@@ -27,13 +24,13 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    gap: 5px;
+    padding: 6px 11px;
     border-radius: 50px;
     border: 1.5px solid var(--border-color, #334155);
     background: var(--bg-secondary, #1e293b);
     color: var(--text-secondary, #94a3b8);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -49,7 +46,7 @@
     transform: scale(0.96);
 }
 .emotion-pill .ep-emoji {
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -175,7 +172,7 @@
     aspect-ratio: 16 / 9;
     background: var(--bg-secondary);
     border-radius: 12px;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -248,14 +245,14 @@
 .token-logo-upload-row {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.6rem 0;
-    margin-bottom: 0.5rem;
+    gap: 0.65rem;
+    padding: 0.4rem 0;
+    margin-bottom: 0.3rem;
 }
 
 .token-logo-area {
-    width: 48px;
-    height: 48px;
+    width: 42px;
+    height: 42px;
     border-radius: 14px;
     background: var(--bg-secondary);
     border: 1.5px dashed var(--border);
@@ -392,11 +389,11 @@
    ═══════════════════════════════════════════════════════════ */
 .calc-split-layout {
     display: grid;
-    grid-template-columns: minmax(360px, 480px) minmax(380px, 1fr);
-    gap: 2rem;
-    max-width: 1350px;
+    grid-template-columns: minmax(340px, 440px) minmax(380px, 1fr);
+    gap: 1.5rem;
+    max-width: 1300px;
     margin: 0 auto;
-    padding: 1.5rem 1rem 3rem;
+    padding: 1.25rem 1.25rem 2rem;
     align-items: start;
 }
 
@@ -404,30 +401,219 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-right: 2px; /* prevent scrollbar from overlapping content */
 }
+
+.calc-left-col::-webkit-scrollbar { width: 4px; }
+.calc-left-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .calc-right-col {
     position: sticky;
-    top: 80px;
+    top: 76px;
     min-width: 0;
+    max-height: calc(100vh - 100px);
 }
 
 .card-panel-container {
     background: var(--bg-primary);
     border: 1px solid var(--border);
     border-radius: 20px;
-    padding: 1.25rem;
-    box-shadow: var(--shadow-glass);
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
 }
 
 @media (max-width: 960px) {
     .calc-split-layout {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
-        max-width: 540px;
-        padding: 1rem 0.5rem 3rem;
+        gap: 1.25rem;
+        max-width: 680px;
+        padding: 1rem 1rem 2rem;
+    }
+    .calc-left-col {
+        max-height: none;
+        overflow-y: visible;
     }
     .calc-right-col {
         position: static;
+        max-height: none;
     }
+}
+
+@media (max-width: 520px) {
+    .calc-split-layout {
+        grid-template-columns: 1fr;
+        padding: 0.75rem 0.5rem 1.5rem;
+        gap: 1rem;
+    }
+    .calc-left-col {
+        max-height: none;
+        overflow-y: visible;
+    }
+    .calc-right-col {
+        max-height: none;
+    }
+    /* Compact inputs for narrow screens */
+    .glass-panel.calculator-form {
+        padding: 0.75rem;
+    }
+    .amount-input {
+        font-size: 0.95rem;
+        padding: 0.35rem 0.4rem;
+    }
+    .mul-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+    .result-value-lg {
+        font-size: 1.35rem;
+    }
+    .result-value-sm,
+    .result-sub-item .result-value {
+        font-size: 1rem;
+    }
+    /* Hide DCA label text on narrow screens — keep toggle switch */
+    .dca-toggle-text {
+        display: none;
+    }
+    /* Ensure input label row doesn't overflow */
+    .input-label-row {
+        min-width: 0;
+        overflow: hidden;
+    }
+    .input-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+    /* Ensure calc panel has no overflow */
+    .glass-panel.calculator-form,
+    .glass-panel.results-panel {
+        overflow: hidden;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Card Panel Header – Clean semantic styles
+   ═══════════════════════════════════════════════════════════ */
+.card-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.card-panel-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.sidebar-toggle-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Empty State Placeholder — inside preview container
+   ═══════════════════════════════════════════════════════════ */
+#card-empty-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1.5rem;
+    position: absolute;
+    inset: 0;
+}
+
+.empty-card-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.empty-card-desc {
+    font-size: 0.77rem;
+    max-width: 240px;
+    line-height: 1.45;
+    opacity: 0.65;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DCA Entries Container
+   ═══════════════════════════════════════════════════════════ */
+.dca-entries-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.dca-add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.dca-add-row-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.dca-avg-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    padding: 4px 2px;
+}
+
+.dca-avg-val {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--accent-primary);
 }
