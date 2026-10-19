@@ -92,8 +92,8 @@
 /* (Old sidebar CSS removed - gallery now uses .bg-gallery-panel / .bg-gallery-grid) */
 .bg-thumb {
     aspect-ratio: 16/9;
-    height: 52px;
-    max-height: 52px;
+    height: 100%;
+    max-height: 60px;
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
@@ -343,34 +343,36 @@
 
 /* ═══════════════════════════════════════════════════════════
    Split-Screen Workstation Layout (Desktop side-by-side)
-   LEFT = Trading Card | MIDDLE = BG Gallery (on demand) | RIGHT = Inputs
+   LEFT = Trading Card (fixed) | GAP (gallery fills here) | RIGHT = Inputs (fixed)
    ═══════════════════════════════════════════════════════════ */
 .calc-split-layout {
-    display: grid;
-    grid-template-columns: minmax(380px, 1fr) minmax(340px, 440px);
-    gap: 1.5rem;
-    max-width: 1300px;
-    margin: 0 auto;
-    padding: 1.25rem 1.25rem 2rem;
-    align-items: start;
-}
-
-/* When middle gallery is visible, use 3-column layout */
-.calc-split-layout.gallery-open {
-    grid-template-columns: minmax(380px, 1fr) 180px minmax(340px, 440px);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 1.25rem 2rem 2rem;
+    gap: 0;
+    position: relative;
+    box-sizing: border-box;
 }
 
 .calc-left-col {
+    width: 520px;
+    min-width: 520px;
+    flex-shrink: 0;
     position: sticky;
     top: 76px;
-    min-width: 0;
     max-height: calc(100vh - 100px);
 }
 
 .calc-right-col {
+    width: 380px;
+    min-width: 380px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    min-width: 0;
     max-height: calc(100vh - 100px);
     overflow-y: auto;
     overflow-x: hidden;
@@ -383,16 +385,22 @@
 .calc-right-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 /* ═══════════════════════════════════════════════════════════
-   Middle Column — Background Gallery (slide-in)
+   Middle Column — Background Gallery (fills the gap, fixed position)
+   Does NOT change the card or input column widths
    ═══════════════════════════════════════════════════════════ */
 .calc-middle-col {
-    min-width: 0;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 76px;
+    width: 280px;
+    z-index: 40;
     animation: gallerySlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes gallerySlideIn {
-    from { opacity: 0; transform: translateX(-20px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 .bg-gallery-panel {
@@ -403,15 +411,14 @@
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 100px);
-    position: sticky;
-    top: 76px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 .bg-gallery-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
@@ -425,9 +432,9 @@
 .bg-gallery-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 48px;
-    gap: 6px;
-    padding: 8px;
+    grid-auto-rows: 60px;
+    gap: 10px;
+    padding: 12px;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
@@ -483,6 +490,19 @@
     box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
 }
 
+/* Default grayscale state for reaction icon */
+.reaction-toggle-btn .reaction-icon-default {
+    font-size: 16px;
+    line-height: 1;
+    filter: grayscale(1) brightness(0.6);
+    transition: filter 0.2s ease;
+}
+
+.reaction-toggle-btn.has-emotion .reaction-icon-default {
+    filter: none;
+    font-size: 18px;
+}
+
 .reaction-popover {
     display: none;
     position: absolute;
@@ -532,39 +552,51 @@
     transform: scale(1.1);
 }
 
-@media (max-width: 960px) {
-    .calc-split-layout,
-    .calc-split-layout.gallery-open {
-        grid-template-columns: 1fr;
+/* ═══════════════════════════════════════════════════════════
+   Responsive Breakpoints
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1080px) {
+    .calc-split-layout {
+        flex-direction: column;
+        align-items: center;
         gap: 1.25rem;
-        max-width: 680px;
         padding: 1rem 1rem 2rem;
     }
     .calc-left-col {
+        width: 100%;
+        min-width: 0;
+        max-width: 680px;
         position: static;
         max-height: none;
     }
     .calc-right-col {
-        position: static;
+        width: 100%;
+        min-width: 0;
+        max-width: 680px;
         max-height: none;
         overflow-y: visible;
     }
     .calc-middle-col {
-        order: 2; /* Gallery between card and inputs on mobile */
+        position: static;
+        transform: none;
+        width: 100%;
+        max-width: 680px;
+        order: 2;
+        animation: none;
     }
     .calc-right-col {
         order: 3;
     }
     .bg-gallery-panel {
-        position: static;
         max-height: 280px;
+    }
+    .bg-gallery-grid {
+        grid-auto-rows: 52px;
     }
 }
 
 @media (max-width: 520px) {
-    .calc-split-layout,
-    .calc-split-layout.gallery-open {
-        grid-template-columns: 1fr;
+    .calc-split-layout {
         padding: 0.75rem 0.5rem 1.5rem;
         gap: 1rem;
     }
@@ -595,11 +627,9 @@
     .result-sub-item .result-value {
         font-size: 1rem;
     }
-    /* Hide DCA label text on narrow screens — keep toggle switch */
     .dca-toggle-text {
         display: none;
     }
-    /* Ensure input label row doesn't overflow */
     .input-label-row {
         min-width: 0;
         overflow: hidden;
@@ -610,7 +640,6 @@
         white-space: nowrap;
         min-width: 0;
     }
-    /* Ensure calc panel has no overflow */
     .glass-panel.calculator-form,
     .glass-panel.results-panel {
         overflow: hidden;
@@ -620,8 +649,8 @@
         max-height: 200px;
     }
     .bg-gallery-grid {
-        grid-auto-rows: 40px;
-        gap: 4px;
+        grid-auto-rows: 44px;
+        gap: 5px;
         padding: 6px;
     }
 }

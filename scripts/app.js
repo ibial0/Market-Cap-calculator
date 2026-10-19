@@ -252,13 +252,19 @@ if (reactionPopover) {
                 // Deselect
                 _selectedEmotion = null;
                 btn.classList.remove('active');
-                if (btnReactionPicker) btnReactionPicker.querySelector('span').textContent = '😊';
+                if (btnReactionPicker) {
+                    btnReactionPicker.querySelector('span').textContent = '🎭';
+                    btnReactionPicker.classList.remove('has-emotion');
+                }
             } else {
                 // Select
                 reactionPopover.querySelectorAll('.reaction-emoji-btn.active').forEach(b => b.classList.remove('active'));
                 _selectedEmotion = em.id;
                 btn.classList.add('active');
-                if (btnReactionPicker) btnReactionPicker.querySelector('span').textContent = em.emoji;
+                if (btnReactionPicker) {
+                    btnReactionPicker.querySelector('span').textContent = em.emoji;
+                    btnReactionPicker.classList.add('has-emotion');
+                }
             }
             // Refresh gallery if open
             _populateSidebar();
@@ -308,17 +314,14 @@ function toggleSidebar() {
     const isHidden = bgGalleryColumn.style.display === 'none';
     if (isHidden) {
         bgGalleryColumn.style.display = '';
-        calcSplitLayout?.classList.add('gallery-open');
         _populateSidebar();
     } else {
         bgGalleryColumn.style.display = 'none';
-        calcSplitLayout?.classList.remove('gallery-open');
     }
 }
 
 function _hideGallery() {
     if (bgGalleryColumn) bgGalleryColumn.style.display = 'none';
-    calcSplitLayout?.classList.remove('gallery-open');
 }
 
 if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
