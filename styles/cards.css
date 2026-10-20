@@ -181,6 +181,25 @@
     z-index: -1;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   PROTECT CARD RENDER NODE FROM TAILWIND PREFLIGHT RESET
+   Tailwind v4 preflight sets border-width:0, resets margins,
+   changes line-height, etc. on ALL elements. This breaks the
+   card rendering which uses inline styles for its layout.
+   `all: revert` reverts every CSS property to the browser
+   default, undoing Tailwind's preflight reset completely.
+   Inline styles (used by png-engine.js) have higher
+   specificity and still apply correctly.
+   ═══════════════════════════════════════════════════════════ */
+#render-node-container *,
+#render-node-container *::before,
+#render-node-container *::after {
+    all: revert;
+}
+#render-node-container img {
+    max-width: none !important;
+}
+
 /* The actual 1600×900 render canvas — always explicit, never auto-sized */
 .card-node {
     width:      1600px !important;
