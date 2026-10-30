@@ -365,33 +365,32 @@
    LEFT = Trading Card (fixed) | GAP (gallery fills here) | RIGHT = Inputs (fixed)
    ═══════════════════════════════════════════════════════════ */
 .calc-split-layout {
-    display: grid;
-    grid-template-columns: 1.4fr 0.95fr;
-    align-items: start;
-    max-width: 1728px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 1.5rem 2rem 2rem;
-    gap: 1.5rem;
+    padding: 24px 32px;
     box-sizing: border-box;
+    width: 100%;
 }
 
 .calc-left-col {
-    position: sticky;
-    top: 76px;
-    max-height: calc(100vh - 100px);
-    width: 100%;
+    width: 805.45px;
+    max-width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .calc-right-col {
+    width: 546.55px;
+    max-width: 100%;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 100px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-    padding-right: 2px;
-    width: 100%;
+    gap: 12px;
+    box-sizing: border-box;
 }
 
 .calc-right-col::-webkit-scrollbar { width: 4px; }
@@ -569,57 +568,49 @@
 /* ═══════════════════════════════════════════════════════════
    Responsive Breakpoints
    ═══════════════════════════════════════════════════════════ */
-@media (max-width: 1080px) {
+@media (max-width: 1400px) {
     .calc-split-layout {
-        grid-template-columns: 1fr;
-        gap: 1.25rem;
-        padding: 1rem 1rem 2rem;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 16px;
+        gap: 20px;
     }
-    .calc-left-col {
-        width: 100%;
-        max-width: 680px;
-        position: static;
-        max-height: none;
-        margin: 0 auto;
-    }
+    .calc-left-col,
     .calc-right-col {
         width: 100%;
-        max-width: 680px;
-        max-height: none;
-        overflow-y: visible;
-        margin: 0 auto;
-    }
-    .calc-middle-col {
-        position: static;
-        transform: none;
-        width: 100%;
-        max-width: 680px;
-        order: 2;
-        animation: none;
-    }
-    .calc-right-col {
-        order: 3;
-    }
-    .bg-gallery-panel {
-        max-height: 280px;
-    }
-    .bg-gallery-grid {
-        grid-auto-rows: 52px;
+        max-width: 805.45px;
     }
 }
 
 @media (max-width: 520px) {
     .calc-split-layout {
-        padding: 0.75rem 0.5rem 1.5rem;
-        gap: 1rem;
-    }
-    .calc-left-col {
-        max-height: none;
-    }
-    .calc-right-col {
-        max-height: none;
-        overflow-y: visible;
-    }
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.calc-left-col {
+    width: 805.45px;
+    max-width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.calc-right-col {
+    width: 546.55px;
+    max-width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
     /* Compact inputs for narrow screens */
     .glass-panel.calculator-form {
         padding: 0.75rem;
