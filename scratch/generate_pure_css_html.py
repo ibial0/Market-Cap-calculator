@@ -1,0 +1,1131 @@
+import os
+
+os.chdir(r"c:\Antigravity Work\crypto-mc-calc")
+
+html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNL Card Generator</title>
+    <meta name="description" content="PNL Card Generator - Track crypto market cap ROI and generate trading cards.">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- HTML2Canvas CDN for Trading Card Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+
+    <style>
+      /* ═══════════════════════════════════════════════════════════
+         FIGMA 1:1 PIXEL-PERFECT PURE CSS ARCHITECTURE
+         ═══════════════════════════════════════════════════════════ */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #0a0f1c;
+        color: #ffffff;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+
+      header {
+        display: none !important;
+      }
+
+      /* JetBrains Mono for numbers */
+      .font-mono-num {
+        font-family: 'JetBrains Mono', monospace !important;
+      }
+
+      /* Container: Exactly 1440px canvas */
+      .canvas-container {
+        width: 1440px;
+        min-height: 900px;
+        padding: 24px 32px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 24px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 1400px) {
+        .canvas-container {
+          width: 100%;
+          flex-direction: column;
+          align-items: center;
+          padding: 20px 16px;
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         LEFT COLUMN: Trading Card Preview (805.45px)
+         ═══════════════════════════════════════════════════════════ */
+      .preview-column {
+        width: 805.45px;
+        flex-shrink: 0;
+        background-color: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 1400px) {
+        .preview-column {
+          width: 100%;
+          max-width: 805.45px;
+        }
+      }
+
+      /* Card Header */
+      .card-header-bar {
+        display: flex;
+        height: 49px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #23304a;
+        padding-bottom: 9px;
+        padding-left: 4px;
+        padding-right: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .card-header-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 18px;
+        line-height: 28px;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+
+      .card-header-tools {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .icon-tool-btn {
+        width: 40px;
+        height: 40px;
+        background-color: #131b2f;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+      }
+
+      .icon-tool-btn:hover {
+        border-color: #12e2fd;
+        background-color: #1a2540;
+      }
+
+      /* Main Preview Box */
+      .main-preview-box {
+        width: 100%;
+        height: 429.44px;
+        background-color: #131b2f;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .empty-state-content {
+        width: 272px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .monitor-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #94a3b8;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .empty-state-text-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        padding-top: 12px;
+        width: 100%;
+      }
+
+      .empty-state-heading {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #ffffff;
+      }
+
+      .empty-state-desc {
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 20px;
+        color: #94a3b8;
+      }
+
+      /* Action Buttons */
+      .preview-actions-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn-copy-card {
+        height: 44px;
+        width: 100%;
+        background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
+        border: none;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(18, 226, 253, 0.25);
+        transition: filter 0.2s, transform 0.1s;
+      }
+
+      .btn-copy-card:hover {
+        filter: brightness(1.1);
+      }
+
+      .btn-copy-card:active {
+        transform: scale(0.99);
+      }
+
+      .btn-copy-card span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #0a0f1c;
+      }
+
+      .btn-change-bg {
+        height: 40px;
+        width: 100%;
+        background-color: #131b2f;
+        border: 1px solid rgba(18, 226, 253, 0.5);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s, transform 0.1s;
+      }
+
+      .btn-change-bg:hover {
+        border-color: #12e2fd;
+        background-color: #18233d;
+      }
+
+      .btn-change-bg:active {
+        transform: scale(0.99);
+      }
+
+      .change-bg-icon-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background-color: rgba(18, 226, 253, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-change-bg span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #ffffff;
+      }
+
+      .secondary-actions-row {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        height: 36px;
+      }
+
+      .btn-secondary-action {
+        flex: 1;
+        height: 36px;
+        background-color: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: border-color 0.2s, transform 0.1s;
+      }
+
+      .btn-secondary-action:hover {
+        border-color: #12e2fd;
+      }
+
+      .btn-secondary-action:active {
+        transform: scale(0.99);
+      }
+
+      .btn-secondary-action span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         RIGHT COLUMN: Trading Card Details (546.55px)
+         ═══════════════════════════════════════════════════════════ */
+      .details-column {
+        width: 546.55px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 1400px) {
+        .details-column {
+          width: 100%;
+          max-width: 546.55px;
+        }
+      }
+
+      /* Position Inputs Card */
+      .details-card {
+        background-color: #131b2f;
+        border: 1px solid #23304a;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+
+      /* Mode Switch */
+      .mode-switch-bar {
+        height: 48px;
+        width: 100%;
+        background-color: #0a0f1c;
+        border-radius: 8px;
+        padding: 4px;
+        display: flex;
+        gap: 0;
+        box-sizing: border-box;
+      }
+
+      .mode-tab-btn {
+        flex: 1;
+        height: 40px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        transition: background-color 0.2s, color 0.2s;
+      }
+
+      .mode-tab-btn.active {
+        background-color: #12e2fd;
+        color: #0a0f1c;
+      }
+
+      .mode-tab-btn.inactive {
+        background-color: transparent;
+        color: #94a3b8;
+      }
+
+      /* Inputs Container */
+      .amounts-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 16px;
+        width: 100%;
+      }
+
+      .field-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .field-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .field-label {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .field-meta-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .field-meta-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      /* Input Box */
+      .field-input-box {
+        height: 44px;
+        width: 100%;
+        background-color: #0a0f1c;
+        border-radius: 8px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-sizing: border-box;
+      }
+
+      .currency-symbol {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 16px;
+        color: #94a3b8;
+        user-select: none;
+      }
+
+      .field-input-clean {
+        flex: 1;
+        min-width: 0;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+
+      .field-input-clean::placeholder {
+        color: #94a3b8;
+      }
+
+      .unit-toggle-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .unit-pill-btn {
+        height: 27px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .unit-pill-btn.active {
+        background-color: #12e2fd;
+        color: #0a0f1c;
+        padding: 0 12px;
+      }
+
+      .unit-pill-btn.inactive {
+        background-color: transparent;
+        color: #94a3b8;
+        padding: 0 8px;
+      }
+
+      .unit-pill-btn.inactive:hover {
+        color: #ffffff;
+      }
+
+      /* Token Details Card */
+      .token-card {
+        border: 1px solid #23304a;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .token-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .token-header-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .token-header-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .token-header-meta {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+
+      .token-input-row {
+        height: 44px;
+        width: 100%;
+        background-color: rgba(19, 27, 47, 0.4);
+        border-radius: 8px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-sizing: border-box;
+      }
+
+      .token-badge-icon {
+        width: 32px;
+        height: 32px;
+        background-color: rgba(18, 226, 253, 0.1);
+        border: 1px solid rgba(18, 226, 253, 0.2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .token-input-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .token-input-label {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        line-height: 1.2;
+      }
+
+      .token-input-clean {
+        width: 100%;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        line-height: 16px;
+        color: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+
+      .token-input-clean::placeholder {
+        color: rgba(148, 163, 184, 0.7);
+      }
+
+      .token-hint-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+      }
+
+      .token-hint-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+
+      .token-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid #23304a;
+        padding-top: 8px;
+        width: 100%;
+      }
+
+      .custom-logo-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .custom-logo-left-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+
+      .custom-logo-trigger {
+        background: transparent;
+        border: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+      }
+
+      .custom-logo-trigger span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 9px;
+        color: #12e2fd;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         POSITION SUMMARY CARD (With Cyan Outline Glow)
+         ═══════════════════════════════════════════════════════════ */
+      .summary-card {
+        background-color: #131b2f;
+        border: 1px solid #12e2fd;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .summary-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #23304a;
+        padding-bottom: 12px;
+        width: 100%;
+      }
+
+      .summary-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chart-icon-box {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background-color: rgba(18, 226, 253, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .summary-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        color: #ffffff;
+      }
+
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .live-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #12e2fd;
+        text-transform: uppercase;
+      }
+
+      /* Row 1: Final Value and Multiplier */
+      .summary-row-primary {
+        display: flex;
+        padding: 16px 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .summary-cell-left {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+      }
+
+      .summary-metric-label {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .summary-val-white {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 28px;
+        color: #ffffff;
+      }
+
+      .summary-cell-right {
+        flex: 1;
+        min-width: 0;
+        border-left: 1px solid #23304a;
+        padding-left: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
+      }
+
+      .summary-val-cyan {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 28px;
+        color: #12e2fd;
+      }
+
+      /* Row 2: Profit & Percentage Nested Box */
+      .summary-nested-box {
+        background-color: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        display: flex;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .nested-cell-left {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+      }
+
+      .nested-cell-right {
+        flex: 1;
+        min-width: 0;
+        border-left: 1px solid #23304a;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
+      }
+
+      .nested-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 20px;
+        color: #ffffff;
+      }
+
+      /* Generate Card Master Button */
+      .btn-generate-master {
+        height: 48px;
+        width: 100%;
+        background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
+        border: 1px solid rgba(18, 226, 253, 0.4);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        box-shadow: 0 10px 25px -5px rgba(18, 226, 253, 0.3);
+        transition: filter 0.2s, transform 0.1s;
+      }
+
+      .btn-generate-master:hover {
+        filter: brightness(1.1);
+      }
+
+      .btn-generate-master:active {
+        transform: scale(0.99);
+      }
+
+      .sparkle-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background-color: rgba(10, 15, 28, 0.15);
+        border: 1px solid rgba(10, 15, 28, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .btn-generate-master span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 14px;
+        color: #0a0f1c;
+      }
+
+      /* Hidden render node for html2canvas export */
+      #render-node-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 1600px;
+        height: 900px;
+        transform: translate(-9999px, -9999px);
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: -1;
+      }
+      #render-node-container * {
+        all: revert;
+      }
+      #render-node-container img {
+        max-width: none !important;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════ FIGMA 1:1 PNL CARD GENERATOR CANVAS ═══════════════════════════════════ -->
+    <main class="canvas-container" id="tab-calculator">
+
+      <!-- ═══ LEFT COLUMN: Trading card preview (805.45px) ═══ -->
+      <section class="preview-column" id="card-preview-panel">
+        
+        <!-- Card Header -->
+        <div class="card-header-bar">
+          <h1 class="card-header-title">PNL CARD</h1>
+          <div class="card-header-tools">
+            <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
+              <img alt="smile" width="18" height="18" src="./assets/figma/smile.svg" />
+            </button>
+            <button type="button" id="btn-toggle-sidebar" title="Store" aria-label="Store" class="icon-tool-btn">
+              <img alt="shopping-cart" width="18" height="18" src="./assets/figma/shopping-cart.svg" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview Area -->
+        <div class="main-preview-box" id="main-preview-container">
+          <div class="loading-spinner hidden" id="preview-loading"></div>
+          <img id="preview-img" class="hidden" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
+          <div class="empty-state-content" id="card-empty-placeholder">
+            <div class="monitor-icon-wrapper">
+              <img alt="monitor" width="24" height="24" src="./assets/figma/monitor.svg" />
+            </div>
+            <div class="empty-state-text-wrap">
+              <span class="empty-state-heading">Your Trading Card</span>
+              <span class="empty-state-desc">
+                Fill details on the right and tap “Generate Trading Card” to create your card
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="preview-actions-wrap">
+          <!-- Copy Card Button -->
+          <button type="button" id="btn-copy" aria-label="Copy trading card to clipboard" class="btn-copy-card">
+            <img alt="copy" width="16" height="16" src="./assets/figma/copy.svg" />
+            <span>Copy Card</span>
+          </button>
+          
+          <!-- Change Background Button -->
+          <button type="button" id="btn-change-bg" aria-label="Change card background" class="btn-change-bg">
+            <div class="change-bg-icon-badge">
+              <img alt="refresh-cw" width="14" height="14" src="./assets/figma/refresh-cw.svg" />
+            </div>
+            <span>Change Background</span>
+          </button>
+
+          <!-- Download and Upload Row -->
+          <div class="secondary-actions-row">
+            <button type="button" id="btn-download" aria-label="Download trading card image" class="btn-secondary-action">
+              <img alt="download" width="14" height="14" src="./assets/figma/download.svg" />
+              <span>Download</span>
+            </button>
+            <button type="button" id="btn-upload-bg" aria-label="Upload a custom card background" class="btn-secondary-action">
+              <img alt="upload" width="14" height="14" src="./assets/figma/upload.svg" />
+              <span>Upload Background</span>
+            </button>
+            <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ RIGHT COLUMN: Trading card details (546.55px) ═══ -->
+      <section class="details-column">
+        
+        <!-- Position Inputs Card -->
+        <div class="details-card">
+          
+          <!-- Calculation Mode Switch -->
+          <div class="mode-switch-bar">
+            <button type="button" id="mode-mc-btn" data-mode="mc" class="mode-tab-btn active">
+              Market Cap
+            </button>
+            <button type="button" id="mode-price-btn" data-mode="price" class="mode-tab-btn inactive">
+              Price
+            </button>
+          </div>
+
+          <!-- Position Amounts -->
+          <div class="amounts-group">
+            
+            <!-- Initial Market Cap Field -->
+            <div class="field-wrapper">
+              <div class="field-header-row">
+                <span class="field-label">INITIAL MARKET CAP</span>
+                <div class="field-meta-toggle">
+                  <span class="field-meta-text">MULTI-ENTRY</span>
+                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                </div>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">$</span>
+                <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
+                <div class="unit-toggle-group" id="init-toggles">
+                  <button type="button" class="unit-pill-btn active">K</button>
+                  <button type="button" class="unit-pill-btn inactive">M</button>
+                  <button type="button" class="unit-pill-btn inactive">B</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target Market Cap Field -->
+            <div class="field-wrapper">
+              <div class="field-header-row">
+                <span class="field-label">TARGET MARKET CAP</span>
+                <div class="field-meta-toggle">
+                  <span class="field-meta-text">MULTI-EXIT</span>
+                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                </div>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">$</span>
+                <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
+                <div class="unit-toggle-group" id="target-toggles">
+                  <button type="button" class="unit-pill-btn active">K</button>
+                  <button type="button" class="unit-pill-btn inactive">M</button>
+                  <button type="button" class="unit-pill-btn inactive">B</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Investment Amount Field -->
+            <div class="field-wrapper">
+              <div class="field-header-row">
+                <span class="field-label">INVESTMENT AMOUNT</span>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">$</span>
+                <input type="text" id="investment" value="10" placeholder="10" class="field-input-clean" style="color: #ffffff;" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Token Details Card -->
+        <div class="token-card">
+          <div class="token-card-header">
+            <div class="token-header-title-wrap">
+              <img alt="accent" width="6" height="6" src="./assets/figma/accent-marker.svg" />
+              <span class="token-header-title">TOKEN DETAILS</span>
+            </div>
+            <span class="token-header-meta">Optional</span>
+          </div>
+          
+          <div class="token-input-row">
+            <div class="token-badge-icon">
+              <img alt="badge" width="14" height="14" src="./assets/figma/badge-dollar-sign.svg" />
+            </div>
+            <div class="token-input-content">
+              <label for="token-name" class="token-input-label">TOKEN NAME</label>
+              <input type="text" id="token-name" placeholder="Search token name or symbol" class="token-input-clean" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="token-hint-row">
+            <img alt="search" width="12" height="12" src="./assets/figma/search.svg" />
+            <span class="token-hint-text">Start typing to see matching tokens and set a logo automatically.</span>
+          </div>
+
+          <div class="token-card-footer">
+            <div class="custom-logo-left">
+              <img alt="image-plus" width="12" height="12" src="./assets/figma/image-plus.svg" />
+              <span class="custom-logo-left-text">Can't find your token?</span>
+            </div>
+            <button type="button" class="custom-logo-trigger">
+              <span>Add custom logo</span>
+              <img alt="chevron-down" width="12" height="12" src="./assets/figma/chevron-down.svg" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Position Summary Card -->
+        <div class="summary-card">
+          <div class="summary-card-header">
+            <div class="summary-header-left">
+              <div class="chart-icon-box">
+                <img alt="chart" width="14" height="14" src="./assets/figma/chart-no-axes-combined.svg" />
+              </div>
+              <span class="summary-title">Position Summary</span>
+            </div>
+            <div class="live-indicator">
+              <img alt="accent" width="6" height="6" src="./assets/figma/accent-marker.svg" />
+              <span class="live-text">LIVE</span>
+            </div>
+          </div>
+
+          <!-- Row 1: Final Value & Multiplier -->
+          <div class="summary-row-primary">
+            <div class="summary-cell-left">
+              <span class="summary-metric-label">FINAL VALUE</span>
+              <span class="summary-val-white" id="res-final-value">$0.00</span>
+            </div>
+            <div class="summary-cell-right">
+              <span class="summary-metric-label">MULTIPLIER</span>
+              <span class="summary-val-cyan" id="res-multiplier">0.00x</span>
+            </div>
+          </div>
+
+          <!-- Row 2: Profit/Loss & Percentage -->
+          <div class="summary-nested-box">
+            <div class="nested-cell-left">
+              <span class="summary-metric-label">PROFIT / LOSS</span>
+              <span class="nested-val" id="res-profit">$0.00</span>
+            </div>
+            <div class="nested-cell-right">
+              <span class="summary-metric-label">PERCENTAGE</span>
+              <span class="nested-val" id="res-roi">0.00%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Card Master Button -->
+        <button type="button" id="btn-generate" class="btn-generate-master">
+          <div class="sparkle-icon-box">
+            <img alt="sparkles" width="18" height="18" src="./assets/figma/sparkles.svg" />
+          </div>
+          <span>Generate Card</span>
+        </button>
+
+      </section>
+    </main>
+
+    <!-- Hidden Render Container for Card Node -->
+    <div id="render-node-container"><div id="card-node" class="card-node"></div></div>
+
+</body>
+</html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("Generated clean index.html with pure CSS architecture!")

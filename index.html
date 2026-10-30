@@ -1,600 +1,1121 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MC Calc - PnL Card Generator</title>
-    <meta name="description" content="Track crypto market cap ROI, DCA entries/exits, and generate trading cards.">
-    <link rel="manifest" href="./manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNL Card Generator</title>
+    <meta name="description" content="PNL Card Generator - Track crypto market cap ROI and generate trading cards.">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-    <link rel="shortcut icon" href="./favicon.svg">
-    <meta name="theme-color" content="#0f172a">
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;700;900&family=Space+Grotesk:wght@600;700&family=Roboto+Mono:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     
     <!-- HTML2Canvas CDN for Trading Card Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
-    <!-- Modular Styles -->
-    <link rel="stylesheet" href="./styles/index.css">
+    <style>
+      /* ═══════════════════════════════════════════════════════════
+         FIGMA 1:1 PIXEL-PERFECT PURE CSS ARCHITECTURE
+         ═══════════════════════════════════════════════════════════ */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #0a0f1c;
+        color: #ffffff;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+
+      header {
+        display: none !important;
+      }
+
+      /* JetBrains Mono for numbers */
+      .font-mono-num {
+        font-family: 'JetBrains Mono', monospace !important;
+      }
+
+      /* Container: Exactly 1440px canvas */
+      .canvas-container {
+        width: 1440px;
+        min-height: 900px;
+        padding: 24px 32px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 24px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 1400px) {
+        .canvas-container {
+          width: 100%;
+          flex-direction: column;
+          align-items: center;
+          padding: 20px 16px;
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         LEFT COLUMN: Trading Card Preview (805.45px)
+         ═══════════════════════════════════════════════════════════ */
+      .preview-column {
+        width: 805.45px;
+        flex-shrink: 0;
+        background-color: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 1400px) {
+        .preview-column {
+          width: 100%;
+          max-width: 805.45px;
+        }
+      }
+
+      /* Card Header */
+      .card-header-bar {
+        display: flex;
+        height: 49px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #23304a;
+        padding-bottom: 9px;
+        padding-left: 4px;
+        padding-right: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .card-header-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 18px;
+        line-height: 28px;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+
+      .card-header-tools {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .icon-tool-btn {
+        width: 40px;
+        height: 40px;
+        background-color: #131b2f;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+      }
+
+      .icon-tool-btn:hover {
+        border-color: #12e2fd;
+        background-color: #1a2540;
+      }
+
+      /* Main Preview Box */
+      .main-preview-box {
+        width: 100%;
+        height: 429.44px;
+        background-color: #131b2f;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .empty-state-content {
+        width: 272px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .monitor-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #94a3b8;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .empty-state-text-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        padding-top: 12px;
+        width: 100%;
+      }
+
+      .empty-state-heading {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #ffffff;
+      }
+
+      .empty-state-desc {
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 20px;
+        color: #94a3b8;
+      }
+
+      /* Action Buttons */
+      .preview-actions-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn-copy-card {
+        height: 44px;
+        width: 100%;
+        background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
+        border: none;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(18, 226, 253, 0.25);
+        transition: filter 0.2s, transform 0.1s;
+      }
+
+      .btn-copy-card:hover {
+        filter: brightness(1.1);
+      }
+
+      .btn-copy-card:active {
+        transform: scale(0.99);
+      }
+
+      .btn-copy-card span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #0a0f1c;
+      }
+
+      .btn-change-bg {
+        height: 40px;
+        width: 100%;
+        background-color: #131b2f;
+        border: 1px solid rgba(18, 226, 253, 0.5);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s, transform 0.1s;
+      }
+
+      .btn-change-bg:hover {
+        border-color: #12e2fd;
+        background-color: #18233d;
+      }
+
+      .btn-change-bg:active {
+        transform: scale(0.99);
+      }
+
+      .change-bg-icon-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background-color: rgba(18, 226, 253, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-change-bg span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #ffffff;
+      }
+
+      .secondary-actions-row {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        height: 36px;
+      }
+
+      .btn-secondary-action {
+        flex: 1;
+        height: 36px;
+        background-color: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: border-color 0.2s, transform 0.1s;
+      }
+
+      .btn-secondary-action:hover {
+        border-color: #12e2fd;
+      }
+
+      .btn-secondary-action:active {
+        transform: scale(0.99);
+      }
+
+      .btn-secondary-action span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         RIGHT COLUMN: Trading Card Details (546.55px)
+         ═══════════════════════════════════════════════════════════ */
+      .details-column {
+        width: 546.55px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-sizing: border-box;
+      }
+
+      @media (max-width: 1400px) {
+        .details-column {
+          width: 100%;
+          max-width: 546.55px;
+        }
+      }
+
+      /* Position Inputs Card */
+      .details-card {
+        background-color: #131b2f;
+        border: 1px solid #23304a;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+
+      /* Mode Switch */
+      .mode-switch-bar {
+        height: 48px;
+        width: 100%;
+        background-color: #0a0f1c;
+        border-radius: 8px;
+        padding: 4px;
+        display: flex;
+        gap: 0;
+        box-sizing: border-box;
+      }
+
+      .mode-tab-btn {
+        flex: 1;
+        height: 40px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        transition: background-color 0.2s, color 0.2s;
+      }
+
+      .mode-tab-btn.active {
+        background-color: #12e2fd;
+        color: #0a0f1c;
+      }
+
+      .mode-tab-btn.inactive {
+        background-color: transparent;
+        color: #94a3b8;
+      }
+
+      /* Inputs Container */
+      .amounts-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 16px;
+        width: 100%;
+      }
+
+      .field-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .field-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .field-label {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .field-meta-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .field-meta-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      /* Input Box */
+      .field-input-box {
+        height: 44px;
+        width: 100%;
+        background-color: #0a0f1c;
+        border-radius: 8px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-sizing: border-box;
+      }
+
+      .currency-symbol {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 16px;
+        color: #94a3b8;
+        user-select: none;
+      }
+
+      .field-input-clean {
+        flex: 1;
+        min-width: 0;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+
+      .field-input-clean::placeholder {
+        color: #94a3b8;
+      }
+
+      .unit-toggle-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .unit-pill-btn {
+        height: 27px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: background-color 0.15s, color 0.15s;
+      }
+
+      .unit-pill-btn.active {
+        background-color: #12e2fd;
+        color: #0a0f1c;
+        padding: 0 12px;
+      }
+
+      .unit-pill-btn.inactive {
+        background-color: transparent;
+        color: #94a3b8;
+        padding: 0 8px;
+      }
+
+      .unit-pill-btn.inactive:hover {
+        color: #ffffff;
+      }
+
+      /* Token Details Card */
+      .token-card {
+        border: 1px solid #23304a;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .token-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .token-header-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .token-header-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .token-header-meta {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+
+      .token-input-row {
+        height: 44px;
+        width: 100%;
+        background-color: rgba(19, 27, 47, 0.4);
+        border-radius: 8px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-sizing: border-box;
+      }
+
+      .token-badge-icon {
+        width: 32px;
+        height: 32px;
+        background-color: rgba(18, 226, 253, 0.1);
+        border: 1px solid rgba(18, 226, 253, 0.2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .token-input-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .token-input-label {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        line-height: 1.2;
+      }
+
+      .token-input-clean {
+        width: 100%;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        line-height: 16px;
+        color: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+
+      .token-input-clean::placeholder {
+        color: rgba(148, 163, 184, 0.7);
+      }
+
+      .token-hint-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+      }
+
+      .token-hint-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+
+      .token-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid #23304a;
+        padding-top: 8px;
+        width: 100%;
+      }
+
+      .custom-logo-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .custom-logo-left-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 9px;
+        color: #94a3b8;
+      }
+
+      .custom-logo-trigger {
+        background: transparent;
+        border: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+      }
+
+      .custom-logo-trigger span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 9px;
+        color: #12e2fd;
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         POSITION SUMMARY CARD (With Cyan Outline Glow)
+         ═══════════════════════════════════════════════════════════ */
+      .summary-card {
+        background-color: #131b2f;
+        border: 1px solid #12e2fd;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .summary-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #23304a;
+        padding-bottom: 12px;
+        width: 100%;
+      }
+
+      .summary-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chart-icon-box {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background-color: rgba(18, 226, 253, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .summary-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        color: #ffffff;
+      }
+
+      .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .live-text {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #12e2fd;
+        text-transform: uppercase;
+      }
+
+      /* Row 1: Final Value and Multiplier */
+      .summary-row-primary {
+        display: flex;
+        padding: 16px 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .summary-cell-left {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+      }
+
+      .summary-metric-label {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 9px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .summary-val-white {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 28px;
+        color: #ffffff;
+      }
+
+      .summary-cell-right {
+        flex: 1;
+        min-width: 0;
+        border-left: 1px solid #23304a;
+        padding-left: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
+      }
+
+      .summary-val-cyan {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 28px;
+        color: #12e2fd;
+      }
+
+      /* Row 2: Profit & Percentage Nested Box */
+      .summary-nested-box {
+        background-color: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 12px;
+        display: flex;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .nested-cell-left {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+      }
+
+      .nested-cell-right {
+        flex: 1;
+        min-width: 0;
+        border-left: 1px solid #23304a;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-end;
+      }
+
+      .nested-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 20px;
+        color: #ffffff;
+      }
+
+      /* Generate Card Master Button */
+      .btn-generate-master {
+        height: 48px;
+        width: 100%;
+        background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
+        border: 1px solid rgba(18, 226, 253, 0.4);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        box-shadow: 0 10px 25px -5px rgba(18, 226, 253, 0.3);
+        transition: filter 0.2s, transform 0.1s;
+      }
+
+      .btn-generate-master:hover {
+        filter: brightness(1.1);
+      }
+
+      .btn-generate-master:active {
+        transform: scale(0.99);
+      }
+
+      .sparkle-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background-color: rgba(10, 15, 28, 0.15);
+        border: 1px solid rgba(10, 15, 28, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .btn-generate-master span {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 14px;
+        color: #0a0f1c;
+      }
+
+      /* Hidden render node for html2canvas export */
+      #render-node-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 1600px;
+        height: 900px;
+        transform: translate(-9999px, -9999px);
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: -1;
+      }
+      #render-node-container * {
+        all: revert;
+      }
+      #render-node-container img {
+        max-width: none !important;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
 </head>
 <body>
 
-    <!-- ═══════════════════════════════════ HEADER ═══════════════════════════════════ -->
-    <header>
-        <div class="logo">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <circle cx="256" cy="256" r="256" fill="currentColor" opacity="0.1" />
-                <path d="M256 80 L408 168 L408 344 L256 432 L104 344 L104 168 Z" fill="none" stroke="url(#logo-grad)" stroke-width="24" stroke-linejoin="round" />
-                <circle cx="256" cy="256" r="80" fill="url(#logo-grad)"/>
-                <path d="M180 280 L220 220 L270 260 L330 180" fill="none" stroke="var(--bg-primary)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-                <defs>
-                    <linearGradient id="logo-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="var(--accent-primary)" />
-                        <stop offset="100%" stop-color="var(--accent-secondary)" />
-                    </linearGradient>
-                </defs>
-            </svg>
-            MC Calc
-        </div>
-        <div class="header-actions">
-            <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme">
-                <svg viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" /></svg>
+    <!-- ═══════════════════════════════════ FIGMA 1:1 PNL CARD GENERATOR CANVAS ═══════════════════════════════════ -->
+    <main class="canvas-container" id="tab-calculator">
+
+      <!-- ═══ LEFT COLUMN: Trading card preview (805.45px) ═══ -->
+      <section class="preview-column" id="card-preview-panel">
+        
+        <!-- Card Header -->
+        <div class="card-header-bar">
+          <h1 class="card-header-title">PNL CARD</h1>
+          <div class="card-header-tools">
+            <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
+              <img alt="smile" width="18" height="18" src="./assets/figma/smile.svg" />
             </button>
-            <!-- Profile Menu Button -->
-            <button class="profile-btn" id="profile-menu-btn" aria-label="Profile">
-                <img id="header-avatar" class="hidden" alt="Profile">
-                <div id="header-avatar-placeholder" class="profile-btn-placeholder">👤</div>
+            <button type="button" id="btn-toggle-sidebar" title="Store" aria-label="Store" class="icon-tool-btn">
+              <img alt="shopping-cart" width="18" height="18" src="./assets/figma/shopping-cart.svg" />
             </button>
+          </div>
         </div>
-    </header>
 
-    
-    <!-- Top nav tabs moved to profile menu -->
-
-    
-    <!-- ═══════════════════════════════════ CALCULATOR TAB (SPLIT LAYOUT) ═══════════════════════════════════ -->
-    <div id="tab-calculator" class="tab-panel active">
-        <div class="calc-split-layout">
-
-            <!-- ═══ LEFT COLUMN: Trading Card Preview ═══ -->
-            <div class="calc-left-col" id="card-preview-panel">
-                <div class="card-panel-container">
-                    <div class="card-panel-header">
-                        <h2 class="card-panel-title">Trading Card</h2>
-                        <div class="card-header-actions">
-                            <!-- Reaction Picker Toggle -->
-                            <button class="icon-btn reaction-toggle-btn" id="btn-reaction-picker" title="Pick a vibe">
-                                <span class="reaction-icon-default">🎭</span>
-                            </button>
-                            <!-- Reaction Popover (4 emojis) -->
-                            <div class="reaction-popover" id="reaction-popover">
-                                <!-- Populated by app.js -->
-                            </div>
-                            <!-- Background Gallery Toggle -->
-                            <button class="icon-btn sidebar-toggle-btn" id="btn-toggle-sidebar" title="Browse Backgrounds">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 16:9 Card Preview Box -->
-                    <div class="preview-container" id="main-preview-container">
-                        <div class="loading-spinner" id="preview-loading" style="display:none;"></div>
-                        <img id="preview-img" class="preview-image" alt="Trading Card Preview">
-                        <div id="card-empty-placeholder">
-                            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;">
-                                <rect x="2" y="3" width="20" height="14" rx="2"/>
-                                <path d="M8 21h8m-4-4v4"/>
-                            </svg>
-                            <span class="empty-card-title">Your Trading Card</span>
-                            <span class="empty-card-desc">Fill details on the right and tap "Generate Trading Card" to create your card</span>
-                        </div>
-                    </div>
-
-                    <!-- Primary Actions -->
-                    <div class="preview-actions">
-                        <button class="btn-primary" id="btn-copy">
-                            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5h-6z"/><path d="M10.5 2.25A1.5 1.5 0 009 3.75v.75h6v-.75a1.5 1.5 0 00-1.5-1.5h-3z"/></svg>
-                            Copy
-                        </button>
-                        <button class="btn-primary" id="btn-download">
-                            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v11.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3a.75.75 0 01.75-.75zm-9 13.5a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
-                            Download
-                        </button>
-                    </div>
-
-                    <!-- Secondary Actions -->
-                    <div class="preview-actions-secondary">
-                        <button class="btn-secondary" id="btn-change-bg">
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm14.49 3.882a7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0014.388-3.084.75.75 0 10-1.45-.388z" clip-rule="evenodd"/></svg>
-                            Change Background
-                        </button>
-                        <button class="btn-secondary" id="btn-upload-bg">
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd"/></svg>
-                            Upload Background
-                        </button>
-                        <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
-                    </div>
-                </div>
+        <!-- Preview Area -->
+        <div class="main-preview-box" id="main-preview-container">
+          <div class="loading-spinner hidden" id="preview-loading"></div>
+          <img id="preview-img" class="hidden" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
+          <div class="empty-state-content" id="card-empty-placeholder">
+            <div class="monitor-icon-wrapper">
+              <img alt="monitor" width="24" height="24" src="./assets/figma/monitor.svg" />
             </div>
-
-            <!-- ═══ MIDDLE COLUMN: Background Gallery (on demand) ═══ -->
-            <div class="calc-middle-col" id="bg-gallery-column" style="display:none;">
-                <div class="bg-gallery-panel">
-                    <div class="bg-gallery-header">
-                        <span class="bg-gallery-title">Backgrounds</span>
-                        <button class="close-btn" id="close-gallery" style="width:28px;height:28px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </div>
-                    <div class="bg-gallery-grid" id="bg-sidebar-grid">
-                        <!-- Populated by app.js -->
-                    </div>
-                </div>
+            <div class="empty-state-text-wrap">
+              <span class="empty-state-heading">Your Trading Card</span>
+              <span class="empty-state-desc">
+                Fill details on the right and tap “Generate Trading Card” to create your card
+              </span>
             </div>
-
-            <!-- ═══ RIGHT COLUMN: Calculator Form + Results + Token + Generate ═══ -->
-            <div class="calc-right-col">
-                <div class="glass-panel calculator-form">
-                    <!-- Mode Switch: Market Cap vs Price -->
-                    <div class="calc-mode-container">
-                        <button type="button" class="calc-mode-btn active" id="mode-mc-btn" data-mode="mc">
-                            Market Cap
-                        </button>
-                        <button type="button" class="calc-mode-btn" id="mode-price-btn" data-mode="price">
-                            Price
-                        </button>
-                    </div>
-
-                    <!-- Initial MC / Price -->
-                    <div class="input-group">
-                        <div class="input-label-row">
-                            <label class="input-label" id="lbl-initial">Initial Market Cap</label>
-                            <label class="dca-toggle-label">
-                                <span class="dca-toggle-text">Multi-Entry</span>
-                                <input type="checkbox" id="dca-init-toggle" class="dca-chk">
-                                <span class="toggle-switch-mini"></span>
-                            </label>
-                        </div>
-                        <!-- Single entry -->
-                        <div id="init-single">
-                            <div class="input-wrapper">
-                                <span class="prefix">$</span>
-                                <input type="text" id="initial-mc" class="amount-input" placeholder="0" inputmode="decimal">
-                                <div class="multiplier-group" id="init-toggles">
-                                    <button class="mul-btn active" data-val="1000">K</button>
-                                    <button class="mul-btn" data-val="1000000">M</button>
-                                    <button class="mul-btn" data-val="1000000000">B</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Multi entry (DCA) -->
-                        <div id="init-multi" class="hidden">
-                            <div id="init-dca-rows" class="dca-entries-container"></div>
-                            <button class="dca-add-row-btn" id="add-init-dca-row">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                Add Entry
-                            </button>
-                            <div class="dca-avg-display" id="init-dca-avg">
-                                <span id="lbl-init-dca-avg">Avg Entry MC:</span>
-                                <span class="dca-avg-val" id="init-avg-val">—</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Target MC / Price -->
-                    <div class="input-group">
-                        <div class="input-label-row">
-                            <label class="input-label" id="lbl-target">Target Market Cap</label>
-                            <label class="dca-toggle-label">
-                                <span class="dca-toggle-text">Multi-Exit</span>
-                                <input type="checkbox" id="dca-target-toggle" class="dca-chk">
-                                <span class="toggle-switch-mini"></span>
-                            </label>
-                        </div>
-                        <!-- Single -->
-                        <div id="target-single">
-                            <div class="input-wrapper">
-                                <span class="prefix">$</span>
-                                <input type="text" id="target-mc" class="amount-input" placeholder="0" inputmode="decimal">
-                                <div class="multiplier-group" id="target-toggles">
-                                    <button class="mul-btn active" data-val="1000">K</button>
-                                    <button class="mul-btn" data-val="1000000">M</button>
-                                    <button class="mul-btn" data-val="1000000000">B</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Multi exit (DCA) -->
-                        <div id="target-multi" class="hidden">
-                            <div id="target-dca-rows" class="dca-entries-container"></div>
-                            <button class="dca-add-row-btn" id="add-target-dca-row">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                                Add Exit
-                            </button>
-                            <div class="dca-avg-display" id="target-dca-avg">
-                                <span id="lbl-target-dca-avg">Avg Exit MC:</span>
-                                <span class="dca-avg-val" id="target-avg-val">—</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Investment -->
-                    <div class="input-group" style="margin-top: 1rem;">
-                        <label class="input-label">Investment Amount</label>
-                        <div class="input-wrapper">
-                            <span class="prefix">$</span>
-                            <input type="text" id="investment" class="amount-input" value="10" inputmode="decimal">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Meta Inputs: Token Name + Autocomplete Suggestions -->
-                <div class="meta-inputs" style="margin-top: 0.875rem;">
-                    <div class="input-group token-autocomplete" style="flex:1;">
-                        <div class="input-wrapper">
-                            <input type="text" id="token-name" class="amount-input" placeholder="Search or enter a token (e.g. SOL)" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="token-suggestions" aria-expanded="false">
-                        </div>
-                        <div id="token-suggestions" class="token-suggestions hidden" role="listbox" aria-label="Token suggestions"></div>
-                    </div>
-                </div>
-
-                <!-- Token Logo Upload (Optional) -->
-                <div class="token-logo-upload-row" id="token-logo-row" style="margin-top: 0.5rem;">
-                    <div class="token-logo-area" id="token-logo-area">
-                        <img id="token-logo-preview" class="token-logo-img hidden" alt="Token Logo">
-                        <div id="token-logo-placeholder" class="token-logo-placeholder">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z"/><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>
-                        </div>
-                        <input type="file" id="token-logo-upload" accept="image/*" style="display:none">
-                    </div>
-                    <div class="token-logo-info">
-                        <span class="token-logo-label">Token Logo</span>
-                        <span class="token-logo-sub">Optional — tap to upload</span>
-                    </div>
-                    <button class="token-logo-remove hidden" id="token-logo-remove" aria-label="Remove logo">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
-                    </button>
-                </div>
-
-                <!-- Results Panel (moved below token inputs) -->
-                <div class="glass-panel results-panel" style="margin-top: 0.875rem;">
-                    <div class="result-main-row">
-                        <div class="result-main-item">
-                            <div class="result-label">Final Value</div>
-                            <div class="result-value result-value-lg" id="res-final-value">$0.00</div>
-                            <div class="result-sub hidden" id="res-final-bdt">৳ 0.00</div>
-                        </div>
-                        <div class="result-main-item" style="text-align:right;">
-                            <div class="result-label">Multiplier</div>
-                            <div class="result-value result-value-lg" id="res-multiplier" style="color:var(--accent-primary);">0.00x</div>
-                        </div>
-                    </div>
-                    <div class="result-sub-row">
-                        <div class="result-sub-item">
-                            <div class="result-label">Profit / Loss</div>
-                            <div class="result-value" id="res-profit">$0.00</div>
-                            <div class="result-sub hidden" id="res-profit-bdt">৳ 0.00</div>
-                        </div>
-                        <div class="result-sub-item result-sub-divider">
-                            <div class="result-label">Percentage</div>
-                            <div class="result-value" id="res-roi">0.00%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Generate Trading Card Button -->
-                <button class="btn-primary" id="btn-generate" style="margin-top: 1rem; width:100%;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11.644 1.59a.75.75 0 01.712 0l9.75 5.25a.75.75 0 010 1.32l-9.75 5.25a.75.75 0 01-.712 0l-9.75-5.25a.75.75 0 010-1.32l9.75-5.25z" /><path d="M3.265 10.602l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877zM3.265 14.102l7.668 4.129a2.25 2.25 0 002.134 0l7.668-4.13-9.06 4.878a.75.75 0 01-.71 0l-9.06-4.877z" /></svg>
-                    Generate Trading Card
-                </button>
-            </div>
+          </div>
         </div>
-    </div>
 
-
-    <!-- ═══════════════════════════════════ JOURNAL TAB ═══════════════════════════════════ -->
-    <div id="tab-journal" class="tab-panel">
-        <div class="journal-section">
-            <div class="journal-toolbar">
-                <div class="journal-title">My Trades</div>
-                <button class="add-token-btn" id="add-token-btn">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    New Token
-                </button>
+        <!-- Card Actions -->
+        <div class="preview-actions-wrap">
+          <!-- Copy Card Button -->
+          <button type="button" id="btn-copy" aria-label="Copy trading card to clipboard" class="btn-copy-card">
+            <img alt="copy" width="16" height="16" src="./assets/figma/copy.svg" />
+            <span>Copy Card</span>
+          </button>
+          
+          <!-- Change Background Button -->
+          <button type="button" id="btn-change-bg" aria-label="Change card background" class="btn-change-bg">
+            <div class="change-bg-icon-badge">
+              <img alt="refresh-cw" width="14" height="14" src="./assets/figma/refresh-cw.svg" />
             </div>
-            <div id="journal-container"></div>
+            <span>Change Background</span>
+          </button>
+
+          <!-- Download and Upload Row -->
+          <div class="secondary-actions-row">
+            <button type="button" id="btn-download" aria-label="Download trading card image" class="btn-secondary-action">
+              <img alt="download" width="14" height="14" src="./assets/figma/download.svg" />
+              <span>Download</span>
+            </button>
+            <button type="button" id="btn-upload-bg" aria-label="Upload a custom card background" class="btn-secondary-action">
+              <img alt="upload" width="14" height="14" src="./assets/figma/upload.svg" />
+              <span>Upload Background</span>
+            </button>
+            <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
+          </div>
         </div>
-    </div>
+      </section>
 
-    <!-- ═══════════════════════════════════ WALLET ANALYTICS TAB ═══════════════════════════════════ -->
-    <div id="tab-wallet" class="tab-panel">
-        <div class="wallet-section">
+      <!-- ═══ RIGHT COLUMN: Trading card details (546.55px) ═══ -->
+      <section class="details-column">
+        
+        <!-- Position Inputs Card -->
+        <div class="details-card">
+          
+          <!-- Calculation Mode Switch -->
+          <div class="mode-switch-bar">
+            <button type="button" id="mode-mc-btn" data-mode="mc" class="mode-tab-btn active">
+              Market Cap
+            </button>
+            <button type="button" id="mode-price-btn" data-mode="price" class="mode-tab-btn inactive">
+              Price
+            </button>
+          </div>
 
-            <!-- Input Card -->
-            <div class="wallet-input-card">
-                <div>
-                    <label class="input-label" for="wallet-addr-input">EVM Wallet Address</label>
-                    <div class="wallet-addr-wrapper">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--text-secondary)"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 12a1 1 0 100 2 1 1 0 000-2z"/><path d="M22 12H18"/></svg>
-                        <input
-                            type="text"
-                            id="wallet-addr-input"
-                            class="wallet-addr-input"
-                            placeholder="0x… paste your EVM wallet address"
-                            autocomplete="off"
-                            spellcheck="false"
-                            maxlength="42"
-                        >
-                        <button class="wallet-clear-btn" id="wallet-clear-btn" aria-label="Clear address" title="Clear">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd"/></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="input-label" for="wallet-network-select">Network</label>
-                    <div class="network-selector">
-                        <select id="wallet-network-select" class="network-select">
-                            <option value="all">🌐 All Networks</option>
-                            <option value="ethereum">🔷 Ethereum Mainnet</option>
-                            <option value="bnb">🟡 BNB Smart Chain</option>
-                            <option value="base">🔵 Base</option>
-                            <option value="arbitrum">🔵 Arbitrum One</option>
-                            <option value="polygon">🟣 Polygon PoS</option>
-                            <option value="optimism">🔴 Optimism</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn-analyze" id="wallet-analyze-btn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                    Analyze Wallet
-                </button>
-            </div>
-
-            <!-- Filter bar (populated by JS) -->
-            <div id="wallet-filter-bar" class="wallet-filter-bar"></div>
-
-            <!-- Results area (portfolio summary + token rows) -->
-            <div id="wallet-results-area"></div>
-
-            <!-- Activity area -->
-            <div id="wallet-activity-area"></div>
-
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════ MODALS ═══════════════════════════════════ -->
-
-    <!-- Profile Menu Modal -->
-    <div class="modal-overlay" id="profile-menu-overlay">
-        <div class="modal-content" style="max-width: 320px;">
-            <div class="modal-header">
-                <h2 class="modal-title">My Profile</h2>
-                <button class="close-btn" id="close-profile-menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
-            </div>
+          <!-- Position Amounts -->
+          <div class="amounts-group">
             
-            <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:1.5rem; margin-top:0.5rem;">
-                <div class="profile-btn" style="width:72px; height:72px; margin-bottom:0.8rem; cursor:default;">
-                    <img id="menu-avatar" class="hidden" alt="Profile" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
-                    <div id="menu-avatar-placeholder" class="profile-btn-placeholder" style="width:72px; height:72px; font-size:2rem;">👤</div>
+            <!-- Initial Market Cap Field -->
+            <div class="field-wrapper">
+              <div class="field-header-row">
+                <span class="field-label">INITIAL MARKET CAP</span>
+                <div class="field-meta-toggle">
+                  <span class="field-meta-text">MULTI-ENTRY</span>
+                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
                 </div>
-                <div id="menu-user-name" style="font-family:var(--font-display); font-size:1.2rem; font-weight:800; color:var(--text-primary);">User</div>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">$</span>
+                <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
+                <div class="unit-toggle-group" id="init-toggles">
+                  <button type="button" class="unit-pill-btn active">K</button>
+                  <button type="button" class="unit-pill-btn inactive">M</button>
+                  <button type="button" class="unit-pill-btn inactive">B</button>
+                </div>
+              </div>
             </div>
 
-                        <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
-                <button class="btn-outline menu-nav-btn" data-tab="calculator" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.5 6h-15v13.5h15V6zm-9.75 10.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-3h3v3zm0-4.5h-3v-3h3v3zm4.5 4.5h-3v-7.5h3v7.5zM5.25 4.5h13.5V3H5.25v1.5z"/></svg>
-                    PnL Generator
-                </button>
-                <button class="btn-outline menu-nav-btn" data-tab="journal" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75zM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 01-1.875-1.875V8.625zM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 013 19.875v-6.75z"/></svg>
-                    My Trades
-                </button>
-                <button class="btn-outline menu-nav-btn" data-tab="wallet" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.273 5.625A4.483 4.483 0 015.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 3H5.25a3 3 0 00-2.977 2.625zM2.273 8.125A4.483 4.483 0 015.25 7h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0018.75 5.5H5.25a3 3 0 00-2.977 2.625zM5.25 9a3 3 0 00-3 3v6a3 3 0 003 3h13.5a3 3 0 003-3v-6a3 3 0 00-3-3H5.25zm10.5 4.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"/></svg>
-                    Wallet
-                </button>
+            <!-- Target Market Cap Field -->
+            <div class="field-wrapper">
+              <div class="field-header-row">
+                <span class="field-label">TARGET MARKET CAP</span>
+                <div class="field-meta-toggle">
+                  <span class="field-meta-text">MULTI-EXIT</span>
+                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                </div>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">$</span>
+                <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
+                <div class="unit-toggle-group" id="target-toggles">
+                  <button type="button" class="unit-pill-btn active">K</button>
+                  <button type="button" class="unit-pill-btn inactive">M</button>
+                  <button type="button" class="unit-pill-btn inactive">B</button>
+                </div>
+              </div>
             </div>
-            <div style="display:flex; flex-direction:column; gap:0.6rem;">
-                <button class="btn-outline" id="menu-edit-profile-btn" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.158 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.713zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z" /></svg>
-                    Edit Profile
-                </button>
-                <button class="btn-outline" id="menu-settings-btn" style="display:flex; justify-content:flex-start; align-items:center; gap:0.6rem; padding:0.8rem 1rem;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.875 1.875 0 00-2.282.819l-.922 1.597a1.875 1.875 0 00.432 2.385l.84.692c.097.078.16.208.16.336 0 .013-.005.09-.006.183a8.1 8.1 0 000 1.996c.002.094.005.17.006.183.002.128-.063.258-.16.336l-.84.692a1.875 1.875 0 00-.432 2.385l.922 1.597a1.875 1.875 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.312.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h1.844c.916 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.673-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.875 1.875 0 002.28-.819l.923-1.597a1.875 1.875 0 00-.432-2.385l-.84-.692c-.095-.078-.159-.208-.159-.336a7.274 7.274 0 000-2.015c0-.128.064-.258.159-.336l.84-.692a1.875 1.875 0 00.432-2.385l-.923-1.597a1.875 1.875 0 00-2.28-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.985-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.875 1.875 0 00-1.85-1.567h-1.843zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clip-rule="evenodd" /></svg>
-                    Settings
-                </button>
+
+            <!-- Investment Amount Field -->
+            <div class="field-wrapper">
+              <div class="field-header-row">
+                <span class="field-label">INVESTMENT AMOUNT</span>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">$</span>
+                <input type="text" id="investment" value="10" placeholder="10" class="field-input-clean" style="color: #ffffff;" />
+              </div>
             </div>
+
+          </div>
         </div>
-    </div>
 
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settings-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Settings</h2>
-                <button class="close-btn" id="close-settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
+        <!-- Token Details Card -->
+        <div class="token-card">
+          <div class="token-card-header">
+            <div class="token-header-title-wrap">
+              <img alt="accent" width="6" height="6" src="./assets/figma/accent-marker.svg" />
+              <span class="token-header-title">TOKEN DETAILS</span>
             </div>
-            
-            <div class="input-group">
-                <label class="input-label" style="margin-bottom:0.8rem;">Exchange Rate (USD to BDT)</label>
-                <div class="input-wrapper">
-                    <span class="prefix">৳</span>
-                    <input type="number" id="setting-bdt-rate" class="amount-input" value="115" step="0.01">
-                </div>
+            <span class="token-header-meta">Optional</span>
+          </div>
+          
+          <div class="token-input-row">
+            <div class="token-badge-icon">
+              <img alt="badge" width="14" height="14" src="./assets/figma/badge-dollar-sign.svg" />
             </div>
-            
-            <div class="toggle-container" style="border:none;">
-                <span class="toggle-label">Show BDT Conversion</span>
-                <label class="switch">
-                    <input type="checkbox" id="setting-show-bdt">
-                    <span class="slider"></span>
-                </label>
+            <div class="token-input-content">
+              <label for="token-name" class="token-input-label">TOKEN NAME</label>
+              <input type="text" id="token-name" placeholder="Search token name or symbol" class="token-input-clean" autocomplete="off" />
             </div>
-            <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:-10px; margin-bottom:10px;">
-                If enabled, Trading Cards will also generate values in BDT instead of USD.
-            </p>
+          </div>
+
+          <div class="token-hint-row">
+            <img alt="search" width="12" height="12" src="./assets/figma/search.svg" />
+            <span class="token-hint-text">Start typing to see matching tokens and set a logo automatically.</span>
+          </div>
+
+          <div class="token-card-footer">
+            <div class="custom-logo-left">
+              <img alt="image-plus" width="12" height="12" src="./assets/figma/image-plus.svg" />
+              <span class="custom-logo-left-text">Can't find your token?</span>
+            </div>
+            <button type="button" class="custom-logo-trigger">
+              <span>Add custom logo</span>
+              <img alt="chevron-down" width="12" height="12" src="./assets/figma/chevron-down.svg" />
+            </button>
+          </div>
         </div>
-    </div>
 
-    <!-- Profile Modal -->
-    <div class="modal-overlay" id="profile-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">My Profile</h2>
-                <button class="close-btn" id="close-profile"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
+        <!-- Position Summary Card -->
+        <div class="summary-card">
+          <div class="summary-card-header">
+            <div class="summary-header-left">
+              <div class="chart-icon-box">
+                <img alt="chart" width="14" height="14" src="./assets/figma/chart-no-axes-combined.svg" />
+              </div>
+              <span class="summary-title">Position Summary</span>
             </div>
-
-            <!-- Avatar Upload -->
-            <div class="avatar-upload-area" id="avatar-upload-area">
-                <img id="avatar-preview" class="hidden" alt="Your Logo">
-                <div id="avatar-placeholder" class="avatar-placeholder">
-                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z"/><path fill-rule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>
-                    <span>Upload Logo</span>
-                </div>
-                <input type="file" id="avatar-upload" accept="image/*" style="display:none">
+            <div class="live-indicator">
+              <img alt="accent" width="6" height="6" src="./assets/figma/accent-marker.svg" />
+              <span class="live-text">LIVE</span>
             </div>
-            <p style="text-align:center; font-size:0.78rem; color:var(--text-secondary); margin-top:-0.5rem; margin-bottom:1.2rem;">Tap to upload your logo (PNG, JPG, SVG)</p>
+          </div>
 
-            <!-- Name Input -->
-            <div class="profile-name-input-wrap">
-                <label class="input-label" style="margin-bottom:0.5rem;">Display Name</label>
-                <div class="input-wrapper">
-                    <input type="text" id="profile-name-input" class="amount-input" placeholder="Your name or username">
-                </div>
+          <!-- Row 1: Final Value & Multiplier -->
+          <div class="summary-row-primary">
+            <div class="summary-cell-left">
+              <span class="summary-metric-label">FINAL VALUE</span>
+              <span class="summary-val-white" id="res-final-value">$0.00</span>
             </div>
+            <div class="summary-cell-right">
+              <span class="summary-metric-label">MULTIPLIER</span>
+              <span class="summary-val-cyan" id="res-multiplier">0.00x</span>
+            </div>
+          </div>
 
-            <button class="btn-primary" id="profile-save-btn">Save Profile</button>
+          <!-- Row 2: Profit/Loss & Percentage -->
+          <div class="summary-nested-box">
+            <div class="nested-cell-left">
+              <span class="summary-metric-label">PROFIT / LOSS</span>
+              <span class="nested-val" id="res-profit">$0.00</span>
+            </div>
+            <div class="nested-cell-right">
+              <span class="summary-metric-label">PERCENTAGE</span>
+              <span class="nested-val" id="res-roi">0.00%</span>
+            </div>
+          </div>
         </div>
-    </div>
 
-    
+        <!-- Generate Card Master Button -->
+        <button type="button" id="btn-generate" class="btn-generate-master">
+          <div class="sparkle-icon-box">
+            <img alt="sparkles" width="18" height="18" src="./assets/figma/sparkles.svg" />
+          </div>
+          <span>Generate Card</span>
+        </button>
 
-    <!-- New Token Modal -->
-    <div class="modal-overlay" id="new-token-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">New Token</h2>
-                <button class="close-btn" id="new-token-cancel-x"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
-            </div>
-            <div class="input-wrapper" style="margin-bottom:1.2rem;">
-                <input type="text" id="new-token-name" class="amount-input" placeholder="e.g. SOL, BTC, PEPE" autocapitalize="characters">
-            </div>
-            <div class="trade-form-actions">
-                <button class="btn-outline" id="new-token-cancel">Cancel</button>
-                <button class="btn-primary" id="new-token-confirm" style="flex:2;">Create Token</button>
-            </div>
-        </div>
-    </div>
+      </section>
+    </main>
 
-    <!-- Add Trade Modal -->
-    <div class="modal-overlay" id="add-trade-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <span id="add-trade-title-icon" style="display:flex; align-items:center;"></span>
-                    <h2 class="modal-title" id="add-trade-title">Add Trade</h2>
-                </div>
-                <span class="type-badge badge-entry" id="add-trade-type-badge">BUY</span>
-            </div>
-
-            <div class="trade-form-group">
-                <label class="trade-form-label">Market Cap</label>
-                <div class="trade-mc-row">
-                    <div class="input-wrapper">
-                        <span class="prefix">$</span>
-                        <input type="number" id="trade-mc-val" class="amount-input" placeholder="0" inputmode="decimal" min="0">
-                    </div>
-                    <select class="mc-unit-select" id="trade-mc-unit">
-                        <option value="1000">K</option>
-                        <option value="1000000">M</option>
-                        <option value="1000000000">B</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="trade-form-group">
-                <label class="trade-form-label">Amount (USD)</label>
-                <div class="input-wrapper">
-                    <span class="prefix">$</span>
-                    <input type="number" id="trade-amount-val" class="amount-input" placeholder="0.00" inputmode="decimal" min="0">
-                </div>
-            </div>
-
-            <div class="trade-form-group">
-                <label class="trade-form-label">Date</label>
-                <div class="input-wrapper">
-                    <input type="date" id="trade-date-val" class="amount-input">
-                </div>
-            </div>
-
-            <div class="trade-form-actions">
-                <button class="btn-outline" id="add-trade-cancel">Cancel</button>
-                <button class="btn-primary" id="add-trade-confirm" style="flex:2;">Add Trade</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analysis Modal -->
-    <div class="modal-overlay" id="analysis-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Analysis</h2>
-                <button class="close-btn" id="close-analysis"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg></button>
-            </div>
-            <div id="analysis-content"></div>
-        </div>
-    </div>
-
-    <!-- Hidden Render Container -->
+    <!-- Hidden Render Container for Card Node -->
     <div id="render-node-container"><div id="card-node" class="card-node"></div></div>
 
-    <!-- Main JS Application Controller -->
-    <script type="module" src="./scripts/app.js"></script>
-
-    <!-- PWA: Service Worker + Splash Screen Timeout -->
-    <script>
-        // ── Service Worker Registration ─────────────────────
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    // When a new SW is waiting, activate it immediately
-                    reg.addEventListener('updatefound', () => {
-                        const newWorker = reg.installing;
-                        newWorker?.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            }
-                        });
-                    });
-                }).catch(e => console.warn('[SW] Registration failed:', e));
-
-                // When a new SW takes control, reload to get fresh assets
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    window.location.reload();
-                });
-            });
-        }
-
-        // ── PWA Splash Screen Timeout ───────────────────────
-        // If the app loading overlay is still visible after 6 seconds
-        // (e.g., Firebase is unreachable on cold PWA launch),
-        // remove it forcefully so the user isn't stuck on the logo.
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const overlay = document.getElementById('app-loading-overlay');
-                if (overlay) {
-                    overlay.style.opacity = '0';
-                    overlay.style.transition = 'opacity 0.4s ease';
-                    setTimeout(() => overlay.remove(), 400);
-                }
-            }, 6000);
-        });
-    </script>
 </body>
 </html>

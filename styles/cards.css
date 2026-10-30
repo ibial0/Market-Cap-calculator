@@ -89,54 +89,11 @@
     overflow: visible;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Background Gallery Sidebar
-   ═══════════════════════════════════════════════════════════ */
-.bg-sidebar {
-    position: absolute;
-    top: 0;
-    right: -220px;
-    width: 210px;
-    height: 100%;
-    background: var(--bg-primary, #0f172a);
-    border-left: 1px solid var(--border, #334155);
-    border-radius: 0 20px 20px 0;
-    z-index: 30;
-    animation: sidebarSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    display: flex;
-    flex-direction: column;
-}
-@keyframes sidebarSlideIn {
-    from { transform: translateX(220px); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
-}
-.bg-sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border, #334155);
-    flex-shrink: 0;
-}
-.bg-sidebar-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 52px;
-    gap: 8px;
-    padding: 10px;
-    overflow-y: auto;
-    flex: 1;
-    min-height: 0;
-    align-content: start;
-    scrollbar-width: thin;
-    scrollbar-color: #475569 transparent;
-}
-.bg-sidebar-grid::-webkit-scrollbar { width: 4px; }
-.bg-sidebar-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+/* (Old sidebar CSS removed - gallery now uses .bg-gallery-panel / .bg-gallery-grid) */
 .bg-thumb {
     aspect-ratio: 16/9;
-    height: 52px;
-    max-height: 52px;
+    height: 100%;
+    max-height: 60px;
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
@@ -222,6 +179,25 @@
     pointer-events: none;
     overflow: hidden;
     z-index: -1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROTECT CARD RENDER NODE FROM TAILWIND PREFLIGHT RESET
+   Tailwind v4 preflight sets border-width:0, resets margins,
+   changes line-height, etc. on ALL elements. This breaks the
+   card rendering which uses inline styles for its layout.
+   `all: revert` reverts every CSS property to the browser
+   default, undoing Tailwind's preflight reset completely.
+   Inline styles (used by png-engine.js) have higher
+   specificity and still apply correctly.
+   ═══════════════════════════════════════════════════════════ */
+#render-node-container *,
+#render-node-container *::before,
+#render-node-container *::after {
+    all: revert;
+}
+#render-node-container img {
+    max-width: none !important;
 }
 
 /* The actual 1600×900 render canvas — always explicit, never auto-sized */
@@ -386,40 +362,104 @@
 
 /* ═══════════════════════════════════════════════════════════
    Split-Screen Workstation Layout (Desktop side-by-side)
+   LEFT = Trading Card (fixed) | GAP (gallery fills here) | RIGHT = Inputs (fixed)
    ═══════════════════════════════════════════════════════════ */
 .calc-split-layout {
-    display: grid;
-    grid-template-columns: minmax(340px, 440px) minmax(380px, 1fr);
-    gap: 1.5rem;
-    max-width: 1300px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 1.25rem 1.25rem 2rem;
-    align-items: start;
+    padding: 24px 32px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .calc-left-col {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    max-height: calc(100vh - 100px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-    padding-right: 2px; /* prevent scrollbar from overlapping content */
+    width: 805.45px;
+    max-width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
-
-.calc-left-col::-webkit-scrollbar { width: 4px; }
-.calc-left-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .calc-right-col {
-    position: sticky;
-    top: 76px;
-    min-width: 0;
-    max-height: calc(100vh - 100px);
+    width: 546.55px;
+    max-width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
 }
 
+.calc-right-col::-webkit-scrollbar { width: 4px; }
+.calc-right-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════════════
+   Middle Column — Background Gallery (fills the gap, fixed position)
+   Does NOT change the card or input column widths
+   ═══════════════════════════════════════════════════════════ */
+.calc-middle-col {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 76px;
+    width: 280px;
+    z-index: 40;
+    animation: gallerySlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes gallerySlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+.bg-gallery-panel {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.bg-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.bg-gallery-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.bg-gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 60px;
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    align-content: start;
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+}
+
+.bg-gallery-grid::-webkit-scrollbar { width: 4px; }
+.bg-gallery-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
 .card-panel-container {
+    /* Legacy - now handled by Tailwind classes on .tw-card-panel */
     background: var(--bg-primary);
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -429,36 +469,148 @@
     overflow: hidden;
 }
 
-@media (max-width: 960px) {
+/* ═══════════════════════════════════════════════════════════
+   Reaction Popover — Facebook-style floating emoji bar
+   ═══════════════════════════════════════════════════════════ */
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.reaction-toggle-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.reaction-toggle-btn:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+}
+
+.reaction-toggle-btn.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+/* Default grayscale state for reaction icon */
+.reaction-toggle-btn .reaction-icon-default {
+    font-size: 16px;
+    line-height: 1;
+    filter: grayscale(1) brightness(0.6);
+    transition: filter 0.2s ease;
+}
+
+.reaction-toggle-btn.has-emotion .reaction-icon-default {
+    filter: none;
+    font-size: 18px;
+}
+
+.reaction-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 6px 10px;
+    gap: 4px;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    animation: popoverFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.reaction-popover.open {
+    display: flex;
+}
+
+@keyframes popoverFadeIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.reaction-emoji-btn {
+    width: 38px;
+    height: 38px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, border-color 0.2s ease;
+}
+
+.reaction-emoji-btn:hover {
+    transform: scale(1.35) translateY(-4px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.reaction-emoji-btn.active {
+    border-color: var(--accent-primary);
+    background: rgba(0, 242, 254, 0.12);
+    transform: scale(1.1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Responsive Breakpoints
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1400px) {
     .calc-split-layout {
-        grid-template-columns: 1fr;
-        gap: 1.25rem;
-        max-width: 680px;
-        padding: 1rem 1rem 2rem;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 16px;
+        gap: 20px;
     }
-    .calc-left-col {
-        max-height: none;
-        overflow-y: visible;
-    }
+    .calc-left-col,
     .calc-right-col {
-        position: static;
-        max-height: none;
+        width: 100%;
+        max-width: 805.45px;
     }
 }
 
 @media (max-width: 520px) {
     .calc-split-layout {
-        grid-template-columns: 1fr;
-        padding: 0.75rem 0.5rem 1.5rem;
-        gap: 1rem;
-    }
-    .calc-left-col {
-        max-height: none;
-        overflow-y: visible;
-    }
-    .calc-right-col {
-        max-height: none;
-    }
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.calc-left-col {
+    width: 805.45px;
+    max-width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.calc-right-col {
+    width: 546.55px;
+    max-width: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
     /* Compact inputs for narrow screens */
     .glass-panel.calculator-form {
         padding: 0.75rem;
@@ -479,11 +631,9 @@
     .result-sub-item .result-value {
         font-size: 1rem;
     }
-    /* Hide DCA label text on narrow screens — keep toggle switch */
     .dca-toggle-text {
         display: none;
     }
-    /* Ensure input label row doesn't overflow */
     .input-label-row {
         min-width: 0;
         overflow: hidden;
@@ -494,10 +644,18 @@
         white-space: nowrap;
         min-width: 0;
     }
-    /* Ensure calc panel has no overflow */
     .glass-panel.calculator-form,
     .glass-panel.results-panel {
         overflow: hidden;
+    }
+    /* Gallery compact */
+    .bg-gallery-panel {
+        max-height: 200px;
+    }
+    .bg-gallery-grid {
+        grid-auto-rows: 44px;
+        gap: 5px;
+        padding: 6px;
     }
 }
 

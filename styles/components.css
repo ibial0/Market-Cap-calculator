@@ -95,17 +95,14 @@
 
 /* Results Panel */
 .results-panel {
-    background: linear-gradient(160deg, var(--bg-secondary), var(--bg-primary));
+    background: var(--bg-secondary);
     border: 1px solid rgba(0, 242, 254, 0.2);
     position: relative;
     overflow: hidden;
     padding: 1rem;
 }
 
-.results-panel::before {
-    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-}
+/* .results-panel::before removed - new Tailwind design uses border-primary */
 
 .result-grid {
     display: grid;
@@ -404,7 +401,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 6px;
+    margin-top: 14px;
 }
 
 /* ── Profile Menu Navigation Buttons ────────────── */
