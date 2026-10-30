@@ -51,18 +51,17 @@
       .canvas-container {
         width: 100%;
         min-height: 100vh;
-        padding: 40px 48px;
+        padding: 64px 32px 40px 32px;
         display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        gap: 32px;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
         box-sizing: border-box;
       }
 
       @media (min-width: 1600px) {
         .canvas-container {
-          padding: 48px 80px;
-          gap: 40px;
+          padding: 72px 56px 48px 56px;
         }
       }
 
@@ -81,9 +80,10 @@
          LEFT COLUMN: Trading Card Preview (805.45px)
          ═══════════════════════════════════════════════════════════ */
       .preview-column {
-        flex: 0 1 805px;
-        min-width: 480px;
-        max-width: 860px;
+        flex: 0 0 940px;
+        width: 940px;
+        margin-top: -40px;
+        margin-left: 40px;
         background-color: #0a0f1c;
         border: 1px solid #23304a;
         border-radius: 16px;
@@ -99,8 +99,6 @@
         .preview-column {
           flex: none;
           width: 100%;
-          min-width: unset;
-          max-width: 805px;
         }
       }
 
@@ -154,7 +152,7 @@
       /* Main Preview Box */
       .main-preview-box {
         width: 100%;
-        height: 429.44px;
+        aspect-ratio: 16 / 9;
         background-color: #131b2f;
         border: 1px solid #23304a;
         border-radius: 12px;
@@ -328,12 +326,11 @@
          RIGHT COLUMN: Trading Card Details (546.55px)
          ═══════════════════════════════════════════════════════════ */
       .details-column {
-        flex: 0 1 546px;
-        min-width: 320px;
-        max-width: 600px;
+        flex: 0 0 545px;
+        width: 545px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 18px;
         box-sizing: border-box;
       }
 
@@ -341,8 +338,6 @@
         .details-column {
           flex: none;
           width: 100%;
-          min-width: unset;
-          max-width: 546px;
         }
       }
 
