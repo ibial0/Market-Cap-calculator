@@ -297,15 +297,8 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
         ">${logoHtml}${nameHtml}</div>`;
     }
 
-    // ── Arrow SVG (large, matching reference) ────────────
-    const arrowSvg = `<svg width="80" height="24" viewBox="0 0 80 24" fill="none"
-        xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-        <line x1="2" y1="12" x2="60" y2="12" stroke="${accentColor}"
-              stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M54 4L68 12L54 20" stroke="${accentColor}"
-              stroke-width="3.5" stroke-linecap="round"
-              stroke-linejoin="round" fill="none"/>
-    </svg>`;
+    // ── Arrow (pure CSS divs — html2canvas compatible) ────────────
+    const arrowSvg = `<div style="display:flex;align-items:center;flex-shrink:0;"><div style="width:60px;height:4px;background:${accentColor};border-radius:2px 0 0 2px;"></div><div style="width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:16px solid ${accentColor};"></div></div>`;
 
     // ── Background image ─────────────────────────────────
     const bgHtml = bgSrc
@@ -356,23 +349,24 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                     background:${boxBg};
                     border:2px solid ${boxBorder};
                     border-radius:24px;
-                    padding:24px 56px;
+                    padding:30px 56px;
                     display:inline-flex;
                     align-items:center;
                     justify-content:center;
                     backdrop-filter:blur(4px);
                     -webkit-backdrop-filter:blur(4px);
                 ">
-                    <span style="
+                    <div style="
                         font-size:${mulFontSize}px;
                         font-weight:900;
                         color:${accentColor};
                         font-family:'Outfit',sans-serif;
-                        line-height:1.1;
+                        line-height:1.0;
                         letter-spacing:-2px;
                         white-space:nowrap;
                         text-shadow:0 2px 12px rgba(0,0,0,0.3);
-                    ">${_esc(multiplier)}</span>
+                        padding-top:8px;
+                    ">${_esc(multiplier)}</div>
                 </div>
                 <div style="
                     display:flex;align-items:center;

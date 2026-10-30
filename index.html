@@ -892,6 +892,198 @@
       .hidden {
         display: none !important;
       }
+    
+      /* ─── Functional CSS (invisible design changes) ─────────────────── */
+
+      /* K/M/B non-active state fix for JS toggle compatibility */
+      .unit-pill-btn:not(.active) {
+        background-color: transparent !important;
+        color: #94a3b8 !important;
+        padding: 0 8px !important;
+      }
+
+      /* Loading spinner */
+      #preview-loading {
+        width: 36px; height: 36px;
+        border: 3px solid rgba(18, 226, 253, 0.15);
+        border-top-color: #12e2fd;
+        border-radius: 50%;
+        animation: pnlSpin 0.8s linear infinite;
+        position: absolute;
+      }
+      @keyframes pnlSpin { to { transform: rotate(360deg); } }
+
+      /* Preview image: hidden until card generated */
+      #preview-img { display: none !important; }
+      #preview-img.loaded { display: block !important; }
+
+      /* Token suggestions dropdown */
+      .token-card { position: relative; }
+      #token-suggestions {
+        background: #0e1628;
+        border: 1px solid #23304a;
+        border-radius: 8px;
+        z-index: 100;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+        margin-top: 4px;
+      }
+      .token-suggestion {
+        width: 100%; display: flex; align-items: center; gap: 10px;
+        padding: 9px 12px;
+        background: transparent; border: none;
+        border-bottom: 1px solid rgba(35,48,74,0.5);
+        cursor: pointer; text-align: left;
+        font-family: 'Inter', sans-serif; font-weight: 600;
+        font-size: 12px; color: #ffffff; transition: background 0.15s;
+      }
+      .token-suggestion:last-child { border-bottom: none; }
+      .token-suggestion:hover, .token-suggestion.active { background: rgba(18,226,253,0.08); }
+      .token-suggestion-logo {
+        width: 24px; height: 24px; border-radius: 50%;
+        object-fit: cover; flex-shrink: 0;
+        background: rgba(18,226,253,0.1);
+      }
+      .token-suggestion-labels strong { color: #ffffff; font-size: 12px; }
+
+      /* Reaction popover emoji picker */
+      .card-header-tools { position: relative; }
+      #reaction-popover {
+        display: none; position: absolute;
+        top: calc(100% + 8px); right: 0; z-index: 300;
+        background: #131b2f; border: 1px solid #23304a;
+        border-radius: 12px; padding: 8px;
+        flex-wrap: wrap; gap: 4px; width: 168px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      }
+      #reaction-popover.open { display: flex; }
+      .reaction-emoji-btn {
+        background: transparent; border: 1px solid transparent;
+        border-radius: 8px; width: 36px; height: 36px;
+        font-size: 18px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .reaction-emoji-btn:hover { background: rgba(18,226,253,0.08); border-color: rgba(18,226,253,0.2); }
+      .reaction-emoji-btn.active { background: rgba(18,226,253,0.15); border-color: #12e2fd; }
+
+      /* Reaction picker button emotion state */
+      #btn-reaction-picker .reaction-btn-icon { display: block; }
+      #btn-reaction-picker .reaction-btn-emoji { display: none; font-size: 16px; }
+      #btn-reaction-picker.has-emotion .reaction-btn-icon { display: none; }
+      #btn-reaction-picker.has-emotion .reaction-btn-emoji {
+        display: flex; align-items: center; justify-content: center;
+        width: 18px; height: 18px;
+      }
+
+      /* Background gallery overlay (inside preview box) */
+      #bg-gallery-column {
+        flex: 0 0 200px; width: 200px;
+        max-height: 78vh;
+        background: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 14px;
+        display: flex; flex-direction: column;
+        padding: 14px 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        align-self: center;
+      }
+      .bg-gallery-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 8px; padding-bottom: 8px;
+        border-bottom: 1px solid #23304a; flex-shrink: 0;
+      }
+      .bg-gallery-title {
+        font-family: 'Inter', sans-serif; font-weight: 700;
+        font-size: 12px; color: #ffffff; text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      #close-gallery {
+        background: transparent; border: none; color: #94a3b8;
+        cursor: pointer; font-size: 20px; line-height: 1;
+        padding: 0 4px; transition: color 0.2s;
+      }
+      #close-gallery:hover { color: #ffffff; }
+      #bg-sidebar-grid {
+        display: flex; flex-direction: column;
+        gap: 10px; overflow-y: auto; flex: 1;
+        scrollbar-width: thin;
+        scrollbar-color: #23304a transparent;
+        padding-right: 2px;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+      }
+      #bg-sidebar-grid::-webkit-scrollbar { width: 4px; }
+      #bg-sidebar-grid::-webkit-scrollbar-track { background: transparent; }
+      #bg-sidebar-grid::-webkit-scrollbar-thumb { background: #23304a; border-radius: 4px; }
+      #bg-sidebar-grid::-webkit-scrollbar-thumb:hover { background: #2d3f5e; }
+      .bg-thumb {
+        border-radius: 7px; overflow: hidden; cursor: pointer;
+        border: 2px solid transparent; position: relative;
+        width: 100%; aspect-ratio: 16/9;
+        transition: border-color 0.18s ease, transform 0.15s ease;
+        background: #131b2f; flex-shrink: 0;
+      }
+      .bg-thumb:hover {
+        border-color: rgba(18,226,253,0.6);
+        transform: scale(1.02);
+      }
+      .bg-thumb.active { border-color: #12e2fd; }
+      .bg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .bg-thumb-badge { position: absolute; bottom: 3px; right: 3px; font-size: 12px; }
+
+      /* Custom logo expandable panel */
+      #custom-logo-panel {
+        display: none; flex-direction: column; gap: 0;
+        border-top: 1px solid #23304a; padding-top: 10px; margin-top: 4px;
+      }
+      .custom-logo-panel-row {
+        display: flex; align-items: center; gap: 8px; width: 100%;
+      }
+      .custom-logo-url-input {
+        flex: 1; min-width: 0; height: 32px;
+        background: #0a0f1c; border: 1px solid #23304a; border-radius: 8px;
+        padding: 0 10px; font-family: 'Inter', sans-serif;
+        font-size: 11px; font-weight: 500; color: #ffffff; outline: none;
+        transition: border-color 0.2s;
+      }
+      .custom-logo-url-input::placeholder { color: #94a3b8; }
+      .custom-logo-url-input:focus { border-color: #12e2fd; }
+      .custom-logo-upload-btn {
+        height: 32px; padding: 0 12px;
+        background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
+        border: none; border-radius: 8px;
+        display: flex; align-items: center; gap: 5px;
+        cursor: pointer; flex-shrink: 0; transition: filter 0.2s;
+      }
+      .custom-logo-upload-btn:hover { filter: brightness(1.1); }
+      .custom-logo-upload-btn span {
+        font-family: 'Inter', sans-serif; font-weight: 700;
+        font-size: 11px; color: #0a0f1c;
+      }
+      .custom-logo-selected-row {
+        display: none; align-items: center; gap: 8px; margin-top: 8px;
+      }
+      .custom-logo-selected-row.visible { display: flex; }
+      .custom-logo-thumb {
+        width: 28px; height: 28px; border-radius: 6px; object-fit: cover;
+        border: 1px solid rgba(18,226,253,0.3); flex-shrink: 0;
+      }
+      .custom-logo-selected-name {
+        flex: 1; font-family: 'Inter', sans-serif; font-size: 10px;
+        color: #12e2fd; font-weight: 600;
+      }
+      .custom-logo-clear-btn {
+        background: transparent; border: none; color: #94a3b8;
+        cursor: pointer; font-size: 16px; padding: 0 2px;
+        transition: color 0.2s; flex-shrink: 0;
+      }
+      .custom-logo-clear-btn:hover { color: #ff4b4b; }
+
+      /* BDT result values */
+      #res-final-bdt, #res-profit-bdt { display: none; }
+
     </style>
 </head>
 <body>
@@ -907,18 +1099,21 @@
           <h1 class="card-header-title">PNL CARD</h1>
           <div class="card-header-tools">
             <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
-              <img alt="smile" width="18" height="18" src="./assets/figma/smile.svg" />
+              <img alt="smile" width="18" height="18" src="./assets/figma/smile.svg" class="reaction-btn-icon" />
+              <span class="reaction-btn-emoji"></span>
             </button>
             <button type="button" id="btn-toggle-sidebar" title="Store" aria-label="Store" class="icon-tool-btn">
               <img alt="shopping-cart" width="18" height="18" src="./assets/figma/shopping-cart.svg" />
             </button>
+            <!-- Reaction Emoji Popover -->
+            <div id="reaction-popover" role="listbox" aria-label="Choose emotion"></div>
           </div>
         </div>
 
         <!-- Preview Area -->
         <div class="main-preview-box" id="main-preview-container">
-          <div class="loading-spinner hidden" id="preview-loading"></div>
-          <img id="preview-img" class="hidden" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
+          <div class="loading-spinner" id="preview-loading" style="display:none;"></div>
+          <img id="preview-img" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
           <div class="empty-state-content" id="card-empty-placeholder">
             <div class="monitor-icon-wrapper">
               <img alt="monitor" width="24" height="24" src="./assets/figma/monitor.svg" />
@@ -930,6 +1125,7 @@
               </span>
             </div>
           </div>
+          
         </div>
 
         <!-- Card Actions -->
@@ -963,6 +1159,16 @@
         </div>
       </section>
 
+      <!-- ═══ MIDDLE: Background Gallery Strip (between PNL Card and Info) ═══ -->
+      <div id="bg-gallery-column" style="display:none;">
+        <div class="bg-gallery-header">
+          <span class="bg-gallery-title">Backgrounds</span>
+          <button id="close-gallery" type="button" title="Close gallery" aria-label="Close gallery">&#215;</button>
+        </div>
+        <div id="bg-sidebar-grid"></div>
+      </div>
+
+
       <!-- ═══ RIGHT COLUMN: Trading card details (546.55px) ═══ -->
       <section class="details-column">
         
@@ -995,9 +1201,9 @@
                 <span class="currency-symbol">$</span>
                 <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
                 <div class="unit-toggle-group" id="init-toggles">
-                  <button type="button" class="unit-pill-btn active">K</button>
-                  <button type="button" class="unit-pill-btn inactive">M</button>
-                  <button type="button" class="unit-pill-btn inactive">B</button>
+                  <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
+                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
+                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
                 </div>
               </div>
             </div>
@@ -1015,9 +1221,9 @@
                 <span class="currency-symbol">$</span>
                 <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
                 <div class="unit-toggle-group" id="target-toggles">
-                  <button type="button" class="unit-pill-btn active">K</button>
-                  <button type="button" class="unit-pill-btn inactive">M</button>
-                  <button type="button" class="unit-pill-btn inactive">B</button>
+                  <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
+                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
+                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
                 </div>
               </div>
             </div>
@@ -1056,6 +1262,9 @@
             </div>
           </div>
 
+          <!-- Token Search Autocomplete Dropdown -->
+          <div id="token-suggestions" class="hidden" role="listbox" aria-label="Token suggestions"></div>
+
           <div class="token-hint-row">
             <img alt="search" width="12" height="12" src="./assets/figma/search.svg" />
             <span class="token-hint-text">Start typing to see matching tokens and set a logo automatically.</span>
@@ -1070,6 +1279,26 @@
               <span>Add custom logo</span>
               <img alt="chevron-down" width="12" height="12" src="./assets/figma/chevron-down.svg" />
             </button>
+          </div>
+
+          <!-- Add Custom Logo Expandable Panel -->
+          <div id="custom-logo-panel">
+            <div class="custom-logo-panel-row">
+              <input type="text" id="custom-logo-url" class="custom-logo-url-input" placeholder="Paste logo link" autocomplete="off" />
+              <button type="button" id="token-logo-area" class="custom-logo-upload-btn" title="Upload logo from device">
+                <img alt="upload" width="12" height="12" src="./assets/figma/upload.svg" />
+                <span>Upload</span>
+              </button>
+            </div>
+            <!-- Selected logo preview row -->
+            <div class="custom-logo-selected-row" id="custom-logo-selected-row">
+              <img id="token-logo-preview" class="custom-logo-thumb" alt="Logo preview" style="display:none;" />
+              <span class="custom-logo-selected-name" id="custom-logo-selected-name">Logo selected</span>
+              <button type="button" id="token-logo-remove" class="custom-logo-clear-btn" title="Remove logo">&#215;</button>
+            </div>
+            <!-- Hidden elements required by app.js -->
+            <span id="token-logo-placeholder" style="display:none;"></span>
+            <input type="file" id="token-logo-upload" accept="image/*" style="display:none;" />
           </div>
         </div>
 
@@ -1093,6 +1322,7 @@
             <div class="summary-cell-left">
               <span class="summary-metric-label">FINAL VALUE</span>
               <span class="summary-val-white" id="res-final-value">$0.00</span>
+               <span id="res-final-bdt" style="display:none; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;"></span>
             </div>
             <div class="summary-cell-right">
               <span class="summary-metric-label">MULTIPLIER</span>
@@ -1105,6 +1335,7 @@
             <div class="nested-cell-left">
               <span class="summary-metric-label">PROFIT / LOSS</span>
               <span class="nested-val" id="res-profit">$0.00</span>
+               <span id="res-profit-bdt" style="display:none; font-size:10px; color:#94a3b8; font-family:'JetBrains Mono',monospace;"></span>
             </div>
             <div class="nested-cell-right">
               <span class="summary-metric-label">PERCENTAGE</span>
@@ -1126,6 +1357,11 @@
 
     <!-- Hidden Render Container for Card Node -->
     <div id="render-node-container"><div id="card-node" class="card-node"></div></div>
+
+
+
+    <!-- App module -->
+    <script type="module" src="./scripts/app.js"></script>
 
 </body>
 </html>

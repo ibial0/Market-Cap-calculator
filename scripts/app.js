@@ -315,6 +315,7 @@ function toggleSidebar() {
     if (isHidden) {
         bgGalleryColumn.style.display = '';
         _populateSidebar();
+
     } else {
         bgGalleryColumn.style.display = 'none';
     }
@@ -1033,13 +1034,16 @@ function _populateSidebar() {
 
     bgSidebarGrid.innerHTML = '';
     if (filtered.length === 0) {
-        bgSidebarGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#64748b;font-size:12px;padding:20px;">No backgrounds</div>';
+        bgSidebarGrid.innerHTML = '<div style="text-align:center;color:#64748b;font-size:11px;padding:20px 0;">No backgrounds</div>';
         return;
     }
+
+    let activeThumb = null;
 
     filtered.forEach(bg => {
         const thumb = document.createElement('div');
         thumb.className = 'bg-thumb' + (bg.id === _currentBgId ? ' active' : '');
+        if (bg.id === _currentBgId) activeThumb = thumb;
 
         // Find emotion emoji
         const emObj = EMOTIONS.find(e => e.id === bg.emotion);
@@ -1056,6 +1060,8 @@ function _populateSidebar() {
             bgSidebarGrid.querySelectorAll('.bg-thumb').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
 
+
+
             // Regenerate with this background
             document.getElementById('preview-img').classList.remove('loaded');
             await generateRender(window.lastData, false);
@@ -1063,6 +1069,9 @@ function _populateSidebar() {
 
         bgSidebarGrid.appendChild(thumb);
     });
+
+    // Gallery opens at scroll position 0 (top) — no auto-scroll
+    if (bgSidebarGrid) bgSidebarGrid.scrollTop = 0;
 }
 
 // // ── Upload Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
@@ -1207,3 +1216,76 @@ calculate();
 
 // Apply initial calculation mode
 setTimeout(() => setCalcMode(_calcMode), 0);
+
+
+// ═══════════════════════════════════════════════════════════
+//  CUSTOM LOGO PANEL — Toggle + URL Input + Upload wiring
+// ═══════════════════════════════════════════════════════════
+
+// Toggle the expandable panel when 'Add custom logo' is clicked
+const _customLogoTrigger = document.querySelector('.custom-logo-trigger');
+const _customLogoPanel   = document.getElementById('custom-logo-panel');
+
+if (_customLogoTrigger && _customLogoPanel) {
+    _customLogoTrigger.addEventListener('click', () => {
+        const isOpen = _customLogoPanel.style.display === 'flex';
+        _customLogoPanel.style.display = isOpen ? 'none' : 'flex';
+        const chevron = _customLogoTrigger.querySelector('img');
+        if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        if (!isOpen) setTimeout(() => document.getElementById('custom-logo-url')?.focus(), 50);
+    });
+}
+
+// Refresh the selected-logo preview row inside the panel
+function _refreshLogoPanel() {
+    const row     = document.getElementById('custom-logo-selected-row');
+    const thumb   = document.getElementById('token-logo-preview');
+    const nameLbl = document.getElementById('custom-logo-selected-name');
+    if (!row) return;
+    if (_tokenLogoDataUrl) {
+        row.classList.add('visible');
+        if (thumb) { thumb.src = _tokenLogoDataUrl; thumb.style.display = 'block'; }
+        if (nameLbl) nameLbl.textContent = _tokenLogoSource === 'catalog' ? 'Catalog logo' : 'Custom logo';
+    } else {
+        row.classList.remove('visible');
+        if (thumb) { thumb.src = ''; thumb.style.display = 'none'; }
+    }
+}
+
+// Also refresh panel when logo is removed
+if (tokenLogoRemove) {
+    tokenLogoRemove.addEventListener('click', () => {
+        const urlInput = document.getElementById('custom-logo-url');
+        if (urlInput) urlInput.value = '';
+        setTimeout(_refreshLogoPanel, 50);
+    });
+}
+
+// URL input: apply logo when user pastes URL and presses Enter or pauses typing
+const _customLogoUrlInput = document.getElementById('custom-logo-url');
+if (_customLogoUrlInput) {
+    let _logoUrlTimer;
+    const _applyLogoUrl = async (url) => {
+        url = (url || '').trim();
+        if (!url || (!url.startsWith('http') && !url.startsWith('data:'))) return;
+        try {
+            const blobUrl = await _fetchAsBlob(url);
+            setTokenLogo(blobUrl || url, 'upload');
+            setTimeout(_refreshLogoPanel, 50);
+        } catch (_e) {
+            _showToast('Could not load logo from that URL.', 'warning', 3000);
+        }
+    };
+    _customLogoUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { clearTimeout(_logoUrlTimer); _applyLogoUrl(_customLogoUrlInput.value); }
+    });
+    _customLogoUrlInput.addEventListener('input', () => {
+        clearTimeout(_logoUrlTimer);
+        _logoUrlTimer = setTimeout(() => _applyLogoUrl(_customLogoUrlInput.value), 1200);
+    });
+}
+
+// Refresh panel UI after file upload
+if (tokenLogoUpload) {
+    tokenLogoUpload.addEventListener('change', () => setTimeout(_refreshLogoPanel, 150));
+}
