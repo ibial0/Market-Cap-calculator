@@ -349,10 +349,8 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                     background:${boxBg};
                     border:2px solid ${boxBorder};
                     border-radius:24px;
-                    padding:30px 56px;
-                    display:inline-flex;
-                    align-items:center;
-                    justify-content:center;
+                    padding:52px 56px 12px;
+                    text-align:center;
                     backdrop-filter:blur(4px);
                     -webkit-backdrop-filter:blur(4px);
                 ">
@@ -365,7 +363,6 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                         letter-spacing:-2px;
                         white-space:nowrap;
                         text-shadow:0 2px 12px rgba(0,0,0,0.3);
-                        padding-top:8px;
                     ">${_esc(multiplier)}</div>
                 </div>
                 <div style="
