@@ -106,7 +106,7 @@ export function formatCardData(data) {
         ent:        sym + fmtNum(data.initMC, rate),
         ext:        sym + fmtNum(data.targetMC, rate),
         isProfit,
-        profitColor: isProfit ? '#00ff88' : '#ff4b4b',
+        profitColor: isProfit ? '#00FF5A' : '#FF1A1A',
     };
 }
 
@@ -246,17 +246,19 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
     const rate = data.showBdt ? (data.bdtRate || 1) : 1;
 
     // ── Colors — bright, vivid, eye-catching ─────────────
-    const accentColor = isProfit ? '#00e676' : '#ff5252';
-    const boxBg       = isProfit ? 'rgba(0,230,118,0.20)' : 'rgba(255,82,82,0.20)';
-    const boxBorder   = isProfit ? 'rgba(0,230,118,0.35)' : 'rgba(255,82,82,0.35)';
+    const accentColor = isProfit ? '#00FF5A' : '#FF1A1A';
+    const boxBg       = isProfit ? 'rgba(0,255,90,0.20)' : 'rgba(255,26,26,0.20)';
+    const boxBorder   = isProfit ? 'rgba(0,255,90,0.35)' : 'rgba(255,26,26,0.35)';
 
     // ── Format values ────────────────────────────────────
     // Loss multiplier: show inverse (670K→131K = x5.11 red, not x0.20)
     const rawMul = data.multiplier;
     const displayMul = isProfit ? rawMul : (rawMul > 0 ? (1 / rawMul) : 0);
     const multiplier = 'x' + displayMul.toFixed(2);
-    const entryMC    = fmtNum(data.initMC, rate);
-    const exitMC     = fmtNum(data.targetMC, rate);
+    const _isPriceMode = data.isPriceMode || false;
+    const entryMC    = _isPriceMode ? _fmtPriceHtml(data.initMC * rate) : fmtNum(data.initMC, rate);
+    const exitMC     = _isPriceMode ? _fmtPriceHtml(data.targetMC * rate) : fmtNum(data.targetMC, rate);
+    const _mcIsHtml  = _isPriceMode; // entryMC/exitMC contain HTML when price mode
     const tokenName  = (data.tokenName || '').toUpperCase();
 
     // ── Dynamic font size for hero multiplier ────────────
@@ -315,10 +317,10 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
         position:absolute;inset:0;
         background:linear-gradient(
             to right,
-            rgba(0,0,0,0.50) 0%,
-            rgba(0,0,0,0.38) 25%,
-            rgba(0,0,0,0.18) 45%,
-            rgba(0,0,0,0.06) 60%,
+            rgba(0,0,0,0.58) 0%,
+            rgba(0,0,0,0.46) 25%,
+            rgba(0,0,0,0.26) 45%,
+            rgba(0,0,0,0.14) 60%,
             rgba(0,0,0,0) 75%
         );
         z-index:5;
@@ -375,7 +377,7 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                         font-family:'Inter',sans-serif;
                         white-space:nowrap;
                         text-shadow:0 2px 8px rgba(0,0,0,0.5);
-                    ">${_esc(entryMC)}</span>
+                    ">${_mcIsHtml ? entryMC : _esc(entryMC)}</span>
                     ${arrowSvg}
                     <span style="
                         font-size:48px;font-weight:800;
@@ -383,11 +385,96 @@ export function composeSimpleCard(data, bgSrc, tokenLogoSrc) {
                         font-family:'Inter',sans-serif;
                         white-space:nowrap;
                         text-shadow:0 2px 8px rgba(0,0,0,0.3);
-                    ">${_esc(exitMC)}</span>
+                    ">${_mcIsHtml ? exitMC : _esc(exitMC)}</span>
                 </div>
             </div>
         </div>
     </div>`;
+}
+
+/**
+ * Format a price value for card display.
+ * Returns HTML string (safe, no user input).
+ * - >= 0.01: normal display with enough decimals
+ * - < 0.01 with <= 3 leading zeros: show normally  
+ * - < 0.01 with 4+ leading zeros: subscript notation 0.0₄1234
+ */
+function _fmtPriceHtml(val) {
+    if (val === 0 || val === null || val === undefined || !isFinite(val)) return _esc('0');
+    if (val < 0) return '-' + _fmtPriceHtml(-val);
+    
+    // Convert to string avoiding scientific notation and floating-point noise
+    let str;
+    if (val >= 1e-20 && val < 1) {
+        // toPrecision(12) gives a clean string without floating-point noise
+        // e.g. 0.009 → "0.00900000000000" (not 0.00899999...)
+        // Then trim trailing zeros.
+        str = val.toPrecision(12);
+        // toPrecision may return scientific notation for very small values
+        if (str.includes('e') || str.includes('E')) {
+            // Fall through to scientific notation handler below
+        } else {
+            str = str.replace(/0+$/, '');
+            if (str.endsWith('.')) str += '0';
+        }
+    } else {
+        str = String(val);
+    }
+    
+    // Handle scientific notation (e.g. 1e-7, 5.67e-8)
+    if (str.includes('e') || str.includes('E')) {
+        const parts = str.split(/[eE]/);
+        const coef = parseFloat(parts[0]);
+        const exp = parseInt(parts[1]);
+        if (exp < 0) {
+            const absExp = Math.abs(exp);
+            const coefStr = Math.abs(coef).toString().replace('.', '');
+            const totalZeros = absExp - 1;
+            str = '0.' + '0'.repeat(totalZeros) + coefStr;
+        } else {
+            // Large number, use normal formatting
+            return _esc(val.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+        }
+    }
+    
+    // Values >= 0.01: normal formatting
+    if (val >= 0.01) {
+        // Show 2-4 significant digits after decimal
+        if (val >= 1) return _esc(val.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+        // 0.01 to 0.99
+        const match = str.match(/^0\.(\d+)/);
+        if (match) {
+            const digits = match[1];
+            // Find first non-zero
+            let firstNZ = 0;
+            while (firstNZ < digits.length && digits[firstNZ] === '0') firstNZ++;
+            const sigEnd = Math.min(digits.length, firstNZ + 4);
+            let trimmed = digits.substring(0, sigEnd).replace(/0+$/, '');
+            if (trimmed.length === 0) trimmed = '0';
+            return _esc('0.' + trimmed);
+        }
+        return _esc(str);
+    }
+    
+    // Values < 0.01: count leading zeros after "0."
+    const decMatch = str.match(/^0\.(0*)(\d+)/);
+    if (!decMatch) return _esc(str);
+    
+    const leadingZeros = decMatch[1].length; // number of zeros after "0."
+    const sigDigits = decMatch[2]; // significant digits
+    
+    // <= 3 leading zeros: show normally
+    if (leadingZeros <= 3) {
+        const trimSig = sigDigits.substring(0, 4).replace(/0+$/, '') || '0';
+        return _esc('0.' + '0'.repeat(leadingZeros) + trimSig);
+    }
+    
+    // 4+ leading zeros: subscript notation
+    // 0.00001234 → 0.0₄1234
+    const trimSig = sigDigits.substring(0, 4).replace(/0+$/, '') || '0';
+    const subDigit = String(leadingZeros);
+    return '0.0<span style="font-size:0.55em;vertical-align:sub;line-height:0;position:relative;top:0.15em;">' 
+        + _esc(subDigit) + '</span>' + _esc(trimSig);
 }
 
 function _esc(s) {

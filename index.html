@@ -559,7 +559,7 @@
       }
 
       .token-input-row {
-        height: 44px;
+        height: 60px;
         width: 100%;
         background-color: rgba(19, 27, 47, 0.4);
         border-radius: 8px;
@@ -889,6 +889,71 @@
         max-width: none !important;
       }
 
+
+      /* DCA Multi-Entry/Exit */
+      .dca-toggle-checkbox {
+        appearance: none; -webkit-appearance: none;
+        width: 28px; height: 14px; border-radius: 7px;
+        background: #23304a; position: relative; cursor: pointer;
+        border: 1px solid rgba(18,226,253,0.2); flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .dca-toggle-checkbox:checked {
+        background: rgba(18,226,253,0.3);
+        border-color: #12e2fd;
+      }
+      .dca-toggle-checkbox::after {
+        content: ''; position: absolute; top: 1px; left: 1px;
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #94a3b8; transition: transform 0.2s, background 0.2s;
+      }
+      .dca-toggle-checkbox:checked::after {
+        transform: translateX(14px); background: #12e2fd;
+      }
+      .dca-multi-container { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+      .dca-entry-row {
+        display: flex; align-items: center; gap: 6px; width: 100%;
+      }
+      .dca-entry-row .input-wrapper {
+        flex: 1; display: flex; align-items: center; gap: 4px;
+        background: #0a0f1c; border: 1px solid #23304a; border-radius: 8px;
+        padding: 0 8px; height: 36px; box-sizing: border-box;
+      }
+      .dca-entry-row .prefix {
+        font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; color: #94a3b8;
+      }
+      .dca-entry-row .amount-input {
+        width: 100%; background: transparent; border: none; outline: none;
+        font-family: 'Inter', sans-serif; font-weight: 700; font-size: 12px;
+        color: #ffffff; padding: 0;
+      }
+      .dca-entry-row .amount-input::placeholder { color: rgba(148,163,184,0.7); }
+      .mc-unit-select {
+        background: #131b2f; color: #94a3b8; border: 1px solid #23304a;
+        border-radius: 6px; padding: 2px 4px; font-size: 10px;
+        font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer;
+      }
+      .dca-remove-btn {
+        width: 24px; height: 24px; border-radius: 6px; border: 1px solid #23304a;
+        background: transparent; color: #94a3b8; font-size: 14px;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: background 0.15s;
+      }
+      .dca-remove-btn:hover { background: rgba(255,82,82,0.15); color: #ff5252; }
+      .dca-add-btn {
+        background: transparent; border: 1px dashed #23304a; border-radius: 8px;
+        color: #94a3b8; font-family: 'Inter', sans-serif; font-weight: 600;
+        font-size: 10px; padding: 6px; cursor: pointer; width: 100%;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .dca-add-btn:hover { border-color: #12e2fd; color: #12e2fd; }
+      .dca-avg-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 10px;
+      }
+      .dca-avg-label { color: #94a3b8; font-weight: 600; }
+      .dca-avg-value { color: #12e2fd; font-weight: 700; }
+
       .hidden {
         display: none !important;
       }
@@ -918,8 +983,11 @@
       #preview-img.loaded { display: block !important; }
 
       /* Token suggestions dropdown */
-      .token-card { position: relative; }
       #token-suggestions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
         background: #0e1628;
         border: 1px solid #23304a;
         border-radius: 8px;
@@ -1084,7 +1152,90 @@
       /* BDT result values */
       #res-final-bdt, #res-profit-bdt { display: none; }
 
-    </style>
+    
+      /* ── Task 3: Shared button animations ───────────────────── */
+      @media (prefers-reduced-motion: no-preference) {
+        .icon-tool-btn,
+        .btn-copy-card,
+        .btn-change-bg,
+        .btn-secondary-action,
+        #close-gallery,
+        .mode-tab-btn,
+        .unit-pill-btn,
+        .dca-add-btn,
+        .custom-logo-trigger,
+        .custom-logo-upload-btn,
+        .custom-logo-clear-btn,
+        .btn-generate-master {
+          transition:
+            transform     180ms cubic-bezier(0.4, 0, 0.2, 1),
+            box-shadow    180ms cubic-bezier(0.4, 0, 0.2, 1),
+            filter        180ms cubic-bezier(0.4, 0, 0.2, 1),
+            opacity       180ms cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: transform;
+        }
+
+        .icon-tool-btn:not(:disabled):hover,
+        .btn-copy-card:not(:disabled):hover,
+        .btn-change-bg:not(:disabled):hover,
+        .btn-secondary-action:not(:disabled):hover,
+        #close-gallery:not(:disabled):hover,
+        .mode-tab-btn:not(:disabled):hover,
+        .unit-pill-btn:not(:disabled):hover,
+        .dca-add-btn:not(:disabled):hover,
+        .custom-logo-trigger:not(:disabled):hover,
+        .custom-logo-upload-btn:not(:disabled):hover,
+        .custom-logo-clear-btn:not(:disabled):hover,
+        .btn-generate-master:not(:disabled):hover {
+          transform: translateY(-1.5px);
+          filter: brightness(1.12);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .icon-tool-btn:not(:disabled):active,
+        .btn-copy-card:not(:disabled):active,
+        .btn-change-bg:not(:disabled):active,
+        .btn-secondary-action:not(:disabled):active,
+        #close-gallery:not(:disabled):active,
+        .mode-tab-btn:not(:disabled):active,
+        .unit-pill-btn:not(:disabled):active,
+        .dca-add-btn:not(:disabled):active,
+        .custom-logo-trigger:not(:disabled):active,
+        .custom-logo-upload-btn:not(:disabled):active,
+        .custom-logo-clear-btn:not(:disabled):active,
+        .btn-generate-master:not(:disabled):active {
+          transform: scale(0.97);
+          filter: brightness(0.97);
+          box-shadow: none;
+          transition-duration: 80ms;
+        }
+
+        .icon-tool-btn:not(:disabled):focus-visible,
+        .btn-copy-card:not(:disabled):focus-visible,
+        .btn-change-bg:not(:disabled):focus-visible,
+        .btn-secondary-action:not(:disabled):focus-visible,
+        #close-gallery:not(:disabled):focus-visible,
+        .mode-tab-btn:not(:disabled):focus-visible,
+        .unit-pill-btn:not(:disabled):focus-visible,
+        .dca-add-btn:not(:disabled):focus-visible,
+        .custom-logo-trigger:not(:disabled):focus-visible,
+        .custom-logo-upload-btn:not(:disabled):focus-visible,
+        .custom-logo-clear-btn:not(:disabled):focus-visible,
+        .btn-generate-master:not(:disabled):focus-visible {
+          box-shadow: 0 0 0 3px rgba(18, 226, 253, 0.45);
+          outline: none;
+        }
+
+        /* Subtle icon scale on button hover */
+        .icon-tool-btn:not(:disabled):hover img,
+        .btn-secondary-action:not(:disabled):hover img,
+        .btn-copy-card:not(:disabled):hover img {
+          transform: scale(1.08);
+          transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+      }
+      /* ─────────────────────────────────────────────────────── */
+</style>
 </head>
 <body>
 
@@ -1183,6 +1334,9 @@
             <button type="button" id="mode-price-btn" data-mode="price" class="mode-tab-btn inactive">
               Price
             </button>
+            <button type="button" id="mode-nft-btn" data-mode="nft" class="mode-tab-btn inactive">
+              NFT
+            </button>
           </div>
 
           <!-- Position Amounts -->
@@ -1191,19 +1345,29 @@
             <!-- Initial Market Cap Field -->
             <div class="field-wrapper">
               <div class="field-header-row">
-                <span class="field-label">INITIAL MARKET CAP</span>
-                <div class="field-meta-toggle">
+                <span class="field-label" id="lbl-initial">INITIAL MARKET CAP</span>
+                <label class="field-meta-toggle">
                   <span class="field-meta-text">MULTI-ENTRY</span>
-                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                  <input type="checkbox" id="dca-init-toggle" class="dca-toggle-checkbox" />
+                </label>
+              </div>
+              <div id="init-single">
+                <div class="field-input-box">
+                  <span class="currency-symbol">$</span>
+                  <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
+                  <div class="unit-toggle-group" id="init-toggles">
+                    <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
+                  </div>
                 </div>
               </div>
-              <div class="field-input-box">
-                <span class="currency-symbol">$</span>
-                <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
-                <div class="unit-toggle-group" id="init-toggles">
-                  <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
-                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
-                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
+              <div id="init-multi" class="hidden">
+                <div class="dca-multi-container" id="init-dca-rows"></div>
+                <button type="button" class="dca-add-btn" id="add-init-dca-row">+ Add Entry</button>
+                <div class="dca-avg-row" id="init-dca-avg">
+                  <span class="dca-avg-label" id="lbl-init-dca-avg">Avg Entry MC:</span>
+                  <span class="dca-avg-value" id="init-avg-val">—</span>
                 </div>
               </div>
             </div>
@@ -1211,25 +1375,46 @@
             <!-- Target Market Cap Field -->
             <div class="field-wrapper">
               <div class="field-header-row">
-                <span class="field-label">TARGET MARKET CAP</span>
-                <div class="field-meta-toggle">
+                <span class="field-label" id="lbl-target">TARGET MARKET CAP</span>
+                <label class="field-meta-toggle">
                   <span class="field-meta-text">MULTI-EXIT</span>
-                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                  <input type="checkbox" id="dca-target-toggle" class="dca-toggle-checkbox" />
+                </label>
+              </div>
+              <div id="target-single">
+                <div class="field-input-box">
+                  <span class="currency-symbol">$</span>
+                  <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
+                  <div class="unit-toggle-group" id="target-toggles">
+                    <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
+                  </div>
                 </div>
               </div>
-              <div class="field-input-box">
-                <span class="currency-symbol">$</span>
-                <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
-                <div class="unit-toggle-group" id="target-toggles">
-                  <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
-                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
-                  <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
+              <div id="target-multi" class="hidden">
+                <div class="dca-multi-container" id="target-dca-rows"></div>
+                <button type="button" class="dca-add-btn" id="add-target-dca-row">+ Add Exit</button>
+                <div class="dca-avg-row" id="target-dca-avg">
+                  <span class="dca-avg-label" id="lbl-target-dca-avg">Avg Exit MC:</span>
+                  <span class="dca-avg-value" id="target-avg-val">—</span>
                 </div>
               </div>
             </div>
 
-            <!-- Investment Amount Field -->
-            <div class="field-wrapper">
+            <!-- NFT Count Field (NFT mode only) -->
+            <div class="field-wrapper" id="nft-count-wrapper" style="display:none;">
+              <div class="field-header-row">
+                <span class="field-label">NUMBER OF NFTs</span>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">#</span>
+                <input type="text" id="nft-count" value="1" placeholder="1" class="field-input-clean" />
+              </div>
+            </div>
+
+                        <!-- Investment Amount Field -->
+            <div class="field-wrapper" id="investment-wrapper">
               <div class="field-header-row">
                 <span class="field-label">INVESTMENT AMOUNT</span>
               </div>
@@ -1244,26 +1429,21 @@
 
         <!-- Token Details Card -->
         <div class="token-card">
-          <div class="token-card-header">
-            <div class="token-header-title-wrap">
-              <img alt="accent" width="6" height="6" src="./assets/figma/accent-marker.svg" />
-              <span class="token-header-title">TOKEN DETAILS</span>
-            </div>
-            <span class="token-header-meta">Optional</span>
-          </div>
           
-          <div class="token-input-row">
-            <div class="token-badge-icon">
-              <img alt="badge" width="14" height="14" src="./assets/figma/badge-dollar-sign.svg" />
+          <div style="position:relative;">
+            <div class="token-input-row">
+              <div class="token-badge-icon">
+                <img id="token-badge-img" alt="badge" width="14" height="14" src="./assets/figma/badge-dollar-sign.svg" />
+              </div>
+              <div class="token-input-content">
+                <label for="token-name" class="token-input-label">TOKEN NAME</label>
+                <input type="text" id="token-name" placeholder="Search token name or symbol" class="token-input-clean" autocomplete="off" />
+              </div>
             </div>
-            <div class="token-input-content">
-              <label for="token-name" class="token-input-label">TOKEN NAME</label>
-              <input type="text" id="token-name" placeholder="Search token name or symbol" class="token-input-clean" autocomplete="off" />
-            </div>
-          </div>
 
-          <!-- Token Search Autocomplete Dropdown -->
-          <div id="token-suggestions" class="hidden" role="listbox" aria-label="Token suggestions"></div>
+            <!-- Token Search Autocomplete Dropdown -->
+            <div id="token-suggestions" class="hidden" role="listbox" aria-label="Token suggestions"></div>
+          </div>
 
           <div class="token-hint-row">
             <img alt="search" width="12" height="12" src="./assets/figma/search.svg" />

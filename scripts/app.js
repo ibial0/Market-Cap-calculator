@@ -48,48 +48,85 @@ const elToken    = document.getElementById('token-name');
 let _calcMode = Storage.get('calcMode', 'mc');
 const modeMCBtn = document.getElementById('mode-mc-btn');
 const modePriceBtn = document.getElementById('mode-price-btn');
+const modeNftBtn = document.getElementById('mode-nft-btn');
+const nftCountWrapper = document.getElementById('nft-count-wrapper');
+const elNftCount = document.getElementById('nft-count');
 
 function setCalcMode(mode) {
     _calcMode = mode;
     Storage.set('calcMode', mode);
     const isPrice = mode === 'price';
+    const isNft = mode === 'nft';
     
-    if (modeMCBtn && modePriceBtn) {
-        if (isPrice) {
-            modePriceBtn.style.background = 'var(--accent-primary)';
-            modePriceBtn.style.color = '#000';
-            modePriceBtn.style.fontWeight = '700';
-            modePriceBtn.style.boxShadow = '0 2px 8px rgba(0, 230, 118, 0.25)';
-            modeMCBtn.style.background = 'transparent';
-            modeMCBtn.style.color = 'var(--text-secondary)';
-            modeMCBtn.style.fontWeight = '600';
-            modeMCBtn.style.boxShadow = 'none';
+    // Update mode buttons
+    const allModeBtns = [modeMCBtn, modePriceBtn, modeNftBtn];
+    allModeBtns.forEach(btn => {
+        if (!btn) return;
+        if (btn.dataset.mode === mode) {
+            btn.style.background = 'linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%)';
+            btn.style.color = '#0a0f1c';
+            btn.style.fontWeight = '700';
+            btn.style.boxShadow = '0 2px 8px rgba(18, 226, 253, 0.25)';
         } else {
-            modeMCBtn.style.background = 'var(--accent-primary)';
-            modeMCBtn.style.color = '#000';
-            modeMCBtn.style.fontWeight = '700';
-            modeMCBtn.style.boxShadow = '0 2px 8px rgba(0, 230, 118, 0.25)';
-            modePriceBtn.style.background = 'transparent';
-            modePriceBtn.style.color = 'var(--text-secondary)';
-            modePriceBtn.style.fontWeight = '600';
-            modePriceBtn.style.boxShadow = 'none';
+            btn.style.background = 'transparent';
+            btn.style.color = '#94a3b8';
+            btn.style.fontWeight = '600';
+            btn.style.boxShadow = 'none';
         }
-    }
+    });
     
     const lblInit = document.getElementById('lbl-initial');
     const lblTarget = document.getElementById('lbl-target');
     const lblInitDCA = document.getElementById('lbl-init-dca-avg');
     const lblTargetDCA = document.getElementById('lbl-target-dca-avg');
     
-    if (lblInit) lblInit.textContent = isPrice ? 'Entry Price' : 'Initial Market Cap';
-    if (lblTarget) lblTarget.textContent = isPrice ? 'Target Price' : 'Target Market Cap';
-    if (lblInitDCA) lblInitDCA.textContent = isPrice ? 'Avg Entry Price:' : 'Avg Entry MC:';
-    if (lblTargetDCA) lblTargetDCA.textContent = isPrice ? 'Avg Exit Price:' : 'Avg Exit MC:';
+    if (isPrice) {
+        if (lblInit) lblInit.textContent = 'Entry Price';
+        if (lblTarget) lblTarget.textContent = 'Target Price';
+        if (lblInitDCA) lblInitDCA.textContent = 'Avg Entry Price:';
+        if (lblTargetDCA) lblTargetDCA.textContent = 'Avg Exit Price:';
+    } else if (isNft) {
+        if (lblInit) lblInit.textContent = 'BUY PRICE ($)';
+        if (lblTarget) lblTarget.textContent = 'SELL PRICE ($)';
+        if (lblInitDCA) lblInitDCA.textContent = 'Avg Buy Price:';
+        if (lblTargetDCA) lblTargetDCA.textContent = 'Avg Sell Price:';
+    } else {
+        if (lblInit) lblInit.textContent = 'INITIAL MARKET CAP';
+        if (lblTarget) lblTarget.textContent = 'TARGET MARKET CAP';
+        if (lblInitDCA) lblInitDCA.textContent = 'Avg Entry MC:';
+        if (lblTargetDCA) lblTargetDCA.textContent = 'Avg Exit MC:';
+    }
     
     const initToggles = document.getElementById('init-toggles');
     const targetToggles = document.getElementById('target-toggles');
-    if (initToggles) initToggles.style.display = isPrice ? 'none' : 'flex';
-    if (targetToggles) targetToggles.style.display = isPrice ? 'none' : 'flex';
+    if (initToggles) initToggles.style.display = (isPrice || isNft) ? 'none' : 'flex';
+    if (targetToggles) targetToggles.style.display = (isPrice || isNft) ? 'none' : 'flex';
+    
+    // NFT count field
+    if (nftCountWrapper) nftCountWrapper.style.display = isNft ? '' : 'none';
+    // Investment Amount — hidden in NFT mode (auto-computed as buyPrice × nftCount)
+    const invWrapper = document.getElementById('investment-wrapper');
+    if (invWrapper) invWrapper.style.display = isNft ? 'none' : '';
+    
+    // Token Details: change labels for NFT mode
+    const tokenHeaderTitle = document.querySelector('.token-header-title');
+    const tokenInputLabel = document.querySelector('.token-input-label');
+    const tokenHintText = document.querySelector('.token-hint-text');
+    const tokenSearchInput = document.getElementById('token-name');
+    
+    if (tokenHeaderTitle) tokenHeaderTitle.textContent = isNft ? 'NFT DETAILS' : 'TOKEN DETAILS';
+    if (tokenInputLabel) tokenInputLabel.textContent = isNft ? 'NFT NAME' : 'TOKEN NAME';
+    if (tokenSearchInput) tokenSearchInput.placeholder = isNft ? 'Enter NFT name' : 'Search token name or symbol';
+    if (tokenHintText) tokenHintText.textContent = isNft
+        ? 'Enter your NFT name and optionally add a logo below.'
+        : 'Start typing to see matching tokens and set a logo automatically.';
+    
+    // Hide token suggestions in NFT mode
+    const tokenSuggestionsEl = document.getElementById('token-suggestions');
+    if (isNft && tokenSuggestionsEl) {
+        tokenSuggestionsEl.replaceChildren();
+        tokenSuggestionsEl.classList.add('hidden');
+    }
     
     const dcaInitActive = document.getElementById('dca-init-toggle')?.checked;
     const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
@@ -101,6 +138,7 @@ function setCalcMode(mode) {
 
 if (modeMCBtn) modeMCBtn.addEventListener('click', () => setCalcMode('mc'));
 if (modePriceBtn) modePriceBtn.addEventListener('click', () => setCalcMode('price'));
+if (modeNftBtn) modeNftBtn.addEventListener('click', () => setCalcMode('nft'));
 
 
 // Token logo state
@@ -119,11 +157,21 @@ const tokenLogoPlaceholder = document.getElementById('token-logo-placeholder');
 const tokenLogoRemove = document.getElementById('token-logo-remove');
 const tokenLogoSub = document.querySelector('.token-logo-sub');
 const tokenSuggestions = document.getElementById('token-suggestions');
+const _tokenBadgeImg = document.getElementById('token-badge-img');
+const _badgeDollarSrc = './assets/figma/badge-dollar-sign.svg';
 let _highlightedSuggestion = -1;
 
 function setTokenLogo(dataUrl, source = 'upload') {
     _tokenLogoDataUrl = dataUrl || null;
     _tokenLogoSource = dataUrl ? source : 'none';
+    // TASK2: Reset badge icon to dollar when no logo
+    if (!dataUrl && _tokenBadgeImg) {
+        _tokenBadgeImg.src = _badgeDollarSrc;
+        _tokenBadgeImg.style.width = '14px';
+        _tokenBadgeImg.style.height = '14px';
+        _tokenBadgeImg.style.borderRadius = '';
+        _tokenBadgeImg.style.objectFit = '';
+    }
     if (tokenLogoPreview) {
         tokenLogoPreview.src = dataUrl || '';
         tokenLogoPreview.classList.toggle('hidden', !dataUrl);
@@ -146,6 +194,7 @@ function hideTokenSuggestions() {
     if (!tokenSuggestions) return;
     tokenSuggestions.replaceChildren();
     tokenSuggestions.classList.add('hidden');
+    tokenSuggestions.style.cssText = '';
     elToken?.setAttribute('aria-expanded', 'false');
     _highlightedSuggestion = -1;
 }
@@ -157,6 +206,22 @@ function selectCatalogToken(token) {
     saveTokenName(name);
     setTokenLogo(token.logoDataUrl, 'catalog');
     hideTokenSuggestions();
+    // TASK2: Show selected token logo in badge icon slot
+    if (_tokenBadgeImg && token.logoDataUrl) {
+        _tokenBadgeImg.src = token.logoDataUrl;
+        _tokenBadgeImg.style.width = '32px';
+        _tokenBadgeImg.style.height = '32px';
+        _tokenBadgeImg.style.borderRadius = '8px';
+        _tokenBadgeImg.style.objectFit = 'cover';
+        _tokenBadgeImg.onerror = function() {
+            this.src = _badgeDollarSrc;
+            this.style.width = '14px';
+            this.style.height = '14px';
+            this.style.borderRadius = '';
+            this.style.objectFit = '';
+            this.onerror = null;
+        };
+    }
 }
 
 function renderTokenSuggestions(query) {
@@ -200,6 +265,21 @@ function renderTokenSuggestions(query) {
     });
     tokenSuggestions.classList.toggle('hidden', matches.length === 0);
     elToken?.setAttribute('aria-expanded', String(matches.length > 0));
+
+    // Body-level positioning to escape overflow:hidden parents
+    if (matches.length > 0 && elToken) {
+        if (tokenSuggestions.parentElement !== document.body) {
+            document.body.appendChild(tokenSuggestions);
+        }
+        const rect = elToken.closest('[style*="position"]')?.getBoundingClientRect()
+                  || elToken.getBoundingClientRect();
+        const inputRect = elToken.getBoundingClientRect();
+        tokenSuggestions.style.position = 'fixed';
+        tokenSuggestions.style.left = rect.left + 'px';
+        tokenSuggestions.style.width = rect.width + 'px';
+        tokenSuggestions.style.top = (inputRect.bottom + 4) + 'px';
+        tokenSuggestions.style.zIndex = '99999';
+    }
 }
 
 if (tokenLogoArea) {
@@ -220,6 +300,33 @@ if (tokenLogoUpload) {
             tokenLogoUpload.value = '';
         }
     });
+}
+
+// ─── TASK1: Paste image to import token logo ──────────────
+async function _handleClipboardImage(items) {
+    for (const item of items) {
+        if (item.type && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (!file) continue;
+            try {
+                setTokenLogo(await compressImageFile(file), 'upload');
+                setTimeout(_refreshLogoPanel, 50);
+            } catch (error) {
+                _showToast(error.message || 'Could not use that image.', 'warning');
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+if (tokenLogoArea) {
+    tokenLogoArea.addEventListener('paste', async (e) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const hadImage = await _handleClipboardImage(items);
+        if (hadImage) e.preventDefault();
+    });
+    tokenLogoArea.setAttribute('tabindex', '0');
 }
 
 if (tokenLogoRemove) {
@@ -354,7 +461,14 @@ const calculate = () => {
     const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
     let realInit, realTarget, inv;
-    inv = parseAmount(elInv?.value);
+    if (_calcMode === 'nft') {
+        // NFT: investment = buyPrice × numberOfNFTs
+        const nftCount = parseInt(elNftCount?.value) || 1;
+        inv = parseAmount(elInitMC?.value) * nftCount;
+        if (elInv) elInv.value = inv; // keep elInv in sync for card/state reads
+    } else {
+        inv = parseAmount(elInv?.value);
+    }
 
     if (dcaInitActive && dcaInitRows.length > 0) {
         realInit = _calcDCAAvg(dcaInitRows);
@@ -367,7 +481,7 @@ const calculate = () => {
         }
     } else {
         const initVal = parseAmount(elInitMC?.value);
-        realInit = _calcMode === 'price' ? initVal : initVal * State.initMul;
+        realInit = (_calcMode === 'price' || _calcMode === 'nft') ? initVal : initVal * State.initMul;
     }
 
     if (dcaTargetActive && dcaTargetRows.length > 0) {
@@ -375,7 +489,7 @@ const calculate = () => {
         _updateDCAAvgDisplay('target-avg-val', realTarget);
     } else {
         const targetVal = parseAmount(elTargetMC?.value);
-        realTarget = _calcMode === 'price' ? targetVal : targetVal * State.targetMul;
+        realTarget = (_calcMode === 'price' || _calcMode === 'nft') ? targetVal : targetVal * State.targetMul;
     }
 
     State.initVal   = realInit;
@@ -419,7 +533,7 @@ const calculate = () => {
 const _calcDCAAvg = (rows) => {
     let totalWeight = 0, totalAmount = 0;
     rows.forEach(r => {
-        const unit = _calcMode === 'price' ? 1 : parseFloat(r.unit || 1);
+        const unit = (_calcMode === 'price' || _calcMode === 'nft') ? 1 : parseFloat(r.unit || 1);
         const mc  = parseFloat(r.mc || 0) * unit;
         const amt = parseFloat(r.amount || 0);
         if (mc > 0 && amt > 0) {
@@ -473,10 +587,23 @@ if (elToken) {
         // A changed name should not silently retain the logo from a different
         // catalogue token. Custom uploads remain intact.
         if (_tokenLogoSource === 'catalog') setTokenLogo(null);
-        renderTokenSuggestions(e.target.value);
+        if (_calcMode !== 'nft') renderTokenSuggestions(e.target.value);
     });
-    elToken.addEventListener('focus', () => renderTokenSuggestions(elToken.value));
+    elToken.addEventListener('focus', () => { if (_calcMode !== 'nft') renderTokenSuggestions(elToken.value); });
     elToken.addEventListener('blur', () => setTimeout(hideTokenSuggestions, 250));
+    // Reposition suggestions on scroll/resize
+    const _reposSuggestions = () => {
+        if (!tokenSuggestions || tokenSuggestions.classList.contains('hidden')) return;
+        if (!elToken) return;
+        const rect = elToken.closest('[style*="position"]')?.getBoundingClientRect()
+                  || elToken.getBoundingClientRect();
+        const inputRect = elToken.getBoundingClientRect();
+        tokenSuggestions.style.left = rect.left + 'px';
+        tokenSuggestions.style.width = rect.width + 'px';
+        tokenSuggestions.style.top = (inputRect.bottom + 4) + 'px';
+    };
+    window.addEventListener('scroll', _reposSuggestions, { passive: true, capture: true });
+    window.addEventListener('resize', _reposSuggestions, { passive: true });
     elToken.addEventListener('keydown', event => {
         const options = Array.from(tokenSuggestions?.querySelectorAll('.token-suggestion') || []);
         if (!options.length) return;
@@ -791,18 +918,54 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
 
 // // ── Image pre-fetch as blob URL (CORS workaround for mobile) // ──
 async function _fetchAsBlob(url) {
+    // Method 1: Direct fetch with CORS
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 8000); // 8 second max
+    const id = setTimeout(() => controller.abort(), 8000);
     try {
         const resp = await fetch(url, { mode: 'cors', cache: 'force-cache', signal: controller.signal });
         clearTimeout(id);
-        if (!resp.ok) return null;
-        const blob = await resp.blob();
-        return URL.createObjectURL(blob);
-    } catch { 
-        clearTimeout(id);
-        return null; 
-    }
+        if (resp.ok) {
+            const blob = await resp.blob();
+            return URL.createObjectURL(blob);
+        }
+    } catch { clearTimeout(id); }
+
+    // Method 2: Load as Image with crossOrigin, draw to canvas → data URL
+    // Many CDNs send CORS headers for <img> but not for fetch()
+    try {
+        const dataUrl = await _imgToDataUrl(url, true);
+        if (dataUrl) return dataUrl;
+    } catch {}
+
+    // Method 3: Load without crossOrigin, draw to canvas
+    // Canvas will be tainted but toDataURL may still work in some browsers
+    try {
+        const dataUrl = await _imgToDataUrl(url, false);
+        if (dataUrl) return dataUrl;
+    } catch {}
+
+    return null;
+}
+
+function _imgToDataUrl(url, useCors) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        if (useCors) img.crossOrigin = 'anonymous';
+        const timer = setTimeout(() => { resolve(null); }, 8000);
+        img.onload = () => {
+            clearTimeout(timer);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || img.width;
+                canvas.height = img.naturalHeight || img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            } catch { resolve(null); }
+        };
+        img.onerror = () => { clearTimeout(timer); resolve(null); };
+        img.src = url;
+    });
 }
 
 // // ── Wait for an img element to fully decode // ───// ───// ───// ───// ───â”€
@@ -925,22 +1088,35 @@ if (generateBtn) {
         const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
         let realInit, realTarget;
-        const inv = parseAmount(elInv?.value);
+        let inv;
+        if (_calcMode === 'nft') {
+            // NFT: investment = buyPrice × numberOfNFTs (no manual input)
+            const nftCount = parseInt(elNftCount?.value) || 1;
+            inv = parseAmount(elInitMC?.value) * nftCount;
+        } else {
+            inv = parseAmount(elInv?.value);
+        }
 
         if (dcaInitActive && dcaInitRows.length > 0) {
             realInit = _calcDCAAvg(dcaInitRows);
         } else {
-            realInit = _calcMode === 'price' ? parseAmount(elInitMC?.value) : parseAmount(elInitMC?.value) * State.initMul;
+            realInit = (_calcMode === 'price' || _calcMode === 'nft') ? parseAmount(elInitMC?.value) : parseAmount(elInitMC?.value) * State.initMul;
         }
 
         if (dcaTargetActive && dcaTargetRows.length > 0) {
             realTarget = _calcDCAAvg(dcaTargetRows);
         } else {
-            realTarget = _calcMode === 'price' ? parseAmount(elTargetMC?.value) : parseAmount(elTargetMC?.value) * State.targetMul;
+            realTarget = (_calcMode === 'price' || _calcMode === 'nft') ? parseAmount(elTargetMC?.value) : parseAmount(elTargetMC?.value) * State.targetMul;
         }
 
         if (realInit <= 0 || inv <= 0 || realTarget <= 0) {
-            _showToast(_calcMode === 'price' ? 'Please enter valid positive numbers for Entry Price, Target Price, and Investment.' : 'Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
+            if (_calcMode === 'nft') {
+                _showToast('Please enter valid positive numbers for Buy Price, Sell Price, and Number of NFTs.', 'warning');
+            } else if (_calcMode === 'price') {
+                _showToast('Please enter valid positive numbers for Entry Price, Target Price, and Investment.', 'warning');
+            } else {
+                _showToast('Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
+            }
             return;
         }
 
@@ -958,7 +1134,9 @@ if (generateBtn) {
             multiplier: result.multiplier,
             showBdt:    State.showBdt,
             bdtRate:    State.bdtRate,
-            isPriceMode: _calcMode === 'price',
+            isPriceMode: _calcMode === 'price' || _calcMode === 'nft',
+            isNftMode: _calcMode === 'nft',
+            nftCount: _calcMode === 'nft' ? (parseInt(elNftCount?.value) || 1) : null,
         };
 
         _pendingCardData = data;
@@ -1269,9 +1447,13 @@ if (_customLogoUrlInput) {
         url = (url || '').trim();
         if (!url || (!url.startsWith('http') && !url.startsWith('data:'))) return;
         try {
-            const blobUrl = await _fetchAsBlob(url);
-            setTokenLogo(blobUrl || url, 'upload');
-            setTimeout(_refreshLogoPanel, 50);
+            const dataUrl = await _fetchAsBlob(url);
+            if (dataUrl) {
+                setTokenLogo(dataUrl, 'upload');
+                setTimeout(_refreshLogoPanel, 50);
+            } else {
+                _showToast('Could not load logo — the server may block external access. Try downloading and uploading the image instead.', 'warning', 4000);
+            }
         } catch (_e) {
             _showToast('Could not load logo from that URL.', 'warning', 3000);
         }
@@ -1282,6 +1464,13 @@ if (_customLogoUrlInput) {
     _customLogoUrlInput.addEventListener('input', () => {
         clearTimeout(_logoUrlTimer);
         _logoUrlTimer = setTimeout(() => _applyLogoUrl(_customLogoUrlInput.value), 1200);
+    });
+    // TASK1: If clipboard has an image, import it instead of text
+    _customLogoUrlInput.addEventListener('paste', async (e) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const hadImage = await _handleClipboardImage(items);
+        if (hadImage) e.preventDefault();
+        // else: default paste (URL text) remains intact
     });
 }
 
