@@ -34,6 +34,15 @@ const _assetTimeout = new Promise(r => setTimeout(r, 10000));
 const cardAssetsReady = Promise.race([_assetLoad, _assetTimeout])
     .then(() => { _assetsLoaded = true; });
 
+// The Store may be opened before Firestore/image processing finishes. Refresh its
+// already-open view once the shared catalogue is ready instead of leaving its
+// one-time empty-state render on screen.
+loadBackgrounds().finally(() => {
+    if (typeof _populateSidebar === 'function' && bgGalleryColumn?.style.display !== 'none') {
+        _populateSidebar();
+    }
+});
+
 // Suggestions are optional, so a catalogue connection problem never delays cards.
 loadTokenCatalog();
 

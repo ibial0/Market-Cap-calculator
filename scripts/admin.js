@@ -12,7 +12,14 @@ import {
     collection, getDocs, doc, setDoc, deleteDoc, serverTimestamp, addDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { compressImageFile } from '../utils/image.js';
-import { EMOTIONS } from '../cards/emotions.js';
+import { EMOTIONS, getEmotionById } from '../cards/emotions.js';
+import { emojiHappyData } from '../assets/lottie/emoji-happy.js';
+import { emojiShockData } from '../assets/lottie/emoji-shock.js';
+import { emojiGreedData } from '../assets/lottie/emoji-greed.js';
+import { emojiCryData } from '../assets/lottie/emoji-cry.js';
+import { emojiAngryData } from '../assets/lottie/emoji-angry.js';
+import { emojiWorriedData } from '../assets/lottie/emoji-worried.js';
+import { emojiRelievedData } from '../assets/lottie/emoji-relieved.js';
 import { saveIconData } from '../assets/lottie/save-icon.js';
 import { successTickIconData } from '../assets/lottie/success-tick-icon.js';
 
@@ -140,6 +147,28 @@ const adminBgGrid   = document.getElementById('admin-bg-gallery');
 let _adminSelectedEmotion = null;
 let _adminSelectedPnlType = null;
 let _adminFilterEmotion = 'all';
+
+const ADMIN_EMOTION_ANIMATIONS = {
+    happy: emojiHappyData, shock: emojiShockData, greed: emojiGreedData,
+    cry: emojiCryData, angry: emojiAngryData, worried: emojiWorriedData,
+    relieved: emojiRelievedData,
+};
+
+function mountAdminEmotionIcon(container, emotionId) {
+    const animationData = ADMIN_EMOTION_ANIMATIONS[emotionId];
+    if (!container || !animationData || !(window.lottie || window.bodymovin)) return;
+    const icon = document.createElement('span');
+    icon.style.cssText = 'display:inline-flex;width:18px;height:18px;flex:none;pointer-events:none;';
+    container.prepend(icon);
+    try {
+        (window.lottie || window.bodymovin).loadAnimation({
+            container: icon, renderer: 'svg', loop: true, autoplay: true, animationData
+        });
+    } catch (error) {
+        console.warn('[Admin] Emotion animation failed to load:', emotionId, error);
+        icon.remove();
+    }
+}
 
 
 // ═══════════════════════════════════════════════════════════
@@ -719,7 +748,7 @@ if (adminEmPicker) {
     adminEmPicker.innerHTML = '';
     const universal = document.createElement('div');
     universal.dataset.id = '';
-    universal.textContent = 'Universal';
+    universal.textContent = '❌ Universal';
     universal.style.cssText = `padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #38bdf8;background:rgba(56,189,248,0.12);color:#e2e8f0;display:flex;align-items:center;transition:all 0.2s ease;user-select:none;`;
     adminEmPicker.appendChild(universal);
     EMOTIONS.forEach(em => {
@@ -731,6 +760,7 @@ if (adminEmPicker) {
         `;
         pill.textContent = em.label;
         pill.dataset.id = em.id;
+        mountAdminEmotionIcon(pill, em.id);
 
         pill.addEventListener('click', () => {
             adminEmPicker.querySelectorAll('[data-id]').forEach(p => { p.style.borderColor = '#334155'; p.style.background = '#0f172a'; p.style.color = '#94a3b8'; });
@@ -770,6 +800,7 @@ if (adminEmFilter) {
             transition:all 0.2s ease;
         `;
         pill.textContent = em.label;
+        mountAdminEmotionIcon(pill, em.id);
         adminEmFilter.appendChild(pill);
     });
 
@@ -910,10 +941,10 @@ async function loadBgSection() {
             card.className = 'bg-card';
             card.style.cssText = 'background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155;display:flex;flex-direction:column;';
 
-            const emObj = EMOTIONS.find(e => e.id === bg.emotion);
+            const emObj = getEmotionById(bg.emotion);
             const emBadge = emObj
-                ? `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#7dd3fc;font-weight:600;">${emObj.label}</span>`
-                : `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(148,163,184,0.12);color:#94a3b8;font-weight:600;">Universal / legacy</span>`;
+                ? `<span class="bg-emotion-badge" data-emotion-icon="${emObj.id}" style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#7dd3fc;font-weight:600;display:inline-flex;align-items:center;gap:4px;">${emObj.label}</span>`
+                : `<span class="bg-emotion-badge" style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(148,163,184,0.12);color:#94a3b8;font-weight:600;display:inline-flex;align-items:center;gap:4px;">❌ ${bg.emotion ? 'Legacy / review' : 'Universal'}</span>`;
 
             const emOptions = `<option value="" ${!bg.emotion ? 'selected' : ''}>Universal (no emotion)</option>` + EMOTIONS.map(e =>
                 `<option value="${e.id}" ${e.id === bg.emotion ? 'selected' : ''}>${e.label}</option>`
@@ -940,6 +971,10 @@ async function loadBgSection() {
                     </div>
                 </div>
             `;
+
+            card.querySelectorAll('[data-emotion-icon]').forEach(icon => {
+                mountAdminEmotionIcon(icon, icon.dataset.emotionIcon);
+            });
 
             card.querySelector('.bg-emotion-select').addEventListener('change', async (e) => {
                 const select = e.target;
