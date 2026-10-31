@@ -12,9 +12,19 @@ import { loadPNGTemplates } from '../cards/png-loader.js';
 import { initWallet } from './wallet.js';
 import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount, getAllBackgrounds } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
-import { EMOTIONS } from '../cards/emotions.js';
+import { EMOTIONS, getEmotionById } from '../cards/emotions.js';
 import { loadTokenCatalog, searchTokenCatalog } from '../cards/token-catalog.js';
 import { compressImageFile } from '../utils/image.js';
+import { storeIconData } from '../assets/lottie/store-icon.js';
+import { saveDownloadIconData } from '../assets/lottie/save-download-icon.js';
+import { tickDownloadIconData } from '../assets/lottie/tick-download-icon.js';
+import { copyIconData } from '../assets/lottie/copy-icon.js';
+import { successTickIconData } from '../assets/lottie/success-tick-icon.js';
+import { refreshIconData } from '../assets/lottie/refresh-icon.js';
+import { uploadCloudIconData } from '../assets/lottie/upload-cloud-icon.js';
+import { createOrbNoise } from './orb-loader.js';
+import { createBtnStars } from './btn-stars.js';
+import { initReactionController } from './reaction-controller.js';
 
 // Card asset readiness â€” RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
@@ -336,73 +346,14 @@ if (tokenLogoRemove) {
     });
 }
 
-// // ── Reaction Popover (Facebook-style floating emoji picker) // ───────────────────
+// // ── Reaction Popover & Continuously Animated Button ────────────────────────
 let _selectedEmotion = null; // null means "any/random"
 
-const reactionPopover  = document.getElementById('reaction-popover');
-const btnReactionPicker = document.getElementById('btn-reaction-picker');
-const emotionPicker     = document.getElementById('emotion-picker'); // legacy ref (removed from HTML)
-
-// Render reaction emoji buttons inside the popover
-if (reactionPopover) {
-    EMOTIONS.forEach(em => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'reaction-emoji-btn';
-        btn.dataset.id = em.id;
-        btn.dataset.type = em.type;
-        btn.title = em.label;
-        btn.textContent = em.emoji;
-
-        btn.addEventListener('click', () => {
-            if (_selectedEmotion === em.id) {
-                // Deselect
-                _selectedEmotion = null;
-                btn.classList.remove('active');
-                if (btnReactionPicker) {
-                    btnReactionPicker.querySelector('span').textContent = '🎭';
-                    btnReactionPicker.classList.remove('has-emotion');
-                }
-            } else {
-                // Select
-                reactionPopover.querySelectorAll('.reaction-emoji-btn.active').forEach(b => b.classList.remove('active'));
-                _selectedEmotion = em.id;
-                btn.classList.add('active');
-                if (btnReactionPicker) {
-                    btnReactionPicker.querySelector('span').textContent = em.emoji;
-                    btnReactionPicker.classList.add('has-emotion');
-                }
-            }
-            // Refresh gallery if open
-            _populateSidebar();
-        });
-
-        reactionPopover.appendChild(btn);
-    });
-}
-
-// Toggle reaction popover visibility
-if (btnReactionPicker) {
-    btnReactionPicker.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = reactionPopover?.classList.contains('open');
-        if (isOpen) {
-            reactionPopover.classList.remove('open');
-            btnReactionPicker.classList.remove('active');
-        } else {
-            reactionPopover?.classList.add('open');
-            btnReactionPicker.classList.add('active');
-        }
-    });
-}
-
-// Close popover when clicking outside
-document.addEventListener('click', (e) => {
-    if (reactionPopover?.classList.contains('open') &&
-        !reactionPopover.contains(e.target) &&
-        !btnReactionPicker?.contains(e.target)) {
-        reactionPopover.classList.remove('open');
-        btnReactionPicker?.classList.remove('active');
+const reactionController = initReactionController({
+    getSelectedEmotion: () => _selectedEmotion,
+    setSelectedEmotion: (val) => { _selectedEmotion = val; },
+    onEmotionChange: () => {
+        _populateSidebar();
     }
 });
 
@@ -433,6 +384,44 @@ function _hideGallery() {
 }
 
 if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
+
+// Initialize Store animated Lottie icon
+function initStoreLottie() {
+    const storeLottieContainer = document.getElementById('store-lottie-icon');
+    if (!storeLottieContainer) return;
+    const lottieLib = window.lottie || window.bodymovin;
+    if (lottieLib) {
+        try {
+            lottieLib.loadAnimation({
+                container: storeLottieContainer,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                animationData: storeIconData
+            });
+        } catch (err) {
+            console.error('Failed to initialize store Lottie animation:', err);
+        }
+    } else {
+        window.addEventListener('load', () => {
+            const lib = window.lottie || window.bodymovin;
+            if (lib && storeLottieContainer.childElementCount === 0) {
+                try {
+                    lib.loadAnimation({
+                        container: storeLottieContainer,
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        animationData: storeIconData
+                    });
+                } catch (err) {
+                    console.error('Failed to initialize store Lottie animation on window load:', err);
+                }
+            }
+        }, { once: true });
+    }
+}
+initStoreLottie();
 if (closeGallery) closeGallery.addEventListener('click', _hideGallery);
 
 
@@ -461,9 +450,11 @@ const calculate = () => {
     const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
     let realInit, realTarget, inv;
+    const countVal = parseAmount(elNftCount?.value);
+    const nftCount = countVal > 0 ? countVal : 0;
+
     if (_calcMode === 'nft') {
         // NFT: investment = buyPrice × numberOfNFTs
-        const nftCount = parseInt(elNftCount?.value) || 1;
         inv = parseAmount(elInitMC?.value) * nftCount;
         if (elInv) elInv.value = inv; // keep elInv in sync for card/state reads
     } else {
@@ -473,11 +464,16 @@ const calculate = () => {
     if (dcaInitActive && dcaInitRows.length > 0) {
         realInit = _calcDCAAvg(dcaInitRows);
         _updateDCAAvgDisplay('init-avg-val', realInit);
-        // Auto-sum all DCA entry amounts into the investment field
-        const totalDCAInv = dcaInitRows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
-        if (totalDCAInv > 0) {
-            if (elInv) elInv.value = totalDCAInv;
-            inv = totalDCAInv;
+        if (_calcMode === 'nft') {
+            inv = realInit * nftCount;
+            if (elInv) elInv.value = inv;
+        } else {
+            // Auto-sum all DCA entry amounts into the investment field
+            const totalDCAInv = dcaInitRows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+            if (totalDCAInv > 0) {
+                if (elInv) elInv.value = totalDCAInv;
+                inv = totalDCAInv;
+            }
         }
     } else {
         const initVal = parseAmount(elInitMC?.value);
@@ -573,7 +569,7 @@ const handleFocus = (e) => {
     if (val > 0) e.target.value = val;
 };
 
-[elInitMC, elTargetMC, elInv].forEach(el => {
+[elInitMC, elTargetMC, elInv, elNftCount].forEach(el => {
     if (el) {
         el.addEventListener('input', handleInput);
         el.addEventListener('blur', handleBlur);
@@ -1076,6 +1072,52 @@ async function _captureCanvas(node, attempt = 1) {
 let isGenerating = false;
 const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
+const generateBtnLoadingLayer = document.querySelector('.btn-gen-loading-layer');
+const btnStarsEngine = generateBtnLoadingLayer ? createBtnStars(generateBtnLoadingLayer) : null;
+
+let generateResetTimer = null;
+
+function setGenerateBtnLoading() {
+    if (generateResetTimer) {
+        clearTimeout(generateResetTimer);
+        generateResetTimer = null;
+    }
+    if (generateBtn) {
+        generateBtn.classList.remove('is-success');
+        generateBtn.classList.add('is-loading');
+        btnStarsEngine?.start();
+    }
+}
+
+function setGenerateBtnSuccess() {
+    if (generateResetTimer) {
+        clearTimeout(generateResetTimer);
+        generateResetTimer = null;
+    }
+    if (generateBtn) {
+        btnStarsEngine?.finish();
+        generateBtn.classList.remove('is-loading');
+        generateBtn.classList.add('is-success');
+
+        generateResetTimer = setTimeout(() => {
+            generateBtn.classList.remove('is-success');
+            btnStarsEngine?.stop();
+            generateResetTimer = null;
+        }, 1400);
+    }
+}
+
+function resetGenerateBtn() {
+    if (generateResetTimer) {
+        clearTimeout(generateResetTimer);
+        generateResetTimer = null;
+    }
+    if (generateBtn) {
+        btnStarsEngine?.stop();
+        generateBtn.classList.remove('is-loading');
+        generateBtn.classList.remove('is-success');
+    }
+}
 
 // Must be declared before generateBtn handler
 let _pendingCardData = null;
@@ -1089,9 +1131,10 @@ if (generateBtn) {
 
         let realInit, realTarget;
         let inv;
+        const countVal = parseAmount(elNftCount?.value);
+        const nftCount = countVal > 0 ? countVal : 0;
         if (_calcMode === 'nft') {
             // NFT: investment = buyPrice × numberOfNFTs (no manual input)
-            const nftCount = parseInt(elNftCount?.value) || 1;
             inv = parseAmount(elInitMC?.value) * nftCount;
         } else {
             inv = parseAmount(elInv?.value);
@@ -1099,6 +1142,9 @@ if (generateBtn) {
 
         if (dcaInitActive && dcaInitRows.length > 0) {
             realInit = _calcDCAAvg(dcaInitRows);
+            if (_calcMode === 'nft') {
+                inv = realInit * nftCount;
+            }
         } else {
             realInit = (_calcMode === 'price' || _calcMode === 'nft') ? parseAmount(elInitMC?.value) : parseAmount(elInitMC?.value) * State.initMul;
         }
@@ -1136,11 +1182,33 @@ if (generateBtn) {
             bdtRate:    State.bdtRate,
             isPriceMode: _calcMode === 'price' || _calcMode === 'nft',
             isNftMode: _calcMode === 'nft',
-            nftCount: _calcMode === 'nft' ? (parseInt(elNftCount?.value) || 1) : null,
+            nftCount: _calcMode === 'nft' ? (parseAmount(elNftCount?.value) || 1) : null,
         };
 
         _pendingCardData = data;
-        await _doGenerate(data);
+
+        // Trigger loading animation immediately on click
+        setGenerateBtnLoading();
+
+        try {
+            // Maintain loading animation while generation is actively running
+            // (min 950ms so user can appreciate the floating rising stars before checkmark)
+            const [success] = await Promise.all([
+                _doGenerate(data),
+                new Promise(resolve => setTimeout(resolve, 950))
+            ]);
+
+            if (success) {
+                // Smoothly transition to Success Checkmark
+                setGenerateBtnSuccess();
+            } else {
+                // Generation failed: do not show tick, reset to idle
+                resetGenerateBtn();
+            }
+        } catch (err) {
+            console.error('[Generate Button] Execution error:', err);
+            resetGenerateBtn();
+        }
     });
 }
 
@@ -1159,13 +1227,43 @@ async function _doGenerate(data) {
 
     _hideGallery();
 
-    await generateRender(data, false);
+    return await generateRender(data, false);
 }
 
 // // ── Change Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const changeBgBtn = document.getElementById('btn-change-bg');
+// // ── Change Background Button with Animated Lottie ────────────────────────
+const changeBgBtn       = document.getElementById('btn-change-bg');
+const changeBgContainer = document.getElementById('change-bg-lottie');
+const changeBgText      = document.getElementById('change-bg-text');
+
+let changeBgAnim = null;
+
+function initChangeBgLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !changeBgContainer) return;
+
+    try {
+        changeBgAnim = lottieLib.loadAnimation({
+            container: changeBgContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: refreshIconData
+        });
+        changeBgAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Change BG] Failed to initialize Lottie animation:', err);
+    }
+}
+
 if (changeBgBtn) {
     changeBgBtn.addEventListener('click', async () => {
+        // Requirement 2: Do NOT trigger on hover. Trigger only on click.
+        // Every click plays once from the beginning alongside background changing.
+        if (changeBgAnim) {
+            changeBgAnim.goToAndPlay(0, true);
+        }
+
         if (isGenerating) return;
         if (!window.lastData) return;
 
@@ -1177,12 +1275,11 @@ if (changeBgBtn) {
 
         document.getElementById('preview-img').classList.remove('loaded');
 
-        const origHtml = changeBgBtn.innerHTML;
-        changeBgBtn.innerHTML = 'Changingâ€¦';
+        if (changeBgText) changeBgText.textContent = 'Changing…';
         changeBgBtn.disabled = true;
 
         try {
-            // Get next background â€” stay within same emotion
+            // Get next background — stay within same emotion
             const bg = _selectedEmotion
                 ? getNextBackgroundByEmotion(_selectedEmotion)
                 : getNextBackground();
@@ -1194,11 +1291,13 @@ if (changeBgBtn) {
             // Update gallery active state if visible
             if (bgGalleryColumn && bgGalleryColumn.style.display !== 'none') _populateSidebar();
         } finally {
-            changeBgBtn.innerHTML = origHtml;
+            if (changeBgText) changeBgText.textContent = 'Change Background';
             changeBgBtn.disabled = false;
         }
     });
 }
+
+initChangeBgLottie();
 
 // // ── Populate Sidebar Grid // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───â”€
 
@@ -1207,7 +1306,15 @@ function _populateSidebar() {
     const allBgs = getAllBackgrounds();
     // Filter by current emotion if set
     const filtered = _selectedEmotion
-        ? allBgs.filter(bg => bg.emotion === _selectedEmotion)
+        ? allBgs.filter(bg => {
+            if (!bg.emotion) return false;
+            if (bg.emotion === _selectedEmotion) return true;
+            if ((_selectedEmotion === 'happy' || _selectedEmotion === 'smile') && (bg.emotion === 'smile' || bg.emotion === 'happy' || bg.emotion === 'calm')) return true;
+            if (_selectedEmotion === 'shock' && (bg.emotion === 'shock' || bg.emotion === 'stress' || bg.emotion === 'confused')) return true;
+            if ((_selectedEmotion === 'relieved' || _selectedEmotion === 'angel') && (bg.emotion === 'relieved' || bg.emotion === 'angel')) return true;
+            if ((_selectedEmotion === 'cry' || _selectedEmotion === 'crying') && (bg.emotion === 'cry' || bg.emotion === 'crying')) return true;
+            return false;
+        })
         : allBgs;
 
     bgSidebarGrid.innerHTML = '';
@@ -1224,7 +1331,7 @@ function _populateSidebar() {
         if (bg.id === _currentBgId) activeThumb = thumb;
 
         // Find emotion emoji
-        const emObj = EMOTIONS.find(e => e.id === bg.emotion);
+        const emObj = EMOTIONS.find(e => e.id === bg.emotion) || getEmotionById(bg.emotion);
         const badge = emObj ? `<span class="bg-thumb-badge">${emObj.emoji}</span>` : '';
 
         thumb.innerHTML = `<img src="${bg.dataUrl || bg.imageUrl}" alt="bg" loading="lazy">${badge}`;
@@ -1253,12 +1360,49 @@ function _populateSidebar() {
 }
 
 // // ── Upload Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const uploadBgBtn = document.getElementById('btn-upload-bg');
-const bgUploadInput = document.getElementById('bg-upload-input');
+// // ── Upload Background Button with Animated Lottie ────────────────────────
+const uploadBgBtn       = document.getElementById('btn-upload-bg');
+const uploadBgContainer = document.getElementById('upload-bg-lottie');
+const bgUploadInput     = document.getElementById('bg-upload-input');
+
+let uploadBgAnim = null;
+
+function initUploadBgLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !uploadBgContainer) return;
+
+    try {
+        uploadBgAnim = lottieLib.loadAnimation({
+            container: uploadBgContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: uploadCloudIconData
+        });
+        uploadBgAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Upload BG] Failed to initialize Lottie animation:', err);
+    }
+
+    // Requirement 1: Play only when mouse cursor hovers. Stop on leave and return to static state.
+    uploadBgBtn?.addEventListener('mouseenter', () => {
+        if (uploadBgAnim) {
+            uploadBgAnim.goToAndPlay(0, true);
+        }
+    });
+
+    uploadBgBtn?.addEventListener('mouseleave', () => {
+        if (uploadBgAnim) {
+            uploadBgAnim.goToAndStop(0, true);
+        }
+    });
+}
 
 if (uploadBgBtn) {
     uploadBgBtn.addEventListener('click', () => bgUploadInput?.click());
 }
+
+initUploadBgLottie();
 
 if (bgUploadInput) {
     bgUploadInput.addEventListener('change', async (e) => {
@@ -1279,18 +1423,97 @@ if (bgUploadInput) {
     });
 }
 
-// // ── Copy to Clipboard Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const copyBtn = document.getElementById('btn-copy');
+// // ── Copy Card Button with Animated Lottie Transition ───────────────────────
+const copyBtn                 = document.getElementById('btn-copy');
+const copyLottieContainer     = document.getElementById('copy-lottie-container');
+const copyTickLottieContainer = document.getElementById('copy-tick-lottie-container');
+const copyBtnText             = document.getElementById('copy-btn-text');
+
+let copyAnim       = null;
+let copyTickAnim   = null;
+let copyBtnState   = 'idle'; // 'idle' | 'copying' | 'success'
+let copyResetTimer = null;
+
+function resetCopyBtnState() {
+    if (copyResetTimer) {
+        clearTimeout(copyResetTimer);
+        copyResetTimer = null;
+    }
+    copyBtnState = 'idle';
+    if (copyBtn) {
+        copyBtn.classList.remove('is-success');
+    }
+    if (copyBtnText) {
+        copyBtnText.textContent = 'Copy Card';
+    }
+    if (copyAnim) copyAnim.goToAndStop(0, true);
+    if (copyTickAnim) copyTickAnim.goToAndStop(0, true);
+}
+
+function initCopyLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !copyLottieContainer || !copyTickLottieContainer) return;
+
+    try {
+        copyAnim = lottieLib.loadAnimation({
+            container: copyLottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: copyIconData
+        });
+        copyAnim.goToAndStop(0, true);
+
+        copyTickAnim = lottieLib.loadAnimation({
+            container: copyTickLottieContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: successTickIconData
+        });
+        copyTickAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Copy] Failed to initialize Lottie animations:', err);
+    }
+
+    // Requirement 1: Animate ONLY when hovered. On leave, stop and return to static state.
+    copyBtn?.addEventListener('mouseenter', () => {
+        if (copyBtnState === 'idle' && copyAnim) {
+            copyAnim.goToAndPlay(0, true);
+        }
+    });
+
+    copyBtn?.addEventListener('mouseleave', () => {
+        if (copyBtnState === 'idle' && copyAnim) {
+            copyAnim.goToAndStop(0, true);
+        }
+    });
+}
+
 if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
+        if (copyBtnState === 'copying') return;
+
         const imgEl = document.getElementById('preview-img');
         const imgSrc = imgEl?.src;
-        if (!imgSrc) return;
 
-        const origHtml = copyBtn.innerHTML;
+        // Requirement 5: If copying fails (no card generated yet), do not show Success/Tick animation.
+        // Preserve original state and allow user to try again.
+        if (!imgSrc || !imgEl.classList.contains('loaded') || imgEl.style.display === 'none') {
+            _showToast('Please generate a trading card first.', 'warning', 3000);
+            resetCopyBtnState();
+            return;
+        }
+
+        if (copyResetTimer) {
+            clearTimeout(copyResetTimer);
+            copyResetTimer = null;
+        }
+
+        copyBtnState = 'copying';
 
         try {
-            // Convert data URL to blob for clipboard
+            // Requirement 3: Execute existing copy functionality without changing its logic
             const response = await fetch(imgSrc);
             const blob = await response.blob();
 
@@ -1298,16 +1521,57 @@ if (copyBtn) {
                 new ClipboardItem({ 'image/png': blob })
             ]);
 
-            copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/></svg> Copied!';
-            setTimeout(() => { copyBtn.innerHTML = origHtml; }, 2000);
+            // Requirements 4 & 6: Only after the copy operation is successfully completed,
+            // smoothly transition from the Copy animation to the Success/Tick animation.
+            copyBtnState = 'success';
+            copyBtn.classList.add('is-success');
+            if (copyBtnText) copyBtnText.textContent = 'Copied!';
+
+            if (copyAnim) copyAnim.stop();
+            if (copyTickAnim) copyTickAnim.goToAndPlay(0, true);
+
+            // Smoothly revert back to idle Copy state after 2.5s
+            copyResetTimer = setTimeout(() => {
+                resetCopyBtnState();
+            }, 2500);
+
         } catch (err) {
+            // Requirement 5: If copying fails, do not show the Success/Tick animation.
             console.warn('[Copy] Clipboard API failed:', err);
+            resetCopyBtnState();
             _showToast('Copy failed. Your browser may not support this feature.', 'warning', 3000);
         }
     });
 }
 
+initCopyLottie();
+
 // // ── Generate Render (New Simple Card Design) // ───// ───// ───// ───// ───â”€
+// // ── PNL Card Orb Noise Loader (Particle Wobble) ─────────────────────
+const previewLoadingEl = document.getElementById('preview-loading');
+let pnlOrbLoader = null;
+if (previewLoadingEl) {
+    pnlOrbLoader = createOrbNoise(previewLoadingEl, {
+        dotColor: '#12e2fd',
+        width: 84,
+        height: 84,
+        density: 300,
+        dotSize: 150,
+        speed: 50,
+        spinTurns: 1
+    });
+
+    // Auto-sync with visibility in case anything toggles display
+    const _orbObs = new MutationObserver(() => {
+        if (previewLoadingEl.style.display !== 'none' && previewLoadingEl.style.display !== '') {
+            pnlOrbLoader?.start();
+        } else {
+            pnlOrbLoader?.stop();
+        }
+    });
+    _orbObs.observe(previewLoadingEl, { attributes: true, attributeFilter: ['style', 'class'] });
+}
+
 async function generateRender(data, _unused) {
     isGenerating = true;
     window.lastData = data;
@@ -1320,6 +1584,7 @@ async function generateRender(data, _unused) {
         const placeholder = document.getElementById('card-empty-placeholder');
         if (placeholder) placeholder.style.display = 'none';
         spinner.style.display = 'block';
+        pnlOrbLoader?.start();
         img.classList.remove('loaded');
         // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
@@ -1357,6 +1622,7 @@ async function generateRender(data, _unused) {
         });
 
         img.classList.add('loaded');
+        return true;
 
     } catch (err) {
         console.error('[Card] Render failed:', err);
@@ -1364,26 +1630,141 @@ async function generateRender(data, _unused) {
             ? 'Renderer not loaded. Please refresh the page.'
             : 'Card generation failed. Please try again.';
         _showToast(msg, 'error', 6000);
+        return false;
     } finally {
-        if (spinner) spinner.style.display = 'none';
+        if (spinner) {
+            spinner.style.display = 'none';
+            pnlOrbLoader?.stop();
+        }
         // This must run for every failure path; otherwise subsequent Generate
         // clicks are ignored because the app believes a render is still running.
         isGenerating = false;
     }
 }
 
-// // ── Download Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const downloadBtn = document.getElementById('btn-download');
-if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-        const imgSrc = document.getElementById('preview-img')?.src;
-        if (!imgSrc) return;
-        const link = document.createElement('a');
-        link.download = `mccalc-${State.tokenName || 'card'}-${Date.now()}.png`;
-        link.href = imgSrc;
-        link.click();
+// // ── Download Button with Animated Lottie Transition ────────────────────────
+const downloadBtn           = document.getElementById('btn-download');
+const downloadSaveContainer = document.getElementById('download-save-lottie');
+const downloadTickContainer = document.getElementById('download-tick-lottie');
+const downloadBtnText       = document.getElementById('download-btn-text');
+
+let downloadSaveAnim   = null;
+let downloadTickAnim   = null;
+let downloadBtnState   = 'idle'; // 'idle' | 'saving' | 'success'
+let downloadResetTimer = null;
+
+function resetDownloadBtnState() {
+    if (downloadResetTimer) {
+        clearTimeout(downloadResetTimer);
+        downloadResetTimer = null;
+    }
+    downloadBtnState = 'idle';
+    if (downloadBtn) {
+        downloadBtn.classList.remove('is-success');
+    }
+    if (downloadBtnText) {
+        downloadBtnText.textContent = 'Download';
+    }
+    if (downloadSaveAnim) downloadSaveAnim.goToAndStop(0, true);
+    if (downloadTickAnim) downloadTickAnim.goToAndStop(0, true);
+}
+
+function initDownloadLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !downloadSaveContainer || !downloadTickContainer) return;
+
+    try {
+        downloadSaveAnim = lottieLib.loadAnimation({
+            container: downloadSaveContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: saveDownloadIconData
+        });
+        downloadSaveAnim.goToAndStop(0, true);
+
+        downloadTickAnim = lottieLib.loadAnimation({
+            container: downloadTickContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: tickDownloadIconData
+        });
+        downloadTickAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Download] Failed to initialize Lottie animations:', err);
+    }
+
+    // Requirement 1: Animate ONLY when hovered. On leave, stop and return to static state.
+    downloadBtn?.addEventListener('mouseenter', () => {
+        if (downloadBtnState === 'idle' && downloadSaveAnim) {
+            downloadSaveAnim.goToAndPlay(0, true);
+        }
+    });
+
+    downloadBtn?.addEventListener('mouseleave', () => {
+        if (downloadBtnState === 'idle' && downloadSaveAnim) {
+            downloadSaveAnim.goToAndStop(0, true);
+        }
     });
 }
+
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+        if (downloadBtnState === 'saving') return;
+
+        const imgEl = document.getElementById('preview-img');
+        const imgSrc = imgEl?.src;
+
+        // Requirement 5: If saving fails (no card generated yet), do not show success animation.
+        // Preserve original save state and allow user to try again.
+        if (!imgSrc || !imgEl.classList.contains('loaded') || imgEl.style.display === 'none') {
+            _showToast('Please generate a trading card first.', 'warning', 3000);
+            resetDownloadBtnState();
+            return;
+        }
+
+        if (downloadResetTimer) {
+            clearTimeout(downloadResetTimer);
+            downloadResetTimer = null;
+        }
+
+        try {
+            downloadBtnState = 'saving';
+
+            // Requirement 2: Trigger actual save/download operation first
+            const link = document.createElement('a');
+            link.download = `mccalc-${State.tokenName || 'card'}-${Date.now()}.png`;
+            link.href = imgSrc;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Requirements 2, 3, 4: Once operation is successfully completed,
+            // smoothly transition from Save animation to Success/Tick animation
+            downloadBtnState = 'success';
+            downloadBtn.classList.add('is-success');
+            if (downloadBtnText) downloadBtnText.textContent = 'Downloaded!';
+
+            if (downloadSaveAnim) downloadSaveAnim.stop();
+            if (downloadTickAnim) downloadTickAnim.goToAndPlay(0, true);
+
+            // Requirement 4: Display Tick icon as success state. Do not replay Save animation while in success state.
+            // After 3 seconds, smoothly return to idle state so user can download again anytime.
+            downloadResetTimer = setTimeout(() => {
+                resetDownloadBtnState();
+            }, 3000);
+
+        } catch (err) {
+            // Requirement 5: If saving fails, do not show Success animation. Preserve original Save state and allow retry.
+            console.error('[Download] Failed to download card:', err);
+            resetDownloadBtnState();
+            _showToast('Download failed. Please try again.', 'error', 3000);
+        }
+    });
+}
+
+initDownloadLottie();
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Initial calculation

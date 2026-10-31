@@ -149,6 +149,22 @@
         background-color: #1a2540;
       }
 
+      .store-lottie-icon {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .store-lottie-icon svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
       /* Main Preview Box */
       .main-preview-box {
         width: 100%;
@@ -320,6 +336,116 @@
         font-weight: 600;
         font-size: 12px;
         color: #94a3b8;
+      }
+
+      /* ── Download Button Lottie Animation ─────────────────────── */
+      .btn-lottie-wrapper {
+        width: 18px;
+        height: 18px;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .btn-lottie-anim {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .btn-lottie-anim svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      .btn-lottie-anim.lottie-save {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .btn-lottie-anim.lottie-tick {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      .btn-lottie-anim svg path {
+        transition: stroke 0.2s ease;
+      }
+
+      /* Hover highlight */
+      .btn-secondary-action:not(:disabled):hover .lottie-save svg path,
+      .btn-secondary-action:not(:disabled):hover .lottie-upload svg path {
+        stroke: #12e2fd !important;
+      }
+
+      /* Success transition */
+      .btn-secondary-action.is-success .lottie-save {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      .btn-secondary-action.is-success .lottie-tick {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .btn-secondary-action.is-success {
+        border-color: #12e2fd !important;
+      }
+
+      .btn-secondary-action.is-success span {
+        color: #12e2fd !important;
+      }
+
+      .copy-lottie-wrapper {
+        width: 20px;
+        height: 20px;
+      }
+
+      .btn-lottie-anim.lottie-copy {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      /* Copy Button Success Transition */
+      .btn-copy-card.is-success .lottie-copy {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      .btn-copy-card.is-success .lottie-tick {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .change-bg-lottie-wrapper {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .change-bg-lottie-wrapper svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      .btn-lottie-anim.lottie-upload {
+        opacity: 1;
+        transform: scale(1);
       }
 
       /* ═══════════════════════════════════════════════════════════
@@ -828,6 +954,8 @@
 
       /* Generate Card Master Button */
       .btn-generate-master {
+        position: relative;
+        overflow: hidden;
         height: 48px;
         width: 100%;
         background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
@@ -850,6 +978,24 @@
         transform: scale(0.99);
       }
 
+      .btn-generate-master.is-loading,
+      .btn-generate-master.is-success {
+        pointer-events: none;
+      }
+
+      /* Default Content Wrapper */
+      .btn-gen-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        height: 100%;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+
       .sparkle-icon-box {
         width: 32px;
         height: 32px;
@@ -867,6 +1013,171 @@
         font-weight: 800;
         font-size: 14px;
         color: #0a0f1c;
+      }
+
+      /* ── Loading Animation Layer (Magical Constellation & Center Glow) ── */
+      .btn-gen-loading-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Center pulsing glow disk */
+      .btn-gen-center-glow {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.22) 55%, rgba(255, 255, 255, 0) 75%);
+        transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0;
+      }
+
+      /* Dynamic Canvas Star Shower */
+      .btn-stars-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        border-radius: inherit;
+        display: block;
+      }
+
+      /* ── Success Checkmark Layer ── */
+      .btn-gen-success-layer {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 28px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      .btn-gen-tick-svg {
+        width: 28px;
+        height: 22px;
+        display: block;
+        overflow: visible;
+      }
+
+      .btn-gen-tick-path {
+        stroke: #ffffff;
+        stroke-width: 3.2;
+        stroke-dasharray: 36;
+        stroke-dashoffset: 36;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* ── Active States ── */
+
+      /* Loading State */
+      .btn-generate-master.is-loading .btn-gen-content {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+
+      .btn-generate-master.is-loading .btn-gen-loading-layer {
+        opacity: 1;
+      }
+
+      .btn-generate-master.is-loading .btn-gen-center-glow {
+        animation: btnGenCenterPulse 1.3s ease-in-out infinite;
+      }
+
+      .btn-generate-master.is-loading .btn-gen-star {
+        animation: btnGenStarTwinkle 1.4s ease-in-out infinite;
+      }
+
+      .btn-generate-master.is-loading .btn-gen-star.s1 { animation-delay: 0.1s; }
+      .btn-generate-master.is-loading .btn-gen-star.s2 { animation-delay: 0.35s; }
+      .btn-generate-master.is-loading .btn-gen-star.s3 { animation-delay: 0.0s; }
+      .btn-generate-master.is-loading .btn-gen-star.s4 { animation-delay: 0.45s; }
+      .btn-generate-master.is-loading .btn-gen-star.s5 { animation-delay: 0.25s; }
+      .btn-generate-master.is-loading .btn-gen-star.s6 { animation-delay: 0.4s; }
+      .btn-generate-master.is-loading .btn-gen-star.s7 { animation-delay: 0.15s; }
+      .btn-generate-master.is-loading .btn-gen-star.s8 { animation-delay: 0.55s; }
+
+      /* Success State */
+      .btn-generate-master.is-success .btn-gen-content {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+
+      .btn-generate-master.is-success .btn-gen-loading-layer {
+        opacity: 0;
+      }
+
+      .btn-generate-master.is-success .btn-gen-success-layer {
+        opacity: 1;
+        animation: btnGenTickPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      .btn-generate-master.is-success .btn-gen-tick-path {
+        animation: btnGenTickDraw 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+
+      @keyframes btnGenCenterPulse {
+        0%, 100% {
+          transform: translate(-50%, -50%) scale(0.92);
+          opacity: 0.25;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.12);
+          opacity: 0.45;
+        }
+      }
+
+      @keyframes btnGenStarTwinkle {
+        0% {
+          opacity: 0.1;
+          transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+        }
+        50% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.08) rotate(5deg);
+        }
+        100% {
+          opacity: 0.1;
+          transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+        }
+      }
+
+      @keyframes btnGenTickDraw {
+        0% {
+          stroke-dashoffset: 36;
+        }
+        100% {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @keyframes btnGenTickPop {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.65);
+        }
+        60% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.15);
+        }
+        100% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
       }
 
       /* Hidden render node for html2canvas export */
@@ -967,16 +1278,30 @@
         padding: 0 8px !important;
       }
 
-      /* Loading spinner */
+      /* PNL Card Preview Orb Noise Loading Animation */
       #preview-loading {
-        width: 36px; height: 36px;
-        border: 3px solid rgba(18, 226, 253, 0.15);
-        border-top-color: #12e2fd;
-        border-radius: 50%;
-        animation: pnlSpin 0.8s linear infinite;
         position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 84px;
+        height: 84px;
+        z-index: 10;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        animation: none !important;
+        filter: drop-shadow(0 0 16px rgba(18, 226, 253, 0.38));
+        pointer-events: auto;
       }
-      @keyframes pnlSpin { to { transform: rotate(360deg); } }
+
+      #preview-loading canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
 
       /* Preview image: hidden until card generated */
       #preview-img { display: none !important; }
@@ -1015,34 +1340,159 @@
       }
       .token-suggestion-labels strong { color: #ffffff; font-size: 12px; }
 
-      /* Reaction popover emoji picker */
+      /* ── Reaction Tool & Floating Horizontal Popover ── */
       .card-header-tools { position: relative; }
-      #reaction-popover {
-        display: none; position: absolute;
-        top: calc(100% + 8px); right: 0; z-index: 300;
-        background: #131b2f; border: 1px solid #23304a;
-        border-radius: 12px; padding: 8px;
-        flex-wrap: wrap; gap: 4px; width: 168px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      .reaction-tool-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
       }
-      #reaction-popover.open { display: flex; }
-      .reaction-emoji-btn {
-        background: transparent; border: 1px solid transparent;
-        border-radius: 8px; width: 36px; height: 36px;
-        font-size: 18px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: background 0.15s, border-color 0.15s;
-      }
-      .reaction-emoji-btn:hover { background: rgba(18,226,253,0.08); border-color: rgba(18,226,253,0.2); }
-      .reaction-emoji-btn.active { background: rgba(18,226,253,0.15); border-color: #12e2fd; }
 
-      /* Reaction picker button emotion state */
-      #btn-reaction-picker .reaction-btn-icon { display: block; }
-      #btn-reaction-picker .reaction-btn-emoji { display: none; font-size: 16px; }
-      #btn-reaction-picker.has-emotion .reaction-btn-icon { display: none; }
-      #btn-reaction-picker.has-emotion .reaction-btn-emoji {
-        display: flex; align-items: center; justify-content: center;
-        width: 18px; height: 18px;
+      /* Animated Alternating Lottie Container in Button */
+      .reaction-btn-lottie-container {
+        position: relative;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .reaction-btn-lottie-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0.82);
+        transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: opacity, transform;
+      }
+
+      .reaction-btn-lottie-layer.is-active {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .reaction-btn-lottie-layer svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      #btn-reaction-picker.has-emotion {
+        border-color: #12e2fd;
+        background-color: #1a2540;
+        box-shadow: 0 0 12px rgba(18, 226, 253, 0.25);
+      }
+
+      /* Horizontal Floating Reaction Popover on the LEFT side */
+      #reaction-popover.reaction-popover-horizontal {
+        display: none;
+        position: absolute;
+        top: 50%;
+        right: calc(100% + 10px); /* Strictly on the LEFT side of the button */
+        transform: translateY(-50%) scale(0.9);
+        transform-origin: right center;
+        z-index: 500;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        background: rgba(19, 27, 47, 0.94);
+        border: 1px solid rgba(18, 226, 253, 0.35);
+        border-radius: 9999px; /* Pill shape */
+        padding: 4px 6px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 16px rgba(18, 226, 253, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        white-space: nowrap;
+      }
+
+      #reaction-popover.reaction-popover-horizontal.open {
+        display: flex;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(-50%) scale(1);
+      }
+
+      /* Popover items (Smile & Shock) */
+      .reaction-popover-item {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    background-color 0.2s ease,
+                    border-color 0.2s ease,
+                    box-shadow 0.2s ease;
+        will-change: transform;
+      }
+
+      .reaction-popover-item:hover {
+        transform: scale(1.30) translateY(-2.5px);
+        z-index: 10;
+        background: rgba(18, 226, 253, 0.14);
+        border-color: rgba(18, 226, 253, 0.4);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(18, 226, 253, 0.25);
+      }
+
+      .reaction-popover-item:active {
+        transform: scale(1.15) translateY(-1px);
+      }
+
+      .reaction-popover-item.active {
+        background: rgba(18, 226, 253, 0.22);
+        border-color: #12e2fd;
+        box-shadow: 0 0 10px rgba(18, 226, 253, 0.35);
+      }
+
+      .reaction-popover-item.is-none {
+        color: #94a3b8;
+      }
+
+      .reaction-popover-item.is-none:hover {
+        color: #12e2fd;
+        background: rgba(18, 226, 253, 0.14);
+        border-color: rgba(18, 226, 253, 0.4);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(18, 226, 253, 0.25);
+      }
+
+      .reaction-popover-item.is-none.active {
+        color: #12e2fd;
+        background: rgba(18, 226, 253, 0.22);
+        border-color: #12e2fd;
+        box-shadow: 0 0 10px rgba(18, 226, 253, 0.35);
+      }
+
+      .reaction-popover-lottie {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .reaction-popover-lottie svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
       }
 
       /* Background gallery overlay (inside preview box) */
@@ -1228,8 +1678,12 @@
 
         /* Subtle icon scale on button hover */
         .icon-tool-btn:not(:disabled):hover img,
+        .icon-tool-btn:not(:disabled):hover .store-lottie-icon,
         .btn-secondary-action:not(:disabled):hover img,
-        .btn-copy-card:not(:disabled):hover img {
+        .btn-secondary-action:not(:disabled):hover .btn-lottie-wrapper,
+        .btn-copy-card:not(:disabled):hover img,
+        .btn-copy-card:not(:disabled):hover .copy-lottie-wrapper,
+        .btn-change-bg:not(:disabled):hover .change-bg-lottie-wrapper {
           transform: scale(1.08);
           transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -1249,21 +1703,30 @@
         <div class="card-header-bar">
           <h1 class="card-header-title">PNL CARD</h1>
           <div class="card-header-tools">
-            <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
-              <img alt="smile" width="18" height="18" src="./assets/figma/smile.svg" class="reaction-btn-icon" />
-              <span class="reaction-btn-emoji"></span>
-            </button>
+            <div class="reaction-tool-wrapper">
+              <!-- Reaction Emoji Popover (Floating horizontally on the LEFT) -->
+              <div id="reaction-popover" class="reaction-popover-horizontal" role="listbox" aria-label="Choose emotion"></div>
+              <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
+                <div class="reaction-btn-lottie-container">
+                  <div class="reaction-btn-lottie-layer layer-happy" id="btn-lottie-happy"></div>
+                  <div class="reaction-btn-lottie-layer layer-shock" id="btn-lottie-shock"></div>
+                  <div class="reaction-btn-lottie-layer layer-greed" id="btn-lottie-greed"></div>
+                  <div class="reaction-btn-lottie-layer layer-cry" id="btn-lottie-cry"></div>
+                  <div class="reaction-btn-lottie-layer layer-angry" id="btn-lottie-angry"></div>
+                  <div class="reaction-btn-lottie-layer layer-worried" id="btn-lottie-worried"></div>
+                  <div class="reaction-btn-lottie-layer layer-relieved" id="btn-lottie-relieved"></div>
+                </div>
+              </button>
+            </div>
             <button type="button" id="btn-toggle-sidebar" title="Store" aria-label="Store" class="icon-tool-btn">
-              <img alt="shopping-cart" width="18" height="18" src="./assets/figma/shopping-cart.svg" />
+              <div id="store-lottie-icon" class="store-lottie-icon" aria-hidden="true"></div>
             </button>
-            <!-- Reaction Emoji Popover -->
-            <div id="reaction-popover" role="listbox" aria-label="Choose emotion"></div>
           </div>
         </div>
 
         <!-- Preview Area -->
         <div class="main-preview-box" id="main-preview-container">
-          <div class="loading-spinner" id="preview-loading" style="display:none;"></div>
+          <div id="preview-loading" style="display:none;" aria-label="Loading card..."></div>
           <img id="preview-img" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
           <div class="empty-state-content" id="card-empty-placeholder">
             <div class="monitor-icon-wrapper">
@@ -1283,26 +1746,34 @@
         <div class="preview-actions-wrap">
           <!-- Copy Card Button -->
           <button type="button" id="btn-copy" aria-label="Copy trading card to clipboard" class="btn-copy-card">
-            <img alt="copy" width="16" height="16" src="./assets/figma/copy.svg" />
-            <span>Copy Card</span>
+            <span class="btn-lottie-wrapper copy-lottie-wrapper" aria-hidden="true">
+              <span id="copy-lottie-container" class="btn-lottie-anim lottie-copy"></span>
+              <span id="copy-tick-lottie-container" class="btn-lottie-anim lottie-tick"></span>
+            </span>
+            <span id="copy-btn-text">Copy Card</span>
           </button>
           
           <!-- Change Background Button -->
           <button type="button" id="btn-change-bg" aria-label="Change card background" class="btn-change-bg">
             <div class="change-bg-icon-badge">
-              <img alt="refresh-cw" width="14" height="14" src="./assets/figma/refresh-cw.svg" />
+              <span id="change-bg-lottie" class="change-bg-lottie-wrapper" aria-hidden="true"></span>
             </div>
-            <span>Change Background</span>
+            <span id="change-bg-text">Change Background</span>
           </button>
 
           <!-- Download and Upload Row -->
           <div class="secondary-actions-row">
             <button type="button" id="btn-download" aria-label="Download trading card image" class="btn-secondary-action">
-              <img alt="download" width="14" height="14" src="./assets/figma/download.svg" />
-              <span>Download</span>
+              <span class="btn-lottie-wrapper" aria-hidden="true">
+                <span id="download-save-lottie" class="btn-lottie-anim lottie-save"></span>
+                <span id="download-tick-lottie" class="btn-lottie-anim lottie-tick"></span>
+              </span>
+              <span id="download-btn-text">Download</span>
             </button>
             <button type="button" id="btn-upload-bg" aria-label="Upload a custom card background" class="btn-secondary-action">
-              <img alt="upload" width="14" height="14" src="./assets/figma/upload.svg" />
+              <span class="btn-lottie-wrapper" aria-hidden="true">
+                <span id="upload-bg-lottie" class="btn-lottie-anim lottie-upload"></span>
+              </span>
               <span>Upload Background</span>
             </button>
             <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
@@ -1525,11 +1996,26 @@
         </div>
 
         <!-- Generate Card Master Button -->
-        <button type="button" id="btn-generate" class="btn-generate-master">
-          <div class="sparkle-icon-box">
-            <img alt="sparkles" width="18" height="18" src="./assets/figma/sparkles.svg" />
+        <button type="button" id="btn-generate" class="btn-generate-master" aria-label="Generate Card">
+          <div class="btn-gen-content">
+            <div class="sparkle-icon-box">
+              <img alt="sparkles" width="18" height="18" src="./assets/figma/sparkles.svg" />
+            </div>
+            <span>Generate Card</span>
           </div>
-          <span>Generate Card</span>
+
+          <!-- Loading Animation Layer (Dynamic Rising Star Shower & Center Glow) -->
+          <div class="btn-gen-loading-layer" aria-hidden="true">
+            <div class="btn-gen-center-glow"></div>
+            <canvas class="btn-stars-canvas"></canvas>
+          </div>
+
+          <!-- Success Checkmark Layer -->
+          <div class="btn-gen-success-layer" aria-hidden="true">
+            <svg class="btn-gen-tick-svg" viewBox="0 0 28 22" fill="none">
+              <path class="btn-gen-tick-path" d="M 3 11 L 10 18 L 25 3" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
         </button>
 
       </section>
@@ -1540,6 +2026,8 @@
 
 
 
+    <!-- Lottie Web Animation -->
+    <script src="./scripts/lottie.min.js"></script>
     <!-- App module -->
     <script type="module" src="./scripts/app.js"></script>
 

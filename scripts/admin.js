@@ -13,6 +13,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { compressImageFile } from '../utils/image.js';
 import { EMOTIONS } from '../cards/emotions.js';
+import { saveIconData } from '../assets/lottie/save-icon.js';
+import { successTickIconData } from '../assets/lottie/success-tick-icon.js';
 
 // ── DOM References: Auth ───────────────────────────────────
 const authView   = document.getElementById('auth-view');
@@ -42,6 +44,78 @@ const previewImg        = document.getElementById('catalog-token-preview-img');
 const previewEmpty      = document.getElementById('catalog-token-preview-empty');
 const clearLogoBtn      = document.getElementById('catalog-token-clear-btn');
 const saveTokenBtn      = document.getElementById('save-token-btn');
+const saveLottieContainer = document.getElementById('save-lottie-container');
+const tickLottieContainer = document.getElementById('tick-lottie-container');
+const saveTokenBtnText    = document.getElementById('save-token-btn-text');
+
+// ── Save Button Lottie Controller ──────────────────────────
+let saveLottieAnim = null;
+let tickLottieAnim = null;
+let saveBtnState = 'idle'; // 'idle' | 'saving' | 'success'
+let successResetTimer = null;
+
+function updateSaveBtnText(text) {
+    if (saveTokenBtnText) {
+        saveTokenBtnText.textContent = text;
+    } else if (saveTokenBtn) {
+        saveTokenBtn.textContent = text;
+    }
+}
+
+function resetSaveButtonState() {
+    if (successResetTimer) {
+        clearTimeout(successResetTimer);
+        successResetTimer = null;
+    }
+    saveBtnState = 'idle';
+    if (saveTokenBtn) {
+        saveTokenBtn.disabled = false;
+        saveTokenBtn.classList.remove('is-success');
+    }
+    updateSaveBtnText(editingToken ? 'Update Token' : 'Save Token');
+    if (saveLottieAnim) saveLottieAnim.goToAndStop(0, true);
+    if (tickLottieAnim) tickLottieAnim.goToAndStop(0, true);
+}
+
+function initSaveButtonLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !saveLottieContainer || !tickLottieContainer) return;
+
+    try {
+        saveLottieAnim = lottieLib.loadAnimation({
+            container: saveLottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: saveIconData
+        });
+        saveLottieAnim.goToAndStop(0, true);
+
+        tickLottieAnim = lottieLib.loadAnimation({
+            container: tickLottieContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: successTickIconData
+        });
+        tickLottieAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Admin] Failed to initialize Lottie animations:', err);
+    }
+
+    // Requirement 1: Animate ONLY when hovered. On leave, stop and return to normal static state.
+    saveTokenBtn?.addEventListener('mouseenter', () => {
+        if (saveBtnState === 'idle' && saveLottieAnim) {
+            saveLottieAnim.goToAndPlay(0, true);
+        }
+    });
+
+    saveTokenBtn?.addEventListener('mouseleave', () => {
+        if (saveBtnState === 'idle' && saveLottieAnim) {
+            saveLottieAnim.goToAndStop(0, true);
+        }
+    });
+}
 const cancelEditBtn     = document.getElementById('cancel-token-edit-btn');
 const tokenCountBadge   = document.getElementById('catalog-token-count');
 const tokenSearchInput  = document.getElementById('catalog-search-input');
@@ -396,6 +470,9 @@ window.addEventListener('paste', handleClipboardPaste);
 
 tokenNameInput?.addEventListener('input', () => {
     tokenNameInput.value = tokenNameInput.value.toUpperCase();
+    if (saveBtnState === 'success') {
+        resetSaveButtonState();
+    }
 });
 
 // Reset Form
@@ -403,7 +480,7 @@ function resetTokenForm() {
     editingToken = null;
     if (tokenNameInput) tokenNameInput.value = '';
     clearTokenLogo();
-    if (saveTokenBtn) saveTokenBtn.textContent = 'Save Token';
+    resetSaveButtonState();
     cancelEditBtn?.classList.add('hidden');
 }
 
@@ -411,6 +488,8 @@ cancelEditBtn?.addEventListener('click', resetTokenForm);
 
 // Save / Update Token
 saveTokenBtn?.addEventListener('click', async () => {
+    if (saveBtnState === 'saving') return;
+
     const name = (tokenNameInput?.value || '').trim().toUpperCase();
     if (!name) {
         alert('Please enter a token name.');
@@ -422,9 +501,21 @@ saveTokenBtn?.addEventListener('click', async () => {
         return;
     }
 
-    const origText = saveTokenBtn.textContent;
+    if (successResetTimer) {
+        clearTimeout(successResetTimer);
+        successResetTimer = null;
+    }
+
+    const wasEditing = !!editingToken;
+    saveBtnState = 'saving';
     saveTokenBtn.disabled = true;
-    saveTokenBtn.textContent = editingToken ? 'Updating…' : 'Saving…';
+    saveTokenBtn.classList.remove('is-success');
+    updateSaveBtnText(wasEditing ? 'Updating…' : 'Saving…');
+
+    // Keep save animation playing smoothly during save operation
+    if (saveLottieAnim) {
+        saveLottieAnim.goToAndPlay(0, true);
+    }
 
     try {
         const tokenData = {
@@ -441,14 +532,40 @@ saveTokenBtn?.addEventListener('click', async () => {
             await addDoc(collection(db, 'token_catalog'), tokenData);
         }
 
-        resetTokenForm();
+        // Requirements 2, 3, 4:
+        // Save operation successfully completed!
+        // Smoothly transition from Save animation to Success/Tick Lottie animation.
+        saveBtnState = 'success';
+        saveTokenBtn.classList.add('is-success');
+        updateSaveBtnText(wasEditing ? 'Updated!' : 'Saved!');
+
+        if (saveLottieAnim) saveLottieAnim.stop();
+        if (tickLottieAnim) tickLottieAnim.goToAndPlay(0, true);
+
+        // Reset form fields
+        editingToken = null;
+        if (tokenNameInput) tokenNameInput.value = '';
+        clearTokenLogo();
+        cancelEditBtn?.classList.add('hidden');
+
         await loadTokenCatalogSection();
+
+        // Requirement 4: Display Tick icon as success state. Do not replay Save animation while in success state.
+        // Return to idle state after 3 seconds so next token can be saved
+        successResetTimer = setTimeout(() => {
+            resetSaveButtonState();
+        }, 3000);
+
     } catch (err) {
+        // Requirement 5: If saving fails, do not show Success animation. Preserve original Save state and allow retry.
         console.error('[Admin] Token save failed:', err);
-        alert('Could not save token: ' + err.message);
-    } finally {
+        saveBtnState = 'idle';
         saveTokenBtn.disabled = false;
-        saveTokenBtn.textContent = origText;
+        saveTokenBtn.classList.remove('is-success');
+        updateSaveBtnText(wasEditing ? 'Update Token' : 'Save Token');
+        if (saveLottieAnim) saveLottieAnim.goToAndStop(0, true);
+        if (tickLottieAnim) tickLottieAnim.goToAndStop(0, true);
+        alert('Could not save token: ' + err.message);
     }
 });
 
@@ -529,7 +646,8 @@ function renderTokenCatalog(tokens) {
             } else {
                 clearTokenLogo();
             }
-            if (saveTokenBtn) saveTokenBtn.textContent = 'Update Token';
+            resetSaveButtonState();
+            updateSaveBtnText('Update Token');
             cancelEditBtn?.classList.remove('hidden');
             tokenFormPanel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
@@ -853,3 +971,5 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+initSaveButtonLottie();

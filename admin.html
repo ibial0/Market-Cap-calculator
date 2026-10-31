@@ -149,7 +149,13 @@
                         <!-- Form Actions -->
                         <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;align-items:center;">
                             <button type="button" id="cancel-token-edit-btn" class="btn-secondary hidden">Cancel Edit</button>
-                            <button type="button" id="save-token-btn" class="btn-primary" style="min-width:140px;height:42px;">Save Token</button>
+                            <button type="button" id="save-token-btn" class="btn-primary" style="min-width:140px;height:42px;">
+                                <span class="btn-lottie-wrapper" aria-hidden="true">
+                                    <span id="save-lottie-container" class="btn-lottie-anim lottie-save"></span>
+                                    <span id="tick-lottie-container" class="btn-lottie-anim lottie-tick"></span>
+                                </span>
+                                <span id="save-token-btn-text">Save Token</span>
+                            </button>
                         </div>
                     </section>
 
@@ -229,6 +235,7 @@
         </main>
     </div>
 
+    <script src="./scripts/lottie.min.js"></script>
     <script type="module" src="./scripts/admin.js"></script>
 </body>
 </html>
