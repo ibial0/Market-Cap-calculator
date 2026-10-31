@@ -124,6 +124,9 @@ export function createBtnStars(container) {
         c.restore();
     }
 
+    let cachedCw = 0;
+    let cachedCh = 0;
+
     function loop(now) {
         if (!isRunning) return;
 
@@ -131,14 +134,16 @@ export function createBtnStars(container) {
         lastTime = now;
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-        const cw = canvas.clientWidth || 380;
-        const ch = canvas.clientHeight || 48;
+        const cw = cachedCw || canvas.clientWidth || 380;
+        const ch = cachedCh || canvas.clientHeight || 48;
         const bw = Math.max(1, Math.round(cw * dpr));
         const bh = Math.max(1, Math.round(ch * dpr));
 
         if (canvas.width !== bw || canvas.height !== bh) {
             canvas.width = bw;
             canvas.height = bh;
+            cachedCw = canvas.clientWidth || cw;
+            cachedCh = canvas.clientHeight || ch;
         }
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -217,20 +222,21 @@ export function createBtnStars(container) {
         spawnTimer = 0;
         lastTime = performance.now();
 
-        const cw = canvas.clientWidth || 380;
-        const ch = canvas.clientHeight || 48;
+        cachedCw = canvas.clientWidth || 380;
+        cachedCh = canvas.clientHeight || 48;
 
         // Pre-seed 8-11 particles at random stages of their lifecycles
         // so the button instantly blooms with stars upon click!
         particles = [];
         const initialCount = 9 + Math.floor(Math.random() * 3);
         for (let i = 0; i < initialCount; i++) {
-            const p = spawnParticle(cw, ch, 0.1 + Math.random() * 0.65);
+            const p = spawnParticle(cachedCw, cachedCh, 0.1 + Math.random() * 0.65);
             particles.push(p);
         }
 
         cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(loop);
+        // Render initial frame immediately so stars bloom on frame 0 with zero delay
+        loop(lastTime);
     }
 
     function finish() {

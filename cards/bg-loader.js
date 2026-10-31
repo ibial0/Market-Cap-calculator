@@ -16,16 +16,20 @@ export function normalizeEmotion(value) {
     return VALID_EMOTIONS.has(normalized) ? normalized : null;
 }
 
-/** A missing emotion is universal. Unclassified types never match a known P/L result. */
+/** A missing emotion is universal. Backgrounds without explicit pnlType match any outcome. */
 export function getEligibleBackgrounds({ emotion = null, outcome = null } = {}) {
     const requestedEmotion = normalizeEmotion(emotion);
     const requestedOutcome = VALID_TYPES.has(outcome) ? outcome : null;
     return _cache.filter(bg => {
         const bgEmotion = normalizeEmotion(bg.emotion);
         const hasAssignedEmotion = bg.emotion !== null && bg.emotion !== undefined && bg.emotion !== '';
-        // Unknown legacy values are deliberately not treated as universal: admins can review them safely.
+        // If an emotion is requested, only match that emotion or universal (unassigned)
         if (requestedEmotion && hasAssignedEmotion && bgEmotion !== requestedEmotion) return false;
-        if (requestedOutcome && bg.pnlType !== requestedOutcome) return false;
+
+        // PnL outcome rule: if outcome is requested and background has an assigned pnlType, it must match
+        const hasAssignedPnlType = bg.pnlType === 'profit' || bg.pnlType === 'loss';
+        if (requestedOutcome && hasAssignedPnlType && bg.pnlType !== requestedOutcome) return false;
+
         return true;
     });
 }

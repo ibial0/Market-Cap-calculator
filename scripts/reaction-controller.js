@@ -292,19 +292,62 @@ export function initReactionController({ onEmotionChange, getSelectedEmotion, se
         });
     }
 
-    // ── 3. Popover Toggle & Outside Click ─────────────────────
+    // ── 3. Popover Toggle, Hover & Outside Click ───────────────
+    let hoverCloseTimer = null;
+
     function openPopover() {
+        if (hoverCloseTimer) {
+            clearTimeout(hoverCloseTimer);
+            hoverCloseTimer = null;
+        }
         reactionPopover.classList.add('open');
         btnReactionPicker.classList.add('active');
         updatePopoverActiveState();
     }
 
     function closePopover() {
+        if (hoverCloseTimer) {
+            clearTimeout(hoverCloseTimer);
+            hoverCloseTimer = null;
+        }
         reactionPopover.classList.remove('open');
         btnReactionPicker.classList.remove('active');
         Object.values(popoverAnims).forEach(anim => anim.goToAndStop(0, true));
     }
 
+    // Hover interaction: automatically reveal emotion options on mouse hover
+    const reactionWrapper = btnReactionPicker.closest('.reaction-tool-wrapper') || btnReactionPicker.parentElement;
+
+    function handleHoverEnter() {
+        if (hoverCloseTimer) {
+            clearTimeout(hoverCloseTimer);
+            hoverCloseTimer = null;
+        }
+        openPopover();
+    }
+
+    function handleHoverLeave() {
+        if (hoverCloseTimer) {
+            clearTimeout(hoverCloseTimer);
+        }
+        // 250ms grace window prevents any flickering when moving between button and popover
+        hoverCloseTimer = setTimeout(() => {
+            closePopover();
+            hoverCloseTimer = null;
+        }, 250);
+    }
+
+    if (reactionWrapper) {
+        reactionWrapper.addEventListener('mouseenter', handleHoverEnter);
+        reactionWrapper.addEventListener('mouseleave', handleHoverLeave);
+    } else {
+        btnReactionPicker.addEventListener('mouseenter', handleHoverEnter);
+        btnReactionPicker.addEventListener('mouseleave', handleHoverLeave);
+        reactionPopover.addEventListener('mouseenter', handleHoverEnter);
+        reactionPopover.addEventListener('mouseleave', handleHoverLeave);
+    }
+
+    // Click/tap support for touch devices & toggle
     btnReactionPicker.addEventListener('click', (e) => {
         e.stopPropagation();
         if (reactionPopover.classList.contains('open')) {

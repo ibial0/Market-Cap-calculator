@@ -169,9 +169,10 @@ let _currentBgId = null;
 
 function getBackgroundContext(data = null) {
     // The calculator is the authoritative source; never infer P/L from an emotion or a card name.
-    const result = data || calculateROI(State.initVal, State.targetVal, State.inv);
-    if (!result?.isValid || !Number.isFinite(result.profit)) return { emotion: _selectedEmotion, outcome: null };
-    return { emotion: _selectedEmotion, outcome: result.profit >= 0 ? 'profit' : 'loss' };
+    const result = data || (window.lastData && Number.isFinite(window.lastData.profit) ? window.lastData : calculateROI(State.initVal, State.targetVal, State.inv));
+    const profit = result?.profit;
+    if (!Number.isFinite(profit)) return { emotion: _selectedEmotion, outcome: null };
+    return { emotion: _selectedEmotion, outcome: profit >= 0 ? 'profit' : 'loss' };
 }
 
 // Token logo upload handler
@@ -1097,6 +1098,22 @@ const btnStarsEngine = generateBtnLoadingLayer ? createBtnStars(generateBtnLoadi
 
 let generateResetTimer = null;
 
+function setCardPreviewLoading() {
+    const placeholder = document.getElementById('card-empty-placeholder');
+    const spinner = document.getElementById('preview-loading');
+    const img = document.getElementById('preview-img');
+    if (placeholder) placeholder.style.display = 'none';
+    if (spinner) spinner.style.display = 'block';
+    pnlOrbLoader?.start();
+    if (img) img.classList.remove('loaded');
+}
+
+function stopCardPreviewLoading() {
+    const spinner = document.getElementById('preview-loading');
+    if (spinner) spinner.style.display = 'none';
+    pnlOrbLoader?.stop();
+}
+
 function setGenerateBtnLoading() {
     if (generateResetTimer) {
         clearTimeout(generateResetTimer);
@@ -1137,6 +1154,7 @@ function resetGenerateBtn() {
         generateBtn.classList.remove('is-loading');
         generateBtn.classList.remove('is-success');
     }
+    stopCardPreviewLoading();
 }
 
 // Must be declared before generateBtn handler
@@ -1189,6 +1207,7 @@ if (generateBtn) {
         const result = calculateROI(realInit, realTarget, inv);
 
         const data = {
+            isValid:    result.isValid,
             tokenName:  State.tokenName,
             userName:   '',
             initMC:     realInit,
@@ -1207,8 +1226,9 @@ if (generateBtn) {
 
         _pendingCardData = data;
 
-        // Trigger loading animation immediately on click
+        // Trigger both button and card area loading animations immediately on click
         setGenerateBtnLoading();
+        setCardPreviewLoading();
 
         try {
             const success = await _doGenerate(data);
@@ -1578,13 +1598,9 @@ async function generateRender(data, _unused) {
 
     try {
         if (!node || !spinner || !img) throw new Error('Card preview is unavailable.');
-        const placeholder = document.getElementById('card-empty-placeholder');
-        if (placeholder) placeholder.style.display = 'none';
-        spinner.style.display = 'block';
-        pnlOrbLoader?.start();
-        img.classList.remove('loaded');
-        // Let the browser paint the first loader frame before image composition/canvas work.
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        setCardPreviewLoading();
+        // Give browser event loop a breath to paint both active loader frames at 60fps before heavy work
+        await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 30)));
         // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
             cardAssetsReady,

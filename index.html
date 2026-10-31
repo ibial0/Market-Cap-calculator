@@ -1417,6 +1417,17 @@
         white-space: nowrap;
       }
 
+      #reaction-popover.reaction-popover-horizontal::after {
+        content: '';
+        position: absolute;
+        top: -6px;
+        bottom: -6px;
+        right: -14px;
+        width: 16px;
+        background: transparent;
+        pointer-events: auto;
+      }
+
       #reaction-popover.reaction-popover-horizontal.open {
         display: flex;
         opacity: 1;

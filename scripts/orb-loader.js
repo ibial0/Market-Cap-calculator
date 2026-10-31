@@ -343,7 +343,7 @@ export function createOrbNoise(container, props = {}) {
             if (isRunning) return;
             isRunning = true;
             last = performance.now();
-            raf = requestAnimationFrame(render);
+            render(last); // Render first frame immediately to eliminate delay
         },
         stop() {
             if (!isRunning) return;
