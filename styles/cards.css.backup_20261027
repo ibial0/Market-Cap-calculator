@@ -1,0 +1,786 @@
+/* ═══════════════════════════════════════════════════════════
+   Emotion Picker — Horizontal scrollable pill selector
+   ═══════════════════════════════════════════════════════════ */
+.emotion-picker-section {
+    margin: 10px 0 8px;
+}
+.emotion-picker-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary, #94a3b8);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+.emotion-picker-track {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 0 6px;
+}
+.emotion-picker-track::-webkit-scrollbar {
+    display: none;
+}
+.emotion-pill {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border-color, #334155);
+    background: var(--bg-secondary, #1e293b);
+    color: var(--text-secondary, #94a3b8);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    white-space: nowrap;
+}
+.emotion-pill:hover {
+    border-color: #64748b;
+    color: #e2e8f0;
+    transform: translateY(-1px);
+}
+.emotion-pill:active {
+    transform: scale(0.96);
+}
+.emotion-pill .ep-emoji {
+    font-size: 16px;
+    line-height: 1;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.emotion-pill.active {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    color: #f0f9ff;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.2), inset 0 0 12px rgba(56, 189, 248, 0.06);
+}
+.emotion-pill.active .ep-emoji {
+    transform: scale(1.2);
+}
+/* Profit emotions glow green when active */
+.emotion-pill.active[data-type="profit"] {
+    border-color: #00e676;
+    background: rgba(0, 230, 118, 0.10);
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.18);
+}
+/* Loss emotions glow red when active */
+.emotion-pill.active[data-type="loss"] {
+    border-color: #ff5252;
+    background: rgba(255, 82, 82, 0.10);
+    box-shadow: 0 0 16px rgba(255, 82, 82, 0.18);
+}
+/* Neutral emotions glow amber when active */
+.emotion-pill.active[data-type="neutral"] {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.10);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.18);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Card Preview Modal
+   ═══════════════════════════════════════════════════════════ */
+#preview-overlay .modal-content {
+    max-width: 600px;
+    background: var(--bg-primary);
+    padding: 1rem;
+    border-radius: 20px;
+    overflow: visible;
+}
+
+/* (Old sidebar CSS removed - gallery now uses .bg-gallery-panel / .bg-gallery-grid) */
+.bg-thumb {
+    aspect-ratio: 16/9;
+    height: 100%;
+    max-height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    box-sizing: border-box;
+}
+.bg-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.bg-thumb:hover {
+    border-color: #38bdf8;
+    transform: scale(1.05);
+}
+.bg-thumb.active {
+    border-color: #00e676;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
+}
+.bg-thumb-badge {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.preview-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+}
+
+/* Prevent image squish — canvas output is always 16:9, display it correctly */
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;      /* show full card without cropping or stretching */
+    object-position: center;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    will-change: opacity;
+}
+
+.preview-image.loaded { opacity: 1; }
+
+.loading-spinner {
+    position: absolute;
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════════════
+   Hidden Render Node
+   Must remain "rendered" by the browser (not display:none)
+   so html2canvas can measure it correctly.
+   ═══════════════════════════════════════════════════════════ */
+#render-node-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1600px;
+    height: 900px;
+    transform: translate(-9999px, -9999px);
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: -1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROTECT CARD RENDER NODE FROM TAILWIND PREFLIGHT RESET
+   Tailwind v4 preflight sets border-width:0, resets margins,
+   changes line-height, etc. on ALL elements. This breaks the
+   card rendering which uses inline styles for its layout.
+   `all: revert` reverts every CSS property to the browser
+   default, undoing Tailwind's preflight reset completely.
+   Inline styles (used by png-engine.js) have higher
+   specificity and still apply correctly.
+   ═══════════════════════════════════════════════════════════ */
+#render-node-container *,
+#render-node-container *::before,
+#render-node-container *::after {
+    all: revert;
+}
+#render-node-container img {
+    max-width: none !important;
+}
+
+/* The actual 1600×900 render canvas — always explicit, never auto-sized */
+.card-node {
+    width:      1600px !important;
+    height:      900px !important;
+    min-width:  1600px;
+    min-height:  900px;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.hidden { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   Token Logo Upload
+   ═══════════════════════════════════════════════════════════ */
+.token-logo-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.4rem 0;
+    margin-bottom: 0.3rem;
+}
+
+.token-logo-area {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: var(--bg-secondary);
+    border: 1.5px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    position: relative;
+}
+
+.token-logo-area:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-primary);
+}
+
+.token-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border-radius: 14px;
+}
+
+.token-logo-placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.token-logo-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.token-logo-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.token-logo-sub {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.token-logo-remove {
+    background: rgba(239, 68, 68, 0.1);
+    border: none;
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--danger);
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.token-logo-remove:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Token catalogue autocomplete */
+.token-autocomplete { position: relative; z-index: 30; }
+.token-suggestions {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--bg-secondary) 94%, #0b1220);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+}
+.token-suggestion {
+    width: 100%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 13px;
+    color: var(--text-primary);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.16s ease;
+}
+.token-suggestion:last-child { border-bottom: 0; }
+.token-suggestion:hover, .token-suggestion.active { background: rgba(99, 102, 241, 0.14); }
+.token-suggestion-logo { width: 36px; height: 36px; object-fit: cover; border-radius: 50%; background: transparent; }
+.token-suggestion-labels { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.token-suggestion-labels strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; }
+.token-suggestion-labels small { color: var(--text-secondary); font-family: 'Roboto Mono', monospace; font-size: 0.72rem; }
+
+/* ═══════════════════════════════════════════════════════════
+   Preview Action Buttons
+   ═══════════════════════════════════════════════════════════ */
+#btn-change-bg:active,
+#btn-upload-bg:active {
+    transform: scale(0.97);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile UX improvements
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Remove 300ms tap delay on action buttons */
+    #btn-generate,
+    #btn-reroll,
+    #btn-download {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        will-change: transform;
+    }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   Split-Screen Workstation Layout (Desktop side-by-side)
+   LEFT = Trading Card (fixed) | GAP (gallery fills here) | RIGHT = Inputs (fixed)
+   ═══════════════════════════════════════════════════════════ */
+.calc-split-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 0.95fr;
+    align-items: start;
+    max-width: 1728px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 2rem;
+    gap: 1.5rem;
+    box-sizing: border-box;
+}
+
+.calc-left-col {
+    position: sticky;
+    top: 76px;
+    max-height: calc(100vh - 100px);
+    width: 100%;
+}
+
+.calc-right-col {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-right: 2px;
+    width: 100%;
+}
+
+.calc-right-col::-webkit-scrollbar { width: 4px; }
+.calc-right-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════════════
+   Middle Column — Background Gallery (fills the gap, fixed position)
+   Does NOT change the card or input column widths
+   ═══════════════════════════════════════════════════════════ */
+.calc-middle-col {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 76px;
+    width: 280px;
+    z-index: 40;
+    animation: gallerySlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes gallerySlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+.bg-gallery-panel {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 100px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.bg-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.bg-gallery-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.bg-gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 60px;
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    align-content: start;
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+}
+
+.bg-gallery-grid::-webkit-scrollbar { width: 4px; }
+.bg-gallery-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+.card-panel-container {
+    /* Legacy - now handled by Tailwind classes on .tw-card-panel */
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Reaction Popover — Facebook-style floating emoji bar
+   ═══════════════════════════════════════════════════════════ */
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.reaction-toggle-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.reaction-toggle-btn:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+}
+
+.reaction-toggle-btn.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+/* Default grayscale state for reaction icon */
+.reaction-toggle-btn .reaction-icon-default {
+    font-size: 16px;
+    line-height: 1;
+    filter: grayscale(1) brightness(0.6);
+    transition: filter 0.2s ease;
+}
+
+.reaction-toggle-btn.has-emotion .reaction-icon-default {
+    filter: none;
+    font-size: 18px;
+}
+
+.reaction-popover {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 6px 10px;
+    gap: 4px;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    animation: popoverFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.reaction-popover.open {
+    display: flex;
+}
+
+@keyframes popoverFadeIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.reaction-emoji-btn {
+    width: 38px;
+    height: 38px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, border-color 0.2s ease;
+}
+
+.reaction-emoji-btn:hover {
+    transform: scale(1.35) translateY(-4px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.reaction-emoji-btn.active {
+    border-color: var(--accent-primary);
+    background: rgba(0, 242, 254, 0.12);
+    transform: scale(1.1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Responsive Breakpoints
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1080px) {
+    .calc-split-layout {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        padding: 1rem 1rem 2rem;
+    }
+    .calc-left-col {
+        width: 100%;
+        max-width: 680px;
+        position: static;
+        max-height: none;
+        margin: 0 auto;
+    }
+    .calc-right-col {
+        width: 100%;
+        max-width: 680px;
+        max-height: none;
+        overflow-y: visible;
+        margin: 0 auto;
+    }
+    .calc-middle-col {
+        position: static;
+        transform: none;
+        width: 100%;
+        max-width: 680px;
+        order: 2;
+        animation: none;
+    }
+    .calc-right-col {
+        order: 3;
+    }
+    .bg-gallery-panel {
+        max-height: 280px;
+    }
+    .bg-gallery-grid {
+        grid-auto-rows: 52px;
+    }
+}
+
+@media (max-width: 520px) {
+    .calc-split-layout {
+        padding: 0.75rem 0.5rem 1.5rem;
+        gap: 1rem;
+    }
+    .calc-left-col {
+        max-height: none;
+    }
+    .calc-right-col {
+        max-height: none;
+        overflow-y: visible;
+    }
+    /* Compact inputs for narrow screens */
+    .glass-panel.calculator-form {
+        padding: 0.75rem;
+    }
+    .amount-input {
+        font-size: 0.95rem;
+        padding: 0.35rem 0.4rem;
+    }
+    .mul-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+    .result-value-lg {
+        font-size: 1.35rem;
+    }
+    .result-value-sm,
+    .result-sub-item .result-value {
+        font-size: 1rem;
+    }
+    .dca-toggle-text {
+        display: none;
+    }
+    .input-label-row {
+        min-width: 0;
+        overflow: hidden;
+    }
+    .input-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+    .glass-panel.calculator-form,
+    .glass-panel.results-panel {
+        overflow: hidden;
+    }
+    /* Gallery compact */
+    .bg-gallery-panel {
+        max-height: 200px;
+    }
+    .bg-gallery-grid {
+        grid-auto-rows: 44px;
+        gap: 5px;
+        padding: 6px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Card Panel Header – Clean semantic styles
+   ═══════════════════════════════════════════════════════════ */
+.card-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.875rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.card-panel-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.sidebar-toggle-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Empty State Placeholder — inside preview container
+   ═══════════════════════════════════════════════════════════ */
+#card-empty-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1.5rem;
+    position: absolute;
+    inset: 0;
+}
+
+.empty-card-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.empty-card-desc {
+    font-size: 0.77rem;
+    max-width: 240px;
+    line-height: 1.45;
+    opacity: 0.65;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DCA Entries Container
+   ═══════════════════════════════════════════════════════════ */
+.dca-entries-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.dca-add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.dca-add-row-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.dca-avg-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    padding: 4px 2px;
+}
+
+.dca-avg-val {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--accent-primary);
+}

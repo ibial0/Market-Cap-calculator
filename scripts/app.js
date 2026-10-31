@@ -12,9 +12,19 @@ import { loadPNGTemplates } from '../cards/png-loader.js';
 import { initWallet } from './wallet.js';
 import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount, getAllBackgrounds } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
-import { EMOTIONS } from '../cards/emotions.js';
+import { EMOTIONS, getEmotionById } from '../cards/emotions.js';
 import { loadTokenCatalog, searchTokenCatalog } from '../cards/token-catalog.js';
 import { compressImageFile } from '../utils/image.js';
+import { storeIconData } from '../assets/lottie/store-icon.js';
+import { saveDownloadIconData } from '../assets/lottie/save-download-icon.js';
+import { tickDownloadIconData } from '../assets/lottie/tick-download-icon.js';
+import { copyIconData } from '../assets/lottie/copy-icon.js';
+import { successTickIconData } from '../assets/lottie/success-tick-icon.js';
+import { refreshIconData } from '../assets/lottie/refresh-icon.js';
+import { uploadCloudIconData } from '../assets/lottie/upload-cloud-icon.js';
+import { createOrbNoise } from './orb-loader.js';
+import { createBtnStars } from './btn-stars.js';
+import { initReactionController } from './reaction-controller.js';
 
 // Card asset readiness â€” RACE between actual load and a max timeout.
 // This means: proceed as soon as assets finish, OR after 10s (whichever is FIRST).
@@ -48,48 +58,85 @@ const elToken    = document.getElementById('token-name');
 let _calcMode = Storage.get('calcMode', 'mc');
 const modeMCBtn = document.getElementById('mode-mc-btn');
 const modePriceBtn = document.getElementById('mode-price-btn');
+const modeNftBtn = document.getElementById('mode-nft-btn');
+const nftCountWrapper = document.getElementById('nft-count-wrapper');
+const elNftCount = document.getElementById('nft-count');
 
 function setCalcMode(mode) {
     _calcMode = mode;
     Storage.set('calcMode', mode);
     const isPrice = mode === 'price';
+    const isNft = mode === 'nft';
     
-    if (modeMCBtn && modePriceBtn) {
-        if (isPrice) {
-            modePriceBtn.style.background = 'var(--accent-primary)';
-            modePriceBtn.style.color = '#000';
-            modePriceBtn.style.fontWeight = '700';
-            modePriceBtn.style.boxShadow = '0 2px 8px rgba(0, 230, 118, 0.25)';
-            modeMCBtn.style.background = 'transparent';
-            modeMCBtn.style.color = 'var(--text-secondary)';
-            modeMCBtn.style.fontWeight = '600';
-            modeMCBtn.style.boxShadow = 'none';
+    // Update mode buttons
+    const allModeBtns = [modeMCBtn, modePriceBtn, modeNftBtn];
+    allModeBtns.forEach(btn => {
+        if (!btn) return;
+        if (btn.dataset.mode === mode) {
+            btn.style.background = 'linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%)';
+            btn.style.color = '#0a0f1c';
+            btn.style.fontWeight = '700';
+            btn.style.boxShadow = '0 2px 8px rgba(18, 226, 253, 0.25)';
         } else {
-            modeMCBtn.style.background = 'var(--accent-primary)';
-            modeMCBtn.style.color = '#000';
-            modeMCBtn.style.fontWeight = '700';
-            modeMCBtn.style.boxShadow = '0 2px 8px rgba(0, 230, 118, 0.25)';
-            modePriceBtn.style.background = 'transparent';
-            modePriceBtn.style.color = 'var(--text-secondary)';
-            modePriceBtn.style.fontWeight = '600';
-            modePriceBtn.style.boxShadow = 'none';
+            btn.style.background = 'transparent';
+            btn.style.color = '#94a3b8';
+            btn.style.fontWeight = '600';
+            btn.style.boxShadow = 'none';
         }
-    }
+    });
     
     const lblInit = document.getElementById('lbl-initial');
     const lblTarget = document.getElementById('lbl-target');
     const lblInitDCA = document.getElementById('lbl-init-dca-avg');
     const lblTargetDCA = document.getElementById('lbl-target-dca-avg');
     
-    if (lblInit) lblInit.textContent = isPrice ? 'Entry Price' : 'Initial Market Cap';
-    if (lblTarget) lblTarget.textContent = isPrice ? 'Target Price' : 'Target Market Cap';
-    if (lblInitDCA) lblInitDCA.textContent = isPrice ? 'Avg Entry Price:' : 'Avg Entry MC:';
-    if (lblTargetDCA) lblTargetDCA.textContent = isPrice ? 'Avg Exit Price:' : 'Avg Exit MC:';
+    if (isPrice) {
+        if (lblInit) lblInit.textContent = 'Entry Price';
+        if (lblTarget) lblTarget.textContent = 'Target Price';
+        if (lblInitDCA) lblInitDCA.textContent = 'Avg Entry Price:';
+        if (lblTargetDCA) lblTargetDCA.textContent = 'Avg Exit Price:';
+    } else if (isNft) {
+        if (lblInit) lblInit.textContent = 'BUY PRICE ($)';
+        if (lblTarget) lblTarget.textContent = 'SELL PRICE ($)';
+        if (lblInitDCA) lblInitDCA.textContent = 'Avg Buy Price:';
+        if (lblTargetDCA) lblTargetDCA.textContent = 'Avg Sell Price:';
+    } else {
+        if (lblInit) lblInit.textContent = 'INITIAL MARKET CAP';
+        if (lblTarget) lblTarget.textContent = 'TARGET MARKET CAP';
+        if (lblInitDCA) lblInitDCA.textContent = 'Avg Entry MC:';
+        if (lblTargetDCA) lblTargetDCA.textContent = 'Avg Exit MC:';
+    }
     
     const initToggles = document.getElementById('init-toggles');
     const targetToggles = document.getElementById('target-toggles');
-    if (initToggles) initToggles.style.display = isPrice ? 'none' : 'flex';
-    if (targetToggles) targetToggles.style.display = isPrice ? 'none' : 'flex';
+    if (initToggles) initToggles.style.display = (isPrice || isNft) ? 'none' : 'flex';
+    if (targetToggles) targetToggles.style.display = (isPrice || isNft) ? 'none' : 'flex';
+    
+    // NFT count field
+    if (nftCountWrapper) nftCountWrapper.style.display = isNft ? '' : 'none';
+    // Investment Amount — hidden in NFT mode (auto-computed as buyPrice × nftCount)
+    const invWrapper = document.getElementById('investment-wrapper');
+    if (invWrapper) invWrapper.style.display = isNft ? 'none' : '';
+    
+    // Token Details: change labels for NFT mode
+    const tokenHeaderTitle = document.querySelector('.token-header-title');
+    const tokenInputLabel = document.querySelector('.token-input-label');
+    const tokenHintText = document.querySelector('.token-hint-text');
+    const tokenSearchInput = document.getElementById('token-name');
+    
+    if (tokenHeaderTitle) tokenHeaderTitle.textContent = isNft ? 'NFT DETAILS' : 'TOKEN DETAILS';
+    if (tokenInputLabel) tokenInputLabel.textContent = isNft ? 'NFT NAME' : 'TOKEN NAME';
+    if (tokenSearchInput) tokenSearchInput.placeholder = isNft ? 'Enter NFT name' : 'Search token name or symbol';
+    if (tokenHintText) tokenHintText.textContent = isNft
+        ? 'Enter your NFT name and optionally add a logo below.'
+        : 'Start typing to see matching tokens and set a logo automatically.';
+    
+    // Hide token suggestions in NFT mode
+    const tokenSuggestionsEl = document.getElementById('token-suggestions');
+    if (isNft && tokenSuggestionsEl) {
+        tokenSuggestionsEl.replaceChildren();
+        tokenSuggestionsEl.classList.add('hidden');
+    }
     
     const dcaInitActive = document.getElementById('dca-init-toggle')?.checked;
     const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
@@ -101,6 +148,7 @@ function setCalcMode(mode) {
 
 if (modeMCBtn) modeMCBtn.addEventListener('click', () => setCalcMode('mc'));
 if (modePriceBtn) modePriceBtn.addEventListener('click', () => setCalcMode('price'));
+if (modeNftBtn) modeNftBtn.addEventListener('click', () => setCalcMode('nft'));
 
 
 // Token logo state
@@ -119,11 +167,21 @@ const tokenLogoPlaceholder = document.getElementById('token-logo-placeholder');
 const tokenLogoRemove = document.getElementById('token-logo-remove');
 const tokenLogoSub = document.querySelector('.token-logo-sub');
 const tokenSuggestions = document.getElementById('token-suggestions');
+const _tokenBadgeImg = document.getElementById('token-badge-img');
+const _badgeDollarSrc = './assets/figma/badge-dollar-sign.svg';
 let _highlightedSuggestion = -1;
 
 function setTokenLogo(dataUrl, source = 'upload') {
     _tokenLogoDataUrl = dataUrl || null;
     _tokenLogoSource = dataUrl ? source : 'none';
+    // TASK2: Reset badge icon to dollar when no logo
+    if (!dataUrl && _tokenBadgeImg) {
+        _tokenBadgeImg.src = _badgeDollarSrc;
+        _tokenBadgeImg.style.width = '14px';
+        _tokenBadgeImg.style.height = '14px';
+        _tokenBadgeImg.style.borderRadius = '';
+        _tokenBadgeImg.style.objectFit = '';
+    }
     if (tokenLogoPreview) {
         tokenLogoPreview.src = dataUrl || '';
         tokenLogoPreview.classList.toggle('hidden', !dataUrl);
@@ -146,6 +204,7 @@ function hideTokenSuggestions() {
     if (!tokenSuggestions) return;
     tokenSuggestions.replaceChildren();
     tokenSuggestions.classList.add('hidden');
+    tokenSuggestions.style.cssText = '';
     elToken?.setAttribute('aria-expanded', 'false');
     _highlightedSuggestion = -1;
 }
@@ -157,6 +216,22 @@ function selectCatalogToken(token) {
     saveTokenName(name);
     setTokenLogo(token.logoDataUrl, 'catalog');
     hideTokenSuggestions();
+    // TASK2: Show selected token logo in badge icon slot
+    if (_tokenBadgeImg && token.logoDataUrl) {
+        _tokenBadgeImg.src = token.logoDataUrl;
+        _tokenBadgeImg.style.width = '32px';
+        _tokenBadgeImg.style.height = '32px';
+        _tokenBadgeImg.style.borderRadius = '8px';
+        _tokenBadgeImg.style.objectFit = 'cover';
+        _tokenBadgeImg.onerror = function() {
+            this.src = _badgeDollarSrc;
+            this.style.width = '14px';
+            this.style.height = '14px';
+            this.style.borderRadius = '';
+            this.style.objectFit = '';
+            this.onerror = null;
+        };
+    }
 }
 
 function renderTokenSuggestions(query) {
@@ -200,6 +275,21 @@ function renderTokenSuggestions(query) {
     });
     tokenSuggestions.classList.toggle('hidden', matches.length === 0);
     elToken?.setAttribute('aria-expanded', String(matches.length > 0));
+
+    // Body-level positioning to escape overflow:hidden parents
+    if (matches.length > 0 && elToken) {
+        if (tokenSuggestions.parentElement !== document.body) {
+            document.body.appendChild(tokenSuggestions);
+        }
+        const rect = elToken.closest('[style*="position"]')?.getBoundingClientRect()
+                  || elToken.getBoundingClientRect();
+        const inputRect = elToken.getBoundingClientRect();
+        tokenSuggestions.style.position = 'fixed';
+        tokenSuggestions.style.left = rect.left + 'px';
+        tokenSuggestions.style.width = rect.width + 'px';
+        tokenSuggestions.style.top = (inputRect.bottom + 4) + 'px';
+        tokenSuggestions.style.zIndex = '99999';
+    }
 }
 
 if (tokenLogoArea) {
@@ -222,6 +312,33 @@ if (tokenLogoUpload) {
     });
 }
 
+// ─── TASK1: Paste image to import token logo ──────────────
+async function _handleClipboardImage(items) {
+    for (const item of items) {
+        if (item.type && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (!file) continue;
+            try {
+                setTokenLogo(await compressImageFile(file), 'upload');
+                setTimeout(_refreshLogoPanel, 50);
+            } catch (error) {
+                _showToast(error.message || 'Could not use that image.', 'warning');
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+if (tokenLogoArea) {
+    tokenLogoArea.addEventListener('paste', async (e) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const hadImage = await _handleClipboardImage(items);
+        if (hadImage) e.preventDefault();
+    });
+    tokenLogoArea.setAttribute('tabindex', '0');
+}
+
 if (tokenLogoRemove) {
     tokenLogoRemove.addEventListener('click', () => {
         setTokenLogo(null);
@@ -229,73 +346,14 @@ if (tokenLogoRemove) {
     });
 }
 
-// // ── Reaction Popover (Facebook-style floating emoji picker) // ───────────────────
+// // ── Reaction Popover & Continuously Animated Button ────────────────────────
 let _selectedEmotion = null; // null means "any/random"
 
-const reactionPopover  = document.getElementById('reaction-popover');
-const btnReactionPicker = document.getElementById('btn-reaction-picker');
-const emotionPicker     = document.getElementById('emotion-picker'); // legacy ref (removed from HTML)
-
-// Render reaction emoji buttons inside the popover
-if (reactionPopover) {
-    EMOTIONS.forEach(em => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'reaction-emoji-btn';
-        btn.dataset.id = em.id;
-        btn.dataset.type = em.type;
-        btn.title = em.label;
-        btn.textContent = em.emoji;
-
-        btn.addEventListener('click', () => {
-            if (_selectedEmotion === em.id) {
-                // Deselect
-                _selectedEmotion = null;
-                btn.classList.remove('active');
-                if (btnReactionPicker) {
-                    btnReactionPicker.querySelector('span').textContent = '🎭';
-                    btnReactionPicker.classList.remove('has-emotion');
-                }
-            } else {
-                // Select
-                reactionPopover.querySelectorAll('.reaction-emoji-btn.active').forEach(b => b.classList.remove('active'));
-                _selectedEmotion = em.id;
-                btn.classList.add('active');
-                if (btnReactionPicker) {
-                    btnReactionPicker.querySelector('span').textContent = em.emoji;
-                    btnReactionPicker.classList.add('has-emotion');
-                }
-            }
-            // Refresh gallery if open
-            _populateSidebar();
-        });
-
-        reactionPopover.appendChild(btn);
-    });
-}
-
-// Toggle reaction popover visibility
-if (btnReactionPicker) {
-    btnReactionPicker.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = reactionPopover?.classList.contains('open');
-        if (isOpen) {
-            reactionPopover.classList.remove('open');
-            btnReactionPicker.classList.remove('active');
-        } else {
-            reactionPopover?.classList.add('open');
-            btnReactionPicker.classList.add('active');
-        }
-    });
-}
-
-// Close popover when clicking outside
-document.addEventListener('click', (e) => {
-    if (reactionPopover?.classList.contains('open') &&
-        !reactionPopover.contains(e.target) &&
-        !btnReactionPicker?.contains(e.target)) {
-        reactionPopover.classList.remove('open');
-        btnReactionPicker?.classList.remove('active');
+const reactionController = initReactionController({
+    getSelectedEmotion: () => _selectedEmotion,
+    setSelectedEmotion: (val) => { _selectedEmotion = val; },
+    onEmotionChange: () => {
+        _populateSidebar();
     }
 });
 
@@ -315,6 +373,7 @@ function toggleSidebar() {
     if (isHidden) {
         bgGalleryColumn.style.display = '';
         _populateSidebar();
+
     } else {
         bgGalleryColumn.style.display = 'none';
     }
@@ -325,6 +384,44 @@ function _hideGallery() {
 }
 
 if (btnToggleSidebar) btnToggleSidebar.addEventListener('click', toggleSidebar);
+
+// Initialize Store animated Lottie icon
+function initStoreLottie() {
+    const storeLottieContainer = document.getElementById('store-lottie-icon');
+    if (!storeLottieContainer) return;
+    const lottieLib = window.lottie || window.bodymovin;
+    if (lottieLib) {
+        try {
+            lottieLib.loadAnimation({
+                container: storeLottieContainer,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                animationData: storeIconData
+            });
+        } catch (err) {
+            console.error('Failed to initialize store Lottie animation:', err);
+        }
+    } else {
+        window.addEventListener('load', () => {
+            const lib = window.lottie || window.bodymovin;
+            if (lib && storeLottieContainer.childElementCount === 0) {
+                try {
+                    lib.loadAnimation({
+                        container: storeLottieContainer,
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        animationData: storeIconData
+                    });
+                } catch (err) {
+                    console.error('Failed to initialize store Lottie animation on window load:', err);
+                }
+            }
+        }, { once: true });
+    }
+}
+initStoreLottie();
 if (closeGallery) closeGallery.addEventListener('click', _hideGallery);
 
 
@@ -353,20 +450,34 @@ const calculate = () => {
     const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
     let realInit, realTarget, inv;
-    inv = parseAmount(elInv?.value);
+    const countVal = parseAmount(elNftCount?.value);
+    const nftCount = countVal > 0 ? countVal : 0;
+
+    if (_calcMode === 'nft') {
+        // NFT: investment = buyPrice × numberOfNFTs
+        inv = parseAmount(elInitMC?.value) * nftCount;
+        if (elInv) elInv.value = inv; // keep elInv in sync for card/state reads
+    } else {
+        inv = parseAmount(elInv?.value);
+    }
 
     if (dcaInitActive && dcaInitRows.length > 0) {
         realInit = _calcDCAAvg(dcaInitRows);
         _updateDCAAvgDisplay('init-avg-val', realInit);
-        // Auto-sum all DCA entry amounts into the investment field
-        const totalDCAInv = dcaInitRows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
-        if (totalDCAInv > 0) {
-            if (elInv) elInv.value = totalDCAInv;
-            inv = totalDCAInv;
+        if (_calcMode === 'nft') {
+            inv = realInit * nftCount;
+            if (elInv) elInv.value = inv;
+        } else {
+            // Auto-sum all DCA entry amounts into the investment field
+            const totalDCAInv = dcaInitRows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+            if (totalDCAInv > 0) {
+                if (elInv) elInv.value = totalDCAInv;
+                inv = totalDCAInv;
+            }
         }
     } else {
         const initVal = parseAmount(elInitMC?.value);
-        realInit = _calcMode === 'price' ? initVal : initVal * State.initMul;
+        realInit = (_calcMode === 'price' || _calcMode === 'nft') ? initVal : initVal * State.initMul;
     }
 
     if (dcaTargetActive && dcaTargetRows.length > 0) {
@@ -374,7 +485,7 @@ const calculate = () => {
         _updateDCAAvgDisplay('target-avg-val', realTarget);
     } else {
         const targetVal = parseAmount(elTargetMC?.value);
-        realTarget = _calcMode === 'price' ? targetVal : targetVal * State.targetMul;
+        realTarget = (_calcMode === 'price' || _calcMode === 'nft') ? targetVal : targetVal * State.targetMul;
     }
 
     State.initVal   = realInit;
@@ -418,7 +529,7 @@ const calculate = () => {
 const _calcDCAAvg = (rows) => {
     let totalWeight = 0, totalAmount = 0;
     rows.forEach(r => {
-        const unit = _calcMode === 'price' ? 1 : parseFloat(r.unit || 1);
+        const unit = (_calcMode === 'price' || _calcMode === 'nft') ? 1 : parseFloat(r.unit || 1);
         const mc  = parseFloat(r.mc || 0) * unit;
         const amt = parseFloat(r.amount || 0);
         if (mc > 0 && amt > 0) {
@@ -458,7 +569,7 @@ const handleFocus = (e) => {
     if (val > 0) e.target.value = val;
 };
 
-[elInitMC, elTargetMC, elInv].forEach(el => {
+[elInitMC, elTargetMC, elInv, elNftCount].forEach(el => {
     if (el) {
         el.addEventListener('input', handleInput);
         el.addEventListener('blur', handleBlur);
@@ -472,10 +583,23 @@ if (elToken) {
         // A changed name should not silently retain the logo from a different
         // catalogue token. Custom uploads remain intact.
         if (_tokenLogoSource === 'catalog') setTokenLogo(null);
-        renderTokenSuggestions(e.target.value);
+        if (_calcMode !== 'nft') renderTokenSuggestions(e.target.value);
     });
-    elToken.addEventListener('focus', () => renderTokenSuggestions(elToken.value));
+    elToken.addEventListener('focus', () => { if (_calcMode !== 'nft') renderTokenSuggestions(elToken.value); });
     elToken.addEventListener('blur', () => setTimeout(hideTokenSuggestions, 250));
+    // Reposition suggestions on scroll/resize
+    const _reposSuggestions = () => {
+        if (!tokenSuggestions || tokenSuggestions.classList.contains('hidden')) return;
+        if (!elToken) return;
+        const rect = elToken.closest('[style*="position"]')?.getBoundingClientRect()
+                  || elToken.getBoundingClientRect();
+        const inputRect = elToken.getBoundingClientRect();
+        tokenSuggestions.style.left = rect.left + 'px';
+        tokenSuggestions.style.width = rect.width + 'px';
+        tokenSuggestions.style.top = (inputRect.bottom + 4) + 'px';
+    };
+    window.addEventListener('scroll', _reposSuggestions, { passive: true, capture: true });
+    window.addEventListener('resize', _reposSuggestions, { passive: true });
     elToken.addEventListener('keydown', event => {
         const options = Array.from(tokenSuggestions?.querySelectorAll('.token-suggestion') || []);
         if (!options.length) return;
@@ -790,18 +914,54 @@ function _showToast(msg, type = 'error', durationMs = 4000) {
 
 // // ── Image pre-fetch as blob URL (CORS workaround for mobile) // ──
 async function _fetchAsBlob(url) {
+    // Method 1: Direct fetch with CORS
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 8000); // 8 second max
+    const id = setTimeout(() => controller.abort(), 8000);
     try {
         const resp = await fetch(url, { mode: 'cors', cache: 'force-cache', signal: controller.signal });
         clearTimeout(id);
-        if (!resp.ok) return null;
-        const blob = await resp.blob();
-        return URL.createObjectURL(blob);
-    } catch { 
-        clearTimeout(id);
-        return null; 
-    }
+        if (resp.ok) {
+            const blob = await resp.blob();
+            return URL.createObjectURL(blob);
+        }
+    } catch { clearTimeout(id); }
+
+    // Method 2: Load as Image with crossOrigin, draw to canvas → data URL
+    // Many CDNs send CORS headers for <img> but not for fetch()
+    try {
+        const dataUrl = await _imgToDataUrl(url, true);
+        if (dataUrl) return dataUrl;
+    } catch {}
+
+    // Method 3: Load without crossOrigin, draw to canvas
+    // Canvas will be tainted but toDataURL may still work in some browsers
+    try {
+        const dataUrl = await _imgToDataUrl(url, false);
+        if (dataUrl) return dataUrl;
+    } catch {}
+
+    return null;
+}
+
+function _imgToDataUrl(url, useCors) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        if (useCors) img.crossOrigin = 'anonymous';
+        const timer = setTimeout(() => { resolve(null); }, 8000);
+        img.onload = () => {
+            clearTimeout(timer);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || img.width;
+                canvas.height = img.naturalHeight || img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            } catch { resolve(null); }
+        };
+        img.onerror = () => { clearTimeout(timer); resolve(null); };
+        img.src = url;
+    });
 }
 
 // // ── Wait for an img element to fully decode // ───// ───// ───// ───// ───â”€
@@ -912,6 +1072,52 @@ async function _captureCanvas(node, attempt = 1) {
 let isGenerating = false;
 const generateBtn    = document.getElementById('btn-generate');
 const previewOverlay = document.getElementById('preview-overlay');
+const generateBtnLoadingLayer = document.querySelector('.btn-gen-loading-layer');
+const btnStarsEngine = generateBtnLoadingLayer ? createBtnStars(generateBtnLoadingLayer) : null;
+
+let generateResetTimer = null;
+
+function setGenerateBtnLoading() {
+    if (generateResetTimer) {
+        clearTimeout(generateResetTimer);
+        generateResetTimer = null;
+    }
+    if (generateBtn) {
+        generateBtn.classList.remove('is-success');
+        generateBtn.classList.add('is-loading');
+        btnStarsEngine?.start();
+    }
+}
+
+function setGenerateBtnSuccess() {
+    if (generateResetTimer) {
+        clearTimeout(generateResetTimer);
+        generateResetTimer = null;
+    }
+    if (generateBtn) {
+        btnStarsEngine?.finish();
+        generateBtn.classList.remove('is-loading');
+        generateBtn.classList.add('is-success');
+
+        generateResetTimer = setTimeout(() => {
+            generateBtn.classList.remove('is-success');
+            btnStarsEngine?.stop();
+            generateResetTimer = null;
+        }, 1400);
+    }
+}
+
+function resetGenerateBtn() {
+    if (generateResetTimer) {
+        clearTimeout(generateResetTimer);
+        generateResetTimer = null;
+    }
+    if (generateBtn) {
+        btnStarsEngine?.stop();
+        generateBtn.classList.remove('is-loading');
+        generateBtn.classList.remove('is-success');
+    }
+}
 
 // Must be declared before generateBtn handler
 let _pendingCardData = null;
@@ -924,22 +1130,39 @@ if (generateBtn) {
         const dcaTargetActive = document.getElementById('dca-target-toggle')?.checked;
 
         let realInit, realTarget;
-        const inv = parseAmount(elInv?.value);
+        let inv;
+        const countVal = parseAmount(elNftCount?.value);
+        const nftCount = countVal > 0 ? countVal : 0;
+        if (_calcMode === 'nft') {
+            // NFT: investment = buyPrice × numberOfNFTs (no manual input)
+            inv = parseAmount(elInitMC?.value) * nftCount;
+        } else {
+            inv = parseAmount(elInv?.value);
+        }
 
         if (dcaInitActive && dcaInitRows.length > 0) {
             realInit = _calcDCAAvg(dcaInitRows);
+            if (_calcMode === 'nft') {
+                inv = realInit * nftCount;
+            }
         } else {
-            realInit = _calcMode === 'price' ? parseAmount(elInitMC?.value) : parseAmount(elInitMC?.value) * State.initMul;
+            realInit = (_calcMode === 'price' || _calcMode === 'nft') ? parseAmount(elInitMC?.value) : parseAmount(elInitMC?.value) * State.initMul;
         }
 
         if (dcaTargetActive && dcaTargetRows.length > 0) {
             realTarget = _calcDCAAvg(dcaTargetRows);
         } else {
-            realTarget = _calcMode === 'price' ? parseAmount(elTargetMC?.value) : parseAmount(elTargetMC?.value) * State.targetMul;
+            realTarget = (_calcMode === 'price' || _calcMode === 'nft') ? parseAmount(elTargetMC?.value) : parseAmount(elTargetMC?.value) * State.targetMul;
         }
 
         if (realInit <= 0 || inv <= 0 || realTarget <= 0) {
-            _showToast(_calcMode === 'price' ? 'Please enter valid positive numbers for Entry Price, Target Price, and Investment.' : 'Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
+            if (_calcMode === 'nft') {
+                _showToast('Please enter valid positive numbers for Buy Price, Sell Price, and Number of NFTs.', 'warning');
+            } else if (_calcMode === 'price') {
+                _showToast('Please enter valid positive numbers for Entry Price, Target Price, and Investment.', 'warning');
+            } else {
+                _showToast('Please enter valid positive numbers for Initial MC, Target MC, and Investment.', 'warning');
+            }
             return;
         }
 
@@ -957,11 +1180,35 @@ if (generateBtn) {
             multiplier: result.multiplier,
             showBdt:    State.showBdt,
             bdtRate:    State.bdtRate,
-            isPriceMode: _calcMode === 'price',
+            isPriceMode: _calcMode === 'price' || _calcMode === 'nft',
+            isNftMode: _calcMode === 'nft',
+            nftCount: _calcMode === 'nft' ? (parseAmount(elNftCount?.value) || 1) : null,
         };
 
         _pendingCardData = data;
-        await _doGenerate(data);
+
+        // Trigger loading animation immediately on click
+        setGenerateBtnLoading();
+
+        try {
+            // Maintain loading animation while generation is actively running
+            // (min 950ms so user can appreciate the floating rising stars before checkmark)
+            const [success] = await Promise.all([
+                _doGenerate(data),
+                new Promise(resolve => setTimeout(resolve, 950))
+            ]);
+
+            if (success) {
+                // Smoothly transition to Success Checkmark
+                setGenerateBtnSuccess();
+            } else {
+                // Generation failed: do not show tick, reset to idle
+                resetGenerateBtn();
+            }
+        } catch (err) {
+            console.error('[Generate Button] Execution error:', err);
+            resetGenerateBtn();
+        }
     });
 }
 
@@ -980,13 +1227,43 @@ async function _doGenerate(data) {
 
     _hideGallery();
 
-    await generateRender(data, false);
+    return await generateRender(data, false);
 }
 
 // // ── Change Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const changeBgBtn = document.getElementById('btn-change-bg');
+// // ── Change Background Button with Animated Lottie ────────────────────────
+const changeBgBtn       = document.getElementById('btn-change-bg');
+const changeBgContainer = document.getElementById('change-bg-lottie');
+const changeBgText      = document.getElementById('change-bg-text');
+
+let changeBgAnim = null;
+
+function initChangeBgLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !changeBgContainer) return;
+
+    try {
+        changeBgAnim = lottieLib.loadAnimation({
+            container: changeBgContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: refreshIconData
+        });
+        changeBgAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Change BG] Failed to initialize Lottie animation:', err);
+    }
+}
+
 if (changeBgBtn) {
     changeBgBtn.addEventListener('click', async () => {
+        // Requirement 2: Do NOT trigger on hover. Trigger only on click.
+        // Every click plays once from the beginning alongside background changing.
+        if (changeBgAnim) {
+            changeBgAnim.goToAndPlay(0, true);
+        }
+
         if (isGenerating) return;
         if (!window.lastData) return;
 
@@ -998,12 +1275,11 @@ if (changeBgBtn) {
 
         document.getElementById('preview-img').classList.remove('loaded');
 
-        const origHtml = changeBgBtn.innerHTML;
-        changeBgBtn.innerHTML = 'Changingâ€¦';
+        if (changeBgText) changeBgText.textContent = 'Changing…';
         changeBgBtn.disabled = true;
 
         try {
-            // Get next background â€” stay within same emotion
+            // Get next background — stay within same emotion
             const bg = _selectedEmotion
                 ? getNextBackgroundByEmotion(_selectedEmotion)
                 : getNextBackground();
@@ -1015,11 +1291,13 @@ if (changeBgBtn) {
             // Update gallery active state if visible
             if (bgGalleryColumn && bgGalleryColumn.style.display !== 'none') _populateSidebar();
         } finally {
-            changeBgBtn.innerHTML = origHtml;
+            if (changeBgText) changeBgText.textContent = 'Change Background';
             changeBgBtn.disabled = false;
         }
     });
 }
+
+initChangeBgLottie();
 
 // // ── Populate Sidebar Grid // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───â”€
 
@@ -1028,21 +1306,32 @@ function _populateSidebar() {
     const allBgs = getAllBackgrounds();
     // Filter by current emotion if set
     const filtered = _selectedEmotion
-        ? allBgs.filter(bg => bg.emotion === _selectedEmotion)
+        ? allBgs.filter(bg => {
+            if (!bg.emotion) return false;
+            if (bg.emotion === _selectedEmotion) return true;
+            if ((_selectedEmotion === 'happy' || _selectedEmotion === 'smile') && (bg.emotion === 'smile' || bg.emotion === 'happy' || bg.emotion === 'calm')) return true;
+            if (_selectedEmotion === 'shock' && (bg.emotion === 'shock' || bg.emotion === 'stress' || bg.emotion === 'confused')) return true;
+            if ((_selectedEmotion === 'relieved' || _selectedEmotion === 'angel') && (bg.emotion === 'relieved' || bg.emotion === 'angel')) return true;
+            if ((_selectedEmotion === 'cry' || _selectedEmotion === 'crying') && (bg.emotion === 'cry' || bg.emotion === 'crying')) return true;
+            return false;
+        })
         : allBgs;
 
     bgSidebarGrid.innerHTML = '';
     if (filtered.length === 0) {
-        bgSidebarGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#64748b;font-size:12px;padding:20px;">No backgrounds</div>';
+        bgSidebarGrid.innerHTML = '<div style="text-align:center;color:#64748b;font-size:11px;padding:20px 0;">No backgrounds</div>';
         return;
     }
+
+    let activeThumb = null;
 
     filtered.forEach(bg => {
         const thumb = document.createElement('div');
         thumb.className = 'bg-thumb' + (bg.id === _currentBgId ? ' active' : '');
+        if (bg.id === _currentBgId) activeThumb = thumb;
 
         // Find emotion emoji
-        const emObj = EMOTIONS.find(e => e.id === bg.emotion);
+        const emObj = EMOTIONS.find(e => e.id === bg.emotion) || getEmotionById(bg.emotion);
         const badge = emObj ? `<span class="bg-thumb-badge">${emObj.emoji}</span>` : '';
 
         thumb.innerHTML = `<img src="${bg.dataUrl || bg.imageUrl}" alt="bg" loading="lazy">${badge}`;
@@ -1056,6 +1345,8 @@ function _populateSidebar() {
             bgSidebarGrid.querySelectorAll('.bg-thumb').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
 
+
+
             // Regenerate with this background
             document.getElementById('preview-img').classList.remove('loaded');
             await generateRender(window.lastData, false);
@@ -1063,15 +1354,55 @@ function _populateSidebar() {
 
         bgSidebarGrid.appendChild(thumb);
     });
+
+    // Gallery opens at scroll position 0 (top) — no auto-scroll
+    if (bgSidebarGrid) bgSidebarGrid.scrollTop = 0;
 }
 
 // // ── Upload Background Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const uploadBgBtn = document.getElementById('btn-upload-bg');
-const bgUploadInput = document.getElementById('bg-upload-input');
+// // ── Upload Background Button with Animated Lottie ────────────────────────
+const uploadBgBtn       = document.getElementById('btn-upload-bg');
+const uploadBgContainer = document.getElementById('upload-bg-lottie');
+const bgUploadInput     = document.getElementById('bg-upload-input');
+
+let uploadBgAnim = null;
+
+function initUploadBgLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !uploadBgContainer) return;
+
+    try {
+        uploadBgAnim = lottieLib.loadAnimation({
+            container: uploadBgContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: uploadCloudIconData
+        });
+        uploadBgAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Upload BG] Failed to initialize Lottie animation:', err);
+    }
+
+    // Requirement 1: Play only when mouse cursor hovers. Stop on leave and return to static state.
+    uploadBgBtn?.addEventListener('mouseenter', () => {
+        if (uploadBgAnim) {
+            uploadBgAnim.goToAndPlay(0, true);
+        }
+    });
+
+    uploadBgBtn?.addEventListener('mouseleave', () => {
+        if (uploadBgAnim) {
+            uploadBgAnim.goToAndStop(0, true);
+        }
+    });
+}
 
 if (uploadBgBtn) {
     uploadBgBtn.addEventListener('click', () => bgUploadInput?.click());
 }
+
+initUploadBgLottie();
 
 if (bgUploadInput) {
     bgUploadInput.addEventListener('change', async (e) => {
@@ -1092,18 +1423,97 @@ if (bgUploadInput) {
     });
 }
 
-// // ── Copy to Clipboard Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const copyBtn = document.getElementById('btn-copy');
+// // ── Copy Card Button with Animated Lottie Transition ───────────────────────
+const copyBtn                 = document.getElementById('btn-copy');
+const copyLottieContainer     = document.getElementById('copy-lottie-container');
+const copyTickLottieContainer = document.getElementById('copy-tick-lottie-container');
+const copyBtnText             = document.getElementById('copy-btn-text');
+
+let copyAnim       = null;
+let copyTickAnim   = null;
+let copyBtnState   = 'idle'; // 'idle' | 'copying' | 'success'
+let copyResetTimer = null;
+
+function resetCopyBtnState() {
+    if (copyResetTimer) {
+        clearTimeout(copyResetTimer);
+        copyResetTimer = null;
+    }
+    copyBtnState = 'idle';
+    if (copyBtn) {
+        copyBtn.classList.remove('is-success');
+    }
+    if (copyBtnText) {
+        copyBtnText.textContent = 'Copy Card';
+    }
+    if (copyAnim) copyAnim.goToAndStop(0, true);
+    if (copyTickAnim) copyTickAnim.goToAndStop(0, true);
+}
+
+function initCopyLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !copyLottieContainer || !copyTickLottieContainer) return;
+
+    try {
+        copyAnim = lottieLib.loadAnimation({
+            container: copyLottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: copyIconData
+        });
+        copyAnim.goToAndStop(0, true);
+
+        copyTickAnim = lottieLib.loadAnimation({
+            container: copyTickLottieContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: successTickIconData
+        });
+        copyTickAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Copy] Failed to initialize Lottie animations:', err);
+    }
+
+    // Requirement 1: Animate ONLY when hovered. On leave, stop and return to static state.
+    copyBtn?.addEventListener('mouseenter', () => {
+        if (copyBtnState === 'idle' && copyAnim) {
+            copyAnim.goToAndPlay(0, true);
+        }
+    });
+
+    copyBtn?.addEventListener('mouseleave', () => {
+        if (copyBtnState === 'idle' && copyAnim) {
+            copyAnim.goToAndStop(0, true);
+        }
+    });
+}
+
 if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
+        if (copyBtnState === 'copying') return;
+
         const imgEl = document.getElementById('preview-img');
         const imgSrc = imgEl?.src;
-        if (!imgSrc) return;
 
-        const origHtml = copyBtn.innerHTML;
+        // Requirement 5: If copying fails (no card generated yet), do not show Success/Tick animation.
+        // Preserve original state and allow user to try again.
+        if (!imgSrc || !imgEl.classList.contains('loaded') || imgEl.style.display === 'none') {
+            _showToast('Please generate a trading card first.', 'warning', 3000);
+            resetCopyBtnState();
+            return;
+        }
+
+        if (copyResetTimer) {
+            clearTimeout(copyResetTimer);
+            copyResetTimer = null;
+        }
+
+        copyBtnState = 'copying';
 
         try {
-            // Convert data URL to blob for clipboard
+            // Requirement 3: Execute existing copy functionality without changing its logic
             const response = await fetch(imgSrc);
             const blob = await response.blob();
 
@@ -1111,16 +1521,57 @@ if (copyBtn) {
                 new ClipboardItem({ 'image/png': blob })
             ]);
 
-            copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/></svg> Copied!';
-            setTimeout(() => { copyBtn.innerHTML = origHtml; }, 2000);
+            // Requirements 4 & 6: Only after the copy operation is successfully completed,
+            // smoothly transition from the Copy animation to the Success/Tick animation.
+            copyBtnState = 'success';
+            copyBtn.classList.add('is-success');
+            if (copyBtnText) copyBtnText.textContent = 'Copied!';
+
+            if (copyAnim) copyAnim.stop();
+            if (copyTickAnim) copyTickAnim.goToAndPlay(0, true);
+
+            // Smoothly revert back to idle Copy state after 2.5s
+            copyResetTimer = setTimeout(() => {
+                resetCopyBtnState();
+            }, 2500);
+
         } catch (err) {
+            // Requirement 5: If copying fails, do not show the Success/Tick animation.
             console.warn('[Copy] Clipboard API failed:', err);
+            resetCopyBtnState();
             _showToast('Copy failed. Your browser may not support this feature.', 'warning', 3000);
         }
     });
 }
 
+initCopyLottie();
+
 // // ── Generate Render (New Simple Card Design) // ───// ───// ───// ───// ───â”€
+// // ── PNL Card Orb Noise Loader (Particle Wobble) ─────────────────────
+const previewLoadingEl = document.getElementById('preview-loading');
+let pnlOrbLoader = null;
+if (previewLoadingEl) {
+    pnlOrbLoader = createOrbNoise(previewLoadingEl, {
+        dotColor: '#12e2fd',
+        width: 84,
+        height: 84,
+        density: 300,
+        dotSize: 150,
+        speed: 50,
+        spinTurns: 1
+    });
+
+    // Auto-sync with visibility in case anything toggles display
+    const _orbObs = new MutationObserver(() => {
+        if (previewLoadingEl.style.display !== 'none' && previewLoadingEl.style.display !== '') {
+            pnlOrbLoader?.start();
+        } else {
+            pnlOrbLoader?.stop();
+        }
+    });
+    _orbObs.observe(previewLoadingEl, { attributes: true, attributeFilter: ['style', 'class'] });
+}
+
 async function generateRender(data, _unused) {
     isGenerating = true;
     window.lastData = data;
@@ -1133,6 +1584,7 @@ async function generateRender(data, _unused) {
         const placeholder = document.getElementById('card-empty-placeholder');
         if (placeholder) placeholder.style.display = 'none';
         spinner.style.display = 'block';
+        pnlOrbLoader?.start();
         img.classList.remove('loaded');
         // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
@@ -1170,6 +1622,7 @@ async function generateRender(data, _unused) {
         });
 
         img.classList.add('loaded');
+        return true;
 
     } catch (err) {
         console.error('[Card] Render failed:', err);
@@ -1177,26 +1630,141 @@ async function generateRender(data, _unused) {
             ? 'Renderer not loaded. Please refresh the page.'
             : 'Card generation failed. Please try again.';
         _showToast(msg, 'error', 6000);
+        return false;
     } finally {
-        if (spinner) spinner.style.display = 'none';
+        if (spinner) {
+            spinner.style.display = 'none';
+            pnlOrbLoader?.stop();
+        }
         // This must run for every failure path; otherwise subsequent Generate
         // clicks are ignored because the app believes a render is still running.
         isGenerating = false;
     }
 }
 
-// // ── Download Button // ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ───// ──
-const downloadBtn = document.getElementById('btn-download');
-if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-        const imgSrc = document.getElementById('preview-img')?.src;
-        if (!imgSrc) return;
-        const link = document.createElement('a');
-        link.download = `mccalc-${State.tokenName || 'card'}-${Date.now()}.png`;
-        link.href = imgSrc;
-        link.click();
+// // ── Download Button with Animated Lottie Transition ────────────────────────
+const downloadBtn           = document.getElementById('btn-download');
+const downloadSaveContainer = document.getElementById('download-save-lottie');
+const downloadTickContainer = document.getElementById('download-tick-lottie');
+const downloadBtnText       = document.getElementById('download-btn-text');
+
+let downloadSaveAnim   = null;
+let downloadTickAnim   = null;
+let downloadBtnState   = 'idle'; // 'idle' | 'saving' | 'success'
+let downloadResetTimer = null;
+
+function resetDownloadBtnState() {
+    if (downloadResetTimer) {
+        clearTimeout(downloadResetTimer);
+        downloadResetTimer = null;
+    }
+    downloadBtnState = 'idle';
+    if (downloadBtn) {
+        downloadBtn.classList.remove('is-success');
+    }
+    if (downloadBtnText) {
+        downloadBtnText.textContent = 'Download';
+    }
+    if (downloadSaveAnim) downloadSaveAnim.goToAndStop(0, true);
+    if (downloadTickAnim) downloadTickAnim.goToAndStop(0, true);
+}
+
+function initDownloadLottie() {
+    const lottieLib = window.lottie || window.bodymovin;
+    if (!lottieLib || !downloadSaveContainer || !downloadTickContainer) return;
+
+    try {
+        downloadSaveAnim = lottieLib.loadAnimation({
+            container: downloadSaveContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: false,
+            animationData: saveDownloadIconData
+        });
+        downloadSaveAnim.goToAndStop(0, true);
+
+        downloadTickAnim = lottieLib.loadAnimation({
+            container: downloadTickContainer,
+            renderer: 'svg',
+            loop: false,
+            autoplay: false,
+            animationData: tickDownloadIconData
+        });
+        downloadTickAnim.goToAndStop(0, true);
+    } catch (err) {
+        console.error('[Download] Failed to initialize Lottie animations:', err);
+    }
+
+    // Requirement 1: Animate ONLY when hovered. On leave, stop and return to static state.
+    downloadBtn?.addEventListener('mouseenter', () => {
+        if (downloadBtnState === 'idle' && downloadSaveAnim) {
+            downloadSaveAnim.goToAndPlay(0, true);
+        }
+    });
+
+    downloadBtn?.addEventListener('mouseleave', () => {
+        if (downloadBtnState === 'idle' && downloadSaveAnim) {
+            downloadSaveAnim.goToAndStop(0, true);
+        }
     });
 }
+
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+        if (downloadBtnState === 'saving') return;
+
+        const imgEl = document.getElementById('preview-img');
+        const imgSrc = imgEl?.src;
+
+        // Requirement 5: If saving fails (no card generated yet), do not show success animation.
+        // Preserve original save state and allow user to try again.
+        if (!imgSrc || !imgEl.classList.contains('loaded') || imgEl.style.display === 'none') {
+            _showToast('Please generate a trading card first.', 'warning', 3000);
+            resetDownloadBtnState();
+            return;
+        }
+
+        if (downloadResetTimer) {
+            clearTimeout(downloadResetTimer);
+            downloadResetTimer = null;
+        }
+
+        try {
+            downloadBtnState = 'saving';
+
+            // Requirement 2: Trigger actual save/download operation first
+            const link = document.createElement('a');
+            link.download = `mccalc-${State.tokenName || 'card'}-${Date.now()}.png`;
+            link.href = imgSrc;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Requirements 2, 3, 4: Once operation is successfully completed,
+            // smoothly transition from Save animation to Success/Tick animation
+            downloadBtnState = 'success';
+            downloadBtn.classList.add('is-success');
+            if (downloadBtnText) downloadBtnText.textContent = 'Downloaded!';
+
+            if (downloadSaveAnim) downloadSaveAnim.stop();
+            if (downloadTickAnim) downloadTickAnim.goToAndPlay(0, true);
+
+            // Requirement 4: Display Tick icon as success state. Do not replay Save animation while in success state.
+            // After 3 seconds, smoothly return to idle state so user can download again anytime.
+            downloadResetTimer = setTimeout(() => {
+                resetDownloadBtnState();
+            }, 3000);
+
+        } catch (err) {
+            // Requirement 5: If saving fails, do not show Success animation. Preserve original Save state and allow retry.
+            console.error('[Download] Failed to download card:', err);
+            resetDownloadBtnState();
+            _showToast('Download failed. Please try again.', 'error', 3000);
+        }
+    });
+}
+
+initDownloadLottie();
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Initial calculation
@@ -1207,3 +1775,87 @@ calculate();
 
 // Apply initial calculation mode
 setTimeout(() => setCalcMode(_calcMode), 0);
+
+
+// ═══════════════════════════════════════════════════════════
+//  CUSTOM LOGO PANEL — Toggle + URL Input + Upload wiring
+// ═══════════════════════════════════════════════════════════
+
+// Toggle the expandable panel when 'Add custom logo' is clicked
+const _customLogoTrigger = document.querySelector('.custom-logo-trigger');
+const _customLogoPanel   = document.getElementById('custom-logo-panel');
+
+if (_customLogoTrigger && _customLogoPanel) {
+    _customLogoTrigger.addEventListener('click', () => {
+        const isOpen = _customLogoPanel.style.display === 'flex';
+        _customLogoPanel.style.display = isOpen ? 'none' : 'flex';
+        const chevron = _customLogoTrigger.querySelector('img');
+        if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        if (!isOpen) setTimeout(() => document.getElementById('custom-logo-url')?.focus(), 50);
+    });
+}
+
+// Refresh the selected-logo preview row inside the panel
+function _refreshLogoPanel() {
+    const row     = document.getElementById('custom-logo-selected-row');
+    const thumb   = document.getElementById('token-logo-preview');
+    const nameLbl = document.getElementById('custom-logo-selected-name');
+    if (!row) return;
+    if (_tokenLogoDataUrl) {
+        row.classList.add('visible');
+        if (thumb) { thumb.src = _tokenLogoDataUrl; thumb.style.display = 'block'; }
+        if (nameLbl) nameLbl.textContent = _tokenLogoSource === 'catalog' ? 'Catalog logo' : 'Custom logo';
+    } else {
+        row.classList.remove('visible');
+        if (thumb) { thumb.src = ''; thumb.style.display = 'none'; }
+    }
+}
+
+// Also refresh panel when logo is removed
+if (tokenLogoRemove) {
+    tokenLogoRemove.addEventListener('click', () => {
+        const urlInput = document.getElementById('custom-logo-url');
+        if (urlInput) urlInput.value = '';
+        setTimeout(_refreshLogoPanel, 50);
+    });
+}
+
+// URL input: apply logo when user pastes URL and presses Enter or pauses typing
+const _customLogoUrlInput = document.getElementById('custom-logo-url');
+if (_customLogoUrlInput) {
+    let _logoUrlTimer;
+    const _applyLogoUrl = async (url) => {
+        url = (url || '').trim();
+        if (!url || (!url.startsWith('http') && !url.startsWith('data:'))) return;
+        try {
+            const dataUrl = await _fetchAsBlob(url);
+            if (dataUrl) {
+                setTokenLogo(dataUrl, 'upload');
+                setTimeout(_refreshLogoPanel, 50);
+            } else {
+                _showToast('Could not load logo — the server may block external access. Try downloading and uploading the image instead.', 'warning', 4000);
+            }
+        } catch (_e) {
+            _showToast('Could not load logo from that URL.', 'warning', 3000);
+        }
+    };
+    _customLogoUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { clearTimeout(_logoUrlTimer); _applyLogoUrl(_customLogoUrlInput.value); }
+    });
+    _customLogoUrlInput.addEventListener('input', () => {
+        clearTimeout(_logoUrlTimer);
+        _logoUrlTimer = setTimeout(() => _applyLogoUrl(_customLogoUrlInput.value), 1200);
+    });
+    // TASK1: If clipboard has an image, import it instead of text
+    _customLogoUrlInput.addEventListener('paste', async (e) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const hadImage = await _handleClipboardImage(items);
+        if (hadImage) e.preventDefault();
+        // else: default paste (URL text) remains intact
+    });
+}
+
+// Refresh panel UI after file upload
+if (tokenLogoUpload) {
+    tokenLogoUpload.addEventListener('change', () => setTimeout(_refreshLogoPanel, 150));
+}

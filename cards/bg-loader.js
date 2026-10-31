@@ -61,8 +61,18 @@ export function getNextBackground() {
 export function getNextBackgroundByEmotion(emotionId) {
     if (_cache.length === 0) return null;
 
-    // Filter by emotion
-    const filtered = _cache.filter(bg => bg.emotion === emotionId);
+    if (!emotionId || emotionId === 'none') return getNextBackground();
+
+    // Filter by emotion (supports aliases: happy/smile/calm, shock/stress/confused, relieved/angel, cry/crying)
+    const filtered = _cache.filter(bg => {
+        if (!bg.emotion) return false;
+        if (bg.emotion === emotionId) return true;
+        if ((emotionId === 'happy' || emotionId === 'smile') && (bg.emotion === 'smile' || bg.emotion === 'happy' || bg.emotion === 'calm')) return true;
+        if (emotionId === 'shock' && (bg.emotion === 'shock' || bg.emotion === 'stress' || bg.emotion === 'confused')) return true;
+        if ((emotionId === 'relieved' || emotionId === 'angel') && (bg.emotion === 'relieved' || bg.emotion === 'angel')) return true;
+        if ((emotionId === 'cry' || emotionId === 'crying') && (bg.emotion === 'cry' || bg.emotion === 'crying')) return true;
+        return false;
+    });
 
     if (filtered.length === 0) {
         // Fallback: return any background

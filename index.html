@@ -32,7 +32,7 @@
         min-height: 100vh;
         display: flex;
         justify-content: center;
-        align-items: flex-start;
+        align-items: stretch;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
@@ -47,34 +47,43 @@
         font-family: 'JetBrains Mono', monospace !important;
       }
 
-      /* Container: Centered canvas */
+      /* Container: Full-width responsive canvas */
       .canvas-container {
         width: 100%;
-        max-width: 1440px;
-        min-height: 900px;
-        padding: 24px 48px;
+        min-height: 100vh;
+        padding: 64px 32px 40px 32px;
         display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        gap: 120px;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
         box-sizing: border-box;
       }
 
-      @media (max-width: 1100px) {
+      @media (min-width: 1600px) {
+        .canvas-container {
+          padding: 72px 56px 48px 56px;
+        }
+      }
+
+      @media (max-width: 1024px) {
         .canvas-container {
           width: 100%;
           flex-direction: column;
           align-items: center;
           padding: 20px 16px;
+          gap: 20px;
+          min-height: auto;
         }
       }
 
       /* ═══════════════════════════════════════════════════════════
-         LEFT COLUMN: Trading Card Preview (540px)
+         LEFT COLUMN: Trading Card Preview (805.45px)
          ═══════════════════════════════════════════════════════════ */
       .preview-column {
-        width: 540px;
-        flex-shrink: 0;
+        flex: 0 0 940px;
+        width: 940px;
+        margin-top: -40px;
+        margin-left: 40px;
         background-color: #0a0f1c;
         border: 1px solid #23304a;
         border-radius: 16px;
@@ -86,10 +95,10 @@
         box-sizing: border-box;
       }
 
-      @media (max-width: 1100px) {
+      @media (max-width: 1024px) {
         .preview-column {
+          flex: none;
           width: 100%;
-          max-width: 540px;
         }
       }
 
@@ -140,10 +149,26 @@
         background-color: #1a2540;
       }
 
+      .store-lottie-icon {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .store-lottie-icon svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
       /* Main Preview Box */
       .main-preview-box {
         width: 100%;
-        height: 429.44px;
+        aspect-ratio: 16 / 9;
         background-color: #131b2f;
         border: 1px solid #23304a;
         border-radius: 12px;
@@ -313,22 +338,132 @@
         color: #94a3b8;
       }
 
+      /* ── Download Button Lottie Animation ─────────────────────── */
+      .btn-lottie-wrapper {
+        width: 18px;
+        height: 18px;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .btn-lottie-anim {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .btn-lottie-anim svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      .btn-lottie-anim.lottie-save {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .btn-lottie-anim.lottie-tick {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      .btn-lottie-anim svg path {
+        transition: stroke 0.2s ease;
+      }
+
+      /* Hover highlight */
+      .btn-secondary-action:not(:disabled):hover .lottie-save svg path,
+      .btn-secondary-action:not(:disabled):hover .lottie-upload svg path {
+        stroke: #12e2fd !important;
+      }
+
+      /* Success transition */
+      .btn-secondary-action.is-success .lottie-save {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      .btn-secondary-action.is-success .lottie-tick {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .btn-secondary-action.is-success {
+        border-color: #12e2fd !important;
+      }
+
+      .btn-secondary-action.is-success span {
+        color: #12e2fd !important;
+      }
+
+      .copy-lottie-wrapper {
+        width: 20px;
+        height: 20px;
+      }
+
+      .btn-lottie-anim.lottie-copy {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      /* Copy Button Success Transition */
+      .btn-copy-card.is-success .lottie-copy {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      .btn-copy-card.is-success .lottie-tick {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .change-bg-lottie-wrapper {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .change-bg-lottie-wrapper svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      .btn-lottie-anim.lottie-upload {
+        opacity: 1;
+        transform: scale(1);
+      }
+
       /* ═══════════════════════════════════════════════════════════
-         RIGHT COLUMN: Trading Card Details (340px)
+         RIGHT COLUMN: Trading Card Details (546.55px)
          ═══════════════════════════════════════════════════════════ */
       .details-column {
-        width: 340px;
-        flex-shrink: 0;
+        flex: 0 0 545px;
+        width: 545px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 18px;
         box-sizing: border-box;
       }
 
-      @media (max-width: 1100px) {
+      @media (max-width: 1024px) {
         .details-column {
+          flex: none;
           width: 100%;
-          max-width: 340px;
         }
       }
 
@@ -550,7 +685,7 @@
       }
 
       .token-input-row {
-        height: 44px;
+        height: 60px;
         width: 100%;
         background-color: rgba(19, 27, 47, 0.4);
         border-radius: 8px;
@@ -819,6 +954,8 @@
 
       /* Generate Card Master Button */
       .btn-generate-master {
+        position: relative;
+        overflow: hidden;
         height: 48px;
         width: 100%;
         background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
@@ -841,6 +978,24 @@
         transform: scale(0.99);
       }
 
+      .btn-generate-master.is-loading,
+      .btn-generate-master.is-success {
+        pointer-events: none;
+      }
+
+      /* Default Content Wrapper */
+      .btn-gen-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        height: 100%;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+
       .sparkle-icon-box {
         width: 32px;
         height: 32px;
@@ -858,6 +1013,171 @@
         font-weight: 800;
         font-size: 14px;
         color: #0a0f1c;
+      }
+
+      /* ── Loading Animation Layer (Magical Constellation & Center Glow) ── */
+      .btn-gen-loading-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Center pulsing glow disk */
+      .btn-gen-center-glow {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.22) 55%, rgba(255, 255, 255, 0) 75%);
+        transform: translate(-50%, -50%) scale(0.95);
+        opacity: 0;
+      }
+
+      /* Dynamic Canvas Star Shower */
+      .btn-stars-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        border-radius: inherit;
+        display: block;
+      }
+
+      /* ── Success Checkmark Layer ── */
+      .btn-gen-success-layer {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 28px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      .btn-gen-tick-svg {
+        width: 28px;
+        height: 22px;
+        display: block;
+        overflow: visible;
+      }
+
+      .btn-gen-tick-path {
+        stroke: #ffffff;
+        stroke-width: 3.2;
+        stroke-dasharray: 36;
+        stroke-dashoffset: 36;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* ── Active States ── */
+
+      /* Loading State */
+      .btn-generate-master.is-loading .btn-gen-content {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+
+      .btn-generate-master.is-loading .btn-gen-loading-layer {
+        opacity: 1;
+      }
+
+      .btn-generate-master.is-loading .btn-gen-center-glow {
+        animation: btnGenCenterPulse 1.3s ease-in-out infinite;
+      }
+
+      .btn-generate-master.is-loading .btn-gen-star {
+        animation: btnGenStarTwinkle 1.4s ease-in-out infinite;
+      }
+
+      .btn-generate-master.is-loading .btn-gen-star.s1 { animation-delay: 0.1s; }
+      .btn-generate-master.is-loading .btn-gen-star.s2 { animation-delay: 0.35s; }
+      .btn-generate-master.is-loading .btn-gen-star.s3 { animation-delay: 0.0s; }
+      .btn-generate-master.is-loading .btn-gen-star.s4 { animation-delay: 0.45s; }
+      .btn-generate-master.is-loading .btn-gen-star.s5 { animation-delay: 0.25s; }
+      .btn-generate-master.is-loading .btn-gen-star.s6 { animation-delay: 0.4s; }
+      .btn-generate-master.is-loading .btn-gen-star.s7 { animation-delay: 0.15s; }
+      .btn-generate-master.is-loading .btn-gen-star.s8 { animation-delay: 0.55s; }
+
+      /* Success State */
+      .btn-generate-master.is-success .btn-gen-content {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+
+      .btn-generate-master.is-success .btn-gen-loading-layer {
+        opacity: 0;
+      }
+
+      .btn-generate-master.is-success .btn-gen-success-layer {
+        opacity: 1;
+        animation: btnGenTickPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      .btn-generate-master.is-success .btn-gen-tick-path {
+        animation: btnGenTickDraw 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+
+      @keyframes btnGenCenterPulse {
+        0%, 100% {
+          transform: translate(-50%, -50%) scale(0.92);
+          opacity: 0.25;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.12);
+          opacity: 0.45;
+        }
+      }
+
+      @keyframes btnGenStarTwinkle {
+        0% {
+          opacity: 0.1;
+          transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+        }
+        50% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.08) rotate(5deg);
+        }
+        100% {
+          opacity: 0.1;
+          transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+        }
+      }
+
+      @keyframes btnGenTickDraw {
+        0% {
+          stroke-dashoffset: 36;
+        }
+        100% {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @keyframes btnGenTickPop {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.65);
+        }
+        60% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.15);
+        }
+        100% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
       }
 
       /* Hidden render node for html2canvas export */
@@ -880,36 +1200,534 @@
         max-width: none !important;
       }
 
+
+      /* DCA Multi-Entry/Exit */
+      .dca-toggle-checkbox {
+        appearance: none; -webkit-appearance: none;
+        width: 28px; height: 14px; border-radius: 7px;
+        background: #23304a; position: relative; cursor: pointer;
+        border: 1px solid rgba(18,226,253,0.2); flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .dca-toggle-checkbox:checked {
+        background: rgba(18,226,253,0.3);
+        border-color: #12e2fd;
+      }
+      .dca-toggle-checkbox::after {
+        content: ''; position: absolute; top: 1px; left: 1px;
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #94a3b8; transition: transform 0.2s, background 0.2s;
+      }
+      .dca-toggle-checkbox:checked::after {
+        transform: translateX(14px); background: #12e2fd;
+      }
+      .dca-multi-container { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+      .dca-entry-row {
+        display: flex; align-items: center; gap: 6px; width: 100%;
+      }
+      .dca-entry-row .input-wrapper {
+        flex: 1; display: flex; align-items: center; gap: 4px;
+        background: #0a0f1c; border: 1px solid #23304a; border-radius: 8px;
+        padding: 0 8px; height: 36px; box-sizing: border-box;
+      }
+      .dca-entry-row .prefix {
+        font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; color: #94a3b8;
+      }
+      .dca-entry-row .amount-input {
+        width: 100%; background: transparent; border: none; outline: none;
+        font-family: 'Inter', sans-serif; font-weight: 700; font-size: 12px;
+        color: #ffffff; padding: 0;
+      }
+      .dca-entry-row .amount-input::placeholder { color: rgba(148,163,184,0.7); }
+      .mc-unit-select {
+        background: #131b2f; color: #94a3b8; border: 1px solid #23304a;
+        border-radius: 6px; padding: 2px 4px; font-size: 10px;
+        font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer;
+      }
+      .dca-remove-btn {
+        width: 24px; height: 24px; border-radius: 6px; border: 1px solid #23304a;
+        background: transparent; color: #94a3b8; font-size: 14px;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: background 0.15s;
+      }
+      .dca-remove-btn:hover { background: rgba(255,82,82,0.15); color: #ff5252; }
+      .dca-add-btn {
+        background: transparent; border: 1px dashed #23304a; border-radius: 8px;
+        color: #94a3b8; font-family: 'Inter', sans-serif; font-weight: 600;
+        font-size: 10px; padding: 6px; cursor: pointer; width: 100%;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .dca-add-btn:hover { border-color: #12e2fd; color: #12e2fd; }
+      .dca-avg-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 10px;
+      }
+      .dca-avg-label { color: #94a3b8; font-weight: 600; }
+      .dca-avg-value { color: #12e2fd; font-weight: 700; }
+
       .hidden {
         display: none !important;
       }
-    </style>
+    
+      /* ─── Functional CSS (invisible design changes) ─────────────────── */
+
+      /* K/M/B non-active state fix for JS toggle compatibility */
+      .unit-pill-btn:not(.active) {
+        background-color: transparent !important;
+        color: #94a3b8 !important;
+        padding: 0 8px !important;
+      }
+
+      /* PNL Card Preview Orb Noise Loading Animation */
+      #preview-loading {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 84px;
+        height: 84px;
+        z-index: 10;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        animation: none !important;
+        filter: drop-shadow(0 0 16px rgba(18, 226, 253, 0.38));
+        pointer-events: auto;
+      }
+
+      #preview-loading canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* Preview image: hidden until card generated */
+      #preview-img { display: none !important; }
+      #preview-img.loaded { display: block !important; }
+
+      /* Token suggestions dropdown */
+      #token-suggestions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        background: #0e1628;
+        border: 1px solid #23304a;
+        border-radius: 8px;
+        z-index: 100;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+        margin-top: 4px;
+      }
+      .token-suggestion {
+        width: 100%; display: flex; align-items: center; gap: 10px;
+        padding: 9px 12px;
+        background: transparent; border: none;
+        border-bottom: 1px solid rgba(35,48,74,0.5);
+        cursor: pointer; text-align: left;
+        font-family: 'Inter', sans-serif; font-weight: 600;
+        font-size: 12px; color: #ffffff; transition: background 0.15s;
+      }
+      .token-suggestion:last-child { border-bottom: none; }
+      .token-suggestion:hover, .token-suggestion.active { background: rgba(18,226,253,0.08); }
+      .token-suggestion-logo {
+        width: 24px; height: 24px; border-radius: 50%;
+        object-fit: cover; flex-shrink: 0;
+        background: rgba(18,226,253,0.1);
+      }
+      .token-suggestion-labels strong { color: #ffffff; font-size: 12px; }
+
+      /* ── Reaction Tool & Floating Horizontal Popover ── */
+      .card-header-tools { position: relative; }
+      .reaction-tool-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      /* Animated Alternating Lottie Container in Button */
+      .reaction-btn-lottie-container {
+        position: relative;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .reaction-btn-lottie-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0.82);
+        transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: opacity, transform;
+      }
+
+      .reaction-btn-lottie-layer.is-active {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .reaction-btn-lottie-layer svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      #btn-reaction-picker.has-emotion {
+        border-color: #12e2fd;
+        background-color: #1a2540;
+        box-shadow: 0 0 12px rgba(18, 226, 253, 0.25);
+      }
+
+      /* Horizontal Floating Reaction Popover on the LEFT side */
+      #reaction-popover.reaction-popover-horizontal {
+        display: none;
+        position: absolute;
+        top: 50%;
+        right: calc(100% + 10px); /* Strictly on the LEFT side of the button */
+        transform: translateY(-50%) scale(0.9);
+        transform-origin: right center;
+        z-index: 500;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        background: rgba(19, 27, 47, 0.94);
+        border: 1px solid rgba(18, 226, 253, 0.35);
+        border-radius: 9999px; /* Pill shape */
+        padding: 4px 6px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 16px rgba(18, 226, 253, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        white-space: nowrap;
+      }
+
+      #reaction-popover.reaction-popover-horizontal.open {
+        display: flex;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(-50%) scale(1);
+      }
+
+      /* Popover items (Smile & Shock) */
+      .reaction-popover-item {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    background-color 0.2s ease,
+                    border-color 0.2s ease,
+                    box-shadow 0.2s ease;
+        will-change: transform;
+      }
+
+      .reaction-popover-item:hover {
+        transform: scale(1.30) translateY(-2.5px);
+        z-index: 10;
+        background: rgba(18, 226, 253, 0.14);
+        border-color: rgba(18, 226, 253, 0.4);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(18, 226, 253, 0.25);
+      }
+
+      .reaction-popover-item:active {
+        transform: scale(1.15) translateY(-1px);
+      }
+
+      .reaction-popover-item.active {
+        background: rgba(18, 226, 253, 0.22);
+        border-color: #12e2fd;
+        box-shadow: 0 0 10px rgba(18, 226, 253, 0.35);
+      }
+
+      .reaction-popover-item.is-none {
+        color: #94a3b8;
+      }
+
+      .reaction-popover-item.is-none:hover {
+        color: #12e2fd;
+        background: rgba(18, 226, 253, 0.14);
+        border-color: rgba(18, 226, 253, 0.4);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(18, 226, 253, 0.25);
+      }
+
+      .reaction-popover-item.is-none.active {
+        color: #12e2fd;
+        background: rgba(18, 226, 253, 0.22);
+        border-color: #12e2fd;
+        box-shadow: 0 0 10px rgba(18, 226, 253, 0.35);
+      }
+
+      .reaction-popover-lottie {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .reaction-popover-lottie svg {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+      }
+
+      /* Background gallery overlay (inside preview box) */
+      #bg-gallery-column {
+        flex: 0 0 200px; width: 200px;
+        max-height: 78vh;
+        background: #0a0f1c;
+        border: 1px solid #23304a;
+        border-radius: 14px;
+        display: flex; flex-direction: column;
+        padding: 14px 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        align-self: center;
+      }
+      .bg-gallery-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 8px; padding-bottom: 8px;
+        border-bottom: 1px solid #23304a; flex-shrink: 0;
+      }
+      .bg-gallery-title {
+        font-family: 'Inter', sans-serif; font-weight: 700;
+        font-size: 12px; color: #ffffff; text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      #close-gallery {
+        background: transparent; border: none; color: #94a3b8;
+        cursor: pointer; font-size: 20px; line-height: 1;
+        padding: 0 4px; transition: color 0.2s;
+      }
+      #close-gallery:hover { color: #ffffff; }
+      #bg-sidebar-grid {
+        display: flex; flex-direction: column;
+        gap: 10px; overflow-y: auto; flex: 1;
+        scrollbar-width: thin;
+        scrollbar-color: #23304a transparent;
+        padding-right: 2px;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+      }
+      #bg-sidebar-grid::-webkit-scrollbar { width: 4px; }
+      #bg-sidebar-grid::-webkit-scrollbar-track { background: transparent; }
+      #bg-sidebar-grid::-webkit-scrollbar-thumb { background: #23304a; border-radius: 4px; }
+      #bg-sidebar-grid::-webkit-scrollbar-thumb:hover { background: #2d3f5e; }
+      .bg-thumb {
+        border-radius: 7px; overflow: hidden; cursor: pointer;
+        border: 2px solid transparent; position: relative;
+        width: 100%; aspect-ratio: 16/9;
+        transition: border-color 0.18s ease, transform 0.15s ease;
+        background: #131b2f; flex-shrink: 0;
+      }
+      .bg-thumb:hover {
+        border-color: rgba(18,226,253,0.6);
+        transform: scale(1.02);
+      }
+      .bg-thumb.active { border-color: #12e2fd; }
+      .bg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .bg-thumb-badge { position: absolute; bottom: 3px; right: 3px; font-size: 12px; }
+
+      /* Custom logo expandable panel */
+      #custom-logo-panel {
+        display: none; flex-direction: column; gap: 0;
+        border-top: 1px solid #23304a; padding-top: 10px; margin-top: 4px;
+      }
+      .custom-logo-panel-row {
+        display: flex; align-items: center; gap: 8px; width: 100%;
+      }
+      .custom-logo-url-input {
+        flex: 1; min-width: 0; height: 32px;
+        background: #0a0f1c; border: 1px solid #23304a; border-radius: 8px;
+        padding: 0 10px; font-family: 'Inter', sans-serif;
+        font-size: 11px; font-weight: 500; color: #ffffff; outline: none;
+        transition: border-color 0.2s;
+      }
+      .custom-logo-url-input::placeholder { color: #94a3b8; }
+      .custom-logo-url-input:focus { border-color: #12e2fd; }
+      .custom-logo-upload-btn {
+        height: 32px; padding: 0 12px;
+        background: linear-gradient(90deg, #12e2fd 0%, #3dbbfe 100%);
+        border: none; border-radius: 8px;
+        display: flex; align-items: center; gap: 5px;
+        cursor: pointer; flex-shrink: 0; transition: filter 0.2s;
+      }
+      .custom-logo-upload-btn:hover { filter: brightness(1.1); }
+      .custom-logo-upload-btn span {
+        font-family: 'Inter', sans-serif; font-weight: 700;
+        font-size: 11px; color: #0a0f1c;
+      }
+      .custom-logo-selected-row {
+        display: none; align-items: center; gap: 8px; margin-top: 8px;
+      }
+      .custom-logo-selected-row.visible { display: flex; }
+      .custom-logo-thumb {
+        width: 28px; height: 28px; border-radius: 6px; object-fit: cover;
+        border: 1px solid rgba(18,226,253,0.3); flex-shrink: 0;
+      }
+      .custom-logo-selected-name {
+        flex: 1; font-family: 'Inter', sans-serif; font-size: 10px;
+        color: #12e2fd; font-weight: 600;
+      }
+      .custom-logo-clear-btn {
+        background: transparent; border: none; color: #94a3b8;
+        cursor: pointer; font-size: 16px; padding: 0 2px;
+        transition: color 0.2s; flex-shrink: 0;
+      }
+      .custom-logo-clear-btn:hover { color: #ff4b4b; }
+
+      /* BDT result values */
+      #res-final-bdt, #res-profit-bdt { display: none; }
+
+    
+      /* ── Task 3: Shared button animations ───────────────────── */
+      @media (prefers-reduced-motion: no-preference) {
+        .icon-tool-btn,
+        .btn-copy-card,
+        .btn-change-bg,
+        .btn-secondary-action,
+        #close-gallery,
+        .mode-tab-btn,
+        .unit-pill-btn,
+        .dca-add-btn,
+        .custom-logo-trigger,
+        .custom-logo-upload-btn,
+        .custom-logo-clear-btn,
+        .btn-generate-master {
+          transition:
+            transform     180ms cubic-bezier(0.4, 0, 0.2, 1),
+            box-shadow    180ms cubic-bezier(0.4, 0, 0.2, 1),
+            filter        180ms cubic-bezier(0.4, 0, 0.2, 1),
+            opacity       180ms cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: transform;
+        }
+
+        .icon-tool-btn:not(:disabled):hover,
+        .btn-copy-card:not(:disabled):hover,
+        .btn-change-bg:not(:disabled):hover,
+        .btn-secondary-action:not(:disabled):hover,
+        #close-gallery:not(:disabled):hover,
+        .mode-tab-btn:not(:disabled):hover,
+        .unit-pill-btn:not(:disabled):hover,
+        .dca-add-btn:not(:disabled):hover,
+        .custom-logo-trigger:not(:disabled):hover,
+        .custom-logo-upload-btn:not(:disabled):hover,
+        .custom-logo-clear-btn:not(:disabled):hover,
+        .btn-generate-master:not(:disabled):hover {
+          transform: translateY(-1.5px);
+          filter: brightness(1.12);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .icon-tool-btn:not(:disabled):active,
+        .btn-copy-card:not(:disabled):active,
+        .btn-change-bg:not(:disabled):active,
+        .btn-secondary-action:not(:disabled):active,
+        #close-gallery:not(:disabled):active,
+        .mode-tab-btn:not(:disabled):active,
+        .unit-pill-btn:not(:disabled):active,
+        .dca-add-btn:not(:disabled):active,
+        .custom-logo-trigger:not(:disabled):active,
+        .custom-logo-upload-btn:not(:disabled):active,
+        .custom-logo-clear-btn:not(:disabled):active,
+        .btn-generate-master:not(:disabled):active {
+          transform: scale(0.97);
+          filter: brightness(0.97);
+          box-shadow: none;
+          transition-duration: 80ms;
+        }
+
+        .icon-tool-btn:not(:disabled):focus-visible,
+        .btn-copy-card:not(:disabled):focus-visible,
+        .btn-change-bg:not(:disabled):focus-visible,
+        .btn-secondary-action:not(:disabled):focus-visible,
+        #close-gallery:not(:disabled):focus-visible,
+        .mode-tab-btn:not(:disabled):focus-visible,
+        .unit-pill-btn:not(:disabled):focus-visible,
+        .dca-add-btn:not(:disabled):focus-visible,
+        .custom-logo-trigger:not(:disabled):focus-visible,
+        .custom-logo-upload-btn:not(:disabled):focus-visible,
+        .custom-logo-clear-btn:not(:disabled):focus-visible,
+        .btn-generate-master:not(:disabled):focus-visible {
+          box-shadow: 0 0 0 3px rgba(18, 226, 253, 0.45);
+          outline: none;
+        }
+
+        /* Subtle icon scale on button hover */
+        .icon-tool-btn:not(:disabled):hover img,
+        .icon-tool-btn:not(:disabled):hover .store-lottie-icon,
+        .btn-secondary-action:not(:disabled):hover img,
+        .btn-secondary-action:not(:disabled):hover .btn-lottie-wrapper,
+        .btn-copy-card:not(:disabled):hover img,
+        .btn-copy-card:not(:disabled):hover .copy-lottie-wrapper,
+        .btn-change-bg:not(:disabled):hover .change-bg-lottie-wrapper {
+          transform: scale(1.08);
+          transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+      }
+      /* ─────────────────────────────────────────────────────── */
+</style>
 </head>
 <body>
 
     <!-- ═══════════════════════════════════ FIGMA 1:1 PNL CARD GENERATOR CANVAS ═══════════════════════════════════ -->
     <main class="canvas-container" id="tab-calculator">
 
-      <!-- ═══ LEFT COLUMN: Trading card preview (540px) ═══ -->
+      <!-- ═══ LEFT COLUMN: Trading card preview (805.45px) ═══ -->
       <section class="preview-column" id="card-preview-panel">
         
         <!-- Card Header -->
         <div class="card-header-bar">
           <h1 class="card-header-title">PNL CARD</h1>
           <div class="card-header-tools">
-            <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
-              <img alt="smile" width="18" height="18" src="./assets/figma/smile.svg" />
-            </button>
+            <div class="reaction-tool-wrapper">
+              <!-- Reaction Emoji Popover (Floating horizontally on the LEFT) -->
+              <div id="reaction-popover" class="reaction-popover-horizontal" role="listbox" aria-label="Choose emotion"></div>
+              <button type="button" id="btn-reaction-picker" title="Choose card emotion" aria-label="Choose card emotion" class="icon-tool-btn">
+                <div class="reaction-btn-lottie-container">
+                  <div class="reaction-btn-lottie-layer layer-happy" id="btn-lottie-happy"></div>
+                  <div class="reaction-btn-lottie-layer layer-shock" id="btn-lottie-shock"></div>
+                  <div class="reaction-btn-lottie-layer layer-greed" id="btn-lottie-greed"></div>
+                  <div class="reaction-btn-lottie-layer layer-cry" id="btn-lottie-cry"></div>
+                  <div class="reaction-btn-lottie-layer layer-angry" id="btn-lottie-angry"></div>
+                  <div class="reaction-btn-lottie-layer layer-worried" id="btn-lottie-worried"></div>
+                  <div class="reaction-btn-lottie-layer layer-relieved" id="btn-lottie-relieved"></div>
+                </div>
+              </button>
+            </div>
             <button type="button" id="btn-toggle-sidebar" title="Store" aria-label="Store" class="icon-tool-btn">
-              <img alt="shopping-cart" width="18" height="18" src="./assets/figma/shopping-cart.svg" />
+              <div id="store-lottie-icon" class="store-lottie-icon" aria-hidden="true"></div>
             </button>
           </div>
         </div>
 
         <!-- Preview Area -->
         <div class="main-preview-box" id="main-preview-container">
-          <div class="loading-spinner hidden" id="preview-loading"></div>
-          <img id="preview-img" class="hidden" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
+          <div id="preview-loading" style="display:none;" aria-label="Loading card..."></div>
+          <img id="preview-img" alt="Trading Card Preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;" />
           <div class="empty-state-content" id="card-empty-placeholder">
             <div class="monitor-icon-wrapper">
               <img alt="monitor" width="24" height="24" src="./assets/figma/monitor.svg" />
@@ -921,32 +1739,41 @@
               </span>
             </div>
           </div>
+          
         </div>
 
         <!-- Card Actions -->
         <div class="preview-actions-wrap">
           <!-- Copy Card Button -->
           <button type="button" id="btn-copy" aria-label="Copy trading card to clipboard" class="btn-copy-card">
-            <img alt="copy" width="16" height="16" src="./assets/figma/copy.svg" />
-            <span>Copy Card</span>
+            <span class="btn-lottie-wrapper copy-lottie-wrapper" aria-hidden="true">
+              <span id="copy-lottie-container" class="btn-lottie-anim lottie-copy"></span>
+              <span id="copy-tick-lottie-container" class="btn-lottie-anim lottie-tick"></span>
+            </span>
+            <span id="copy-btn-text">Copy Card</span>
           </button>
           
           <!-- Change Background Button -->
           <button type="button" id="btn-change-bg" aria-label="Change card background" class="btn-change-bg">
             <div class="change-bg-icon-badge">
-              <img alt="refresh-cw" width="14" height="14" src="./assets/figma/refresh-cw.svg" />
+              <span id="change-bg-lottie" class="change-bg-lottie-wrapper" aria-hidden="true"></span>
             </div>
-            <span>Change Background</span>
+            <span id="change-bg-text">Change Background</span>
           </button>
 
           <!-- Download and Upload Row -->
           <div class="secondary-actions-row">
             <button type="button" id="btn-download" aria-label="Download trading card image" class="btn-secondary-action">
-              <img alt="download" width="14" height="14" src="./assets/figma/download.svg" />
-              <span>Download</span>
+              <span class="btn-lottie-wrapper" aria-hidden="true">
+                <span id="download-save-lottie" class="btn-lottie-anim lottie-save"></span>
+                <span id="download-tick-lottie" class="btn-lottie-anim lottie-tick"></span>
+              </span>
+              <span id="download-btn-text">Download</span>
             </button>
             <button type="button" id="btn-upload-bg" aria-label="Upload a custom card background" class="btn-secondary-action">
-              <img alt="upload" width="14" height="14" src="./assets/figma/upload.svg" />
+              <span class="btn-lottie-wrapper" aria-hidden="true">
+                <span id="upload-bg-lottie" class="btn-lottie-anim lottie-upload"></span>
+              </span>
               <span>Upload Background</span>
             </button>
             <input type="file" id="bg-upload-input" accept="image/*" style="display:none">
@@ -954,7 +1781,17 @@
         </div>
       </section>
 
-      <!-- ═══ RIGHT COLUMN: Trading card details (340px) ═══ -->
+      <!-- ═══ MIDDLE: Background Gallery Strip (between PNL Card and Info) ═══ -->
+      <div id="bg-gallery-column" style="display:none;">
+        <div class="bg-gallery-header">
+          <span class="bg-gallery-title">Backgrounds</span>
+          <button id="close-gallery" type="button" title="Close gallery" aria-label="Close gallery">&#215;</button>
+        </div>
+        <div id="bg-sidebar-grid"></div>
+      </div>
+
+
+      <!-- ═══ RIGHT COLUMN: Trading card details (546.55px) ═══ -->
       <section class="details-column">
         
         <!-- Position Inputs Card -->
@@ -968,6 +1805,9 @@
             <button type="button" id="mode-price-btn" data-mode="price" class="mode-tab-btn inactive">
               Price
             </button>
+            <button type="button" id="mode-nft-btn" data-mode="nft" class="mode-tab-btn inactive">
+              NFT
+            </button>
           </div>
 
           <!-- Position Amounts -->
@@ -976,19 +1816,29 @@
             <!-- Initial Market Cap Field -->
             <div class="field-wrapper">
               <div class="field-header-row">
-                <span class="field-label">INITIAL MARKET CAP</span>
-                <div class="field-meta-toggle">
+                <span class="field-label" id="lbl-initial">INITIAL MARKET CAP</span>
+                <label class="field-meta-toggle">
                   <span class="field-meta-text">MULTI-ENTRY</span>
-                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                  <input type="checkbox" id="dca-init-toggle" class="dca-toggle-checkbox" />
+                </label>
+              </div>
+              <div id="init-single">
+                <div class="field-input-box">
+                  <span class="currency-symbol">$</span>
+                  <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
+                  <div class="unit-toggle-group" id="init-toggles">
+                    <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
+                  </div>
                 </div>
               </div>
-              <div class="field-input-box">
-                <span class="currency-symbol">$</span>
-                <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
-                <div class="unit-toggle-group" id="init-toggles">
-                  <button type="button" class="unit-pill-btn active">K</button>
-                  <button type="button" class="unit-pill-btn inactive">M</button>
-                  <button type="button" class="unit-pill-btn inactive">B</button>
+              <div id="init-multi" class="hidden">
+                <div class="dca-multi-container" id="init-dca-rows"></div>
+                <button type="button" class="dca-add-btn" id="add-init-dca-row">+ Add Entry</button>
+                <div class="dca-avg-row" id="init-dca-avg">
+                  <span class="dca-avg-label" id="lbl-init-dca-avg">Avg Entry MC:</span>
+                  <span class="dca-avg-value" id="init-avg-val">—</span>
                 </div>
               </div>
             </div>
@@ -996,25 +1846,46 @@
             <!-- Target Market Cap Field -->
             <div class="field-wrapper">
               <div class="field-header-row">
-                <span class="field-label">TARGET MARKET CAP</span>
-                <div class="field-meta-toggle">
+                <span class="field-label" id="lbl-target">TARGET MARKET CAP</span>
+                <label class="field-meta-toggle">
                   <span class="field-meta-text">MULTI-EXIT</span>
-                  <img alt="inactive" width="10" height="10" src="./assets/figma/inactive-status.svg" />
+                  <input type="checkbox" id="dca-target-toggle" class="dca-toggle-checkbox" />
+                </label>
+              </div>
+              <div id="target-single">
+                <div class="field-input-box">
+                  <span class="currency-symbol">$</span>
+                  <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
+                  <div class="unit-toggle-group" id="target-toggles">
+                    <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
+                    <button type="button" class="unit-pill-btn mul-btn" data-val="1000000000">B</button>
+                  </div>
                 </div>
               </div>
-              <div class="field-input-box">
-                <span class="currency-symbol">$</span>
-                <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
-                <div class="unit-toggle-group" id="target-toggles">
-                  <button type="button" class="unit-pill-btn active">K</button>
-                  <button type="button" class="unit-pill-btn inactive">M</button>
-                  <button type="button" class="unit-pill-btn inactive">B</button>
+              <div id="target-multi" class="hidden">
+                <div class="dca-multi-container" id="target-dca-rows"></div>
+                <button type="button" class="dca-add-btn" id="add-target-dca-row">+ Add Exit</button>
+                <div class="dca-avg-row" id="target-dca-avg">
+                  <span class="dca-avg-label" id="lbl-target-dca-avg">Avg Exit MC:</span>
+                  <span class="dca-avg-value" id="target-avg-val">—</span>
                 </div>
               </div>
             </div>
 
-            <!-- Investment Amount Field -->
-            <div class="field-wrapper">
+            <!-- NFT Count Field (NFT mode only) -->
+            <div class="field-wrapper" id="nft-count-wrapper" style="display:none;">
+              <div class="field-header-row">
+                <span class="field-label">NUMBER OF NFTs</span>
+              </div>
+              <div class="field-input-box">
+                <span class="currency-symbol">#</span>
+                <input type="text" id="nft-count" value="1" placeholder="1" class="field-input-clean" />
+              </div>
+            </div>
+
+                        <!-- Investment Amount Field -->
+            <div class="field-wrapper" id="investment-wrapper">
               <div class="field-header-row">
                 <span class="field-label">INVESTMENT AMOUNT</span>
               </div>
@@ -1029,22 +1900,20 @@
 
         <!-- Token Details Card -->
         <div class="token-card">
-          <div class="token-card-header">
-            <div class="token-header-title-wrap">
-              <img alt="accent" width="6" height="6" src="./assets/figma/accent-marker.svg" />
-              <span class="token-header-title">TOKEN DETAILS</span>
-            </div>
-            <span class="token-header-meta">Optional</span>
-          </div>
           
-          <div class="token-input-row">
-            <div class="token-badge-icon">
-              <img alt="badge" width="14" height="14" src="./assets/figma/badge-dollar-sign.svg" />
+          <div style="position:relative;">
+            <div class="token-input-row">
+              <div class="token-badge-icon">
+                <img id="token-badge-img" alt="badge" width="14" height="14" src="./assets/figma/badge-dollar-sign.svg" />
+              </div>
+              <div class="token-input-content">
+                <label for="token-name" class="token-input-label">TOKEN NAME</label>
+                <input type="text" id="token-name" placeholder="Search token name or symbol" class="token-input-clean" autocomplete="off" />
+              </div>
             </div>
-            <div class="token-input-content">
-              <label for="token-name" class="token-input-label">TOKEN NAME</label>
-              <input type="text" id="token-name" placeholder="Search token name or symbol" class="token-input-clean" autocomplete="off" />
-            </div>
+
+            <!-- Token Search Autocomplete Dropdown -->
+            <div id="token-suggestions" class="hidden" role="listbox" aria-label="Token suggestions"></div>
           </div>
 
           <div class="token-hint-row">
@@ -1061,6 +1930,26 @@
               <span>Add custom logo</span>
               <img alt="chevron-down" width="12" height="12" src="./assets/figma/chevron-down.svg" />
             </button>
+          </div>
+
+          <!-- Add Custom Logo Expandable Panel -->
+          <div id="custom-logo-panel">
+            <div class="custom-logo-panel-row">
+              <input type="text" id="custom-logo-url" class="custom-logo-url-input" placeholder="Paste logo link" autocomplete="off" />
+              <button type="button" id="token-logo-area" class="custom-logo-upload-btn" title="Upload logo from device">
+                <img alt="upload" width="12" height="12" src="./assets/figma/upload.svg" />
+                <span>Upload</span>
+              </button>
+            </div>
+            <!-- Selected logo preview row -->
+            <div class="custom-logo-selected-row" id="custom-logo-selected-row">
+              <img id="token-logo-preview" class="custom-logo-thumb" alt="Logo preview" style="display:none;" />
+              <span class="custom-logo-selected-name" id="custom-logo-selected-name">Logo selected</span>
+              <button type="button" id="token-logo-remove" class="custom-logo-clear-btn" title="Remove logo">&#215;</button>
+            </div>
+            <!-- Hidden elements required by app.js -->
+            <span id="token-logo-placeholder" style="display:none;"></span>
+            <input type="file" id="token-logo-upload" accept="image/*" style="display:none;" />
           </div>
         </div>
 
@@ -1084,6 +1973,7 @@
             <div class="summary-cell-left">
               <span class="summary-metric-label">FINAL VALUE</span>
               <span class="summary-val-white" id="res-final-value">$0.00</span>
+               <span id="res-final-bdt" style="display:none; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;"></span>
             </div>
             <div class="summary-cell-right">
               <span class="summary-metric-label">MULTIPLIER</span>
@@ -1096,6 +1986,7 @@
             <div class="nested-cell-left">
               <span class="summary-metric-label">PROFIT / LOSS</span>
               <span class="nested-val" id="res-profit">$0.00</span>
+               <span id="res-profit-bdt" style="display:none; font-size:10px; color:#94a3b8; font-family:'JetBrains Mono',monospace;"></span>
             </div>
             <div class="nested-cell-right">
               <span class="summary-metric-label">PERCENTAGE</span>
@@ -1105,11 +1996,26 @@
         </div>
 
         <!-- Generate Card Master Button -->
-        <button type="button" id="btn-generate" class="btn-generate-master">
-          <div class="sparkle-icon-box">
-            <img alt="sparkles" width="18" height="18" src="./assets/figma/sparkles.svg" />
+        <button type="button" id="btn-generate" class="btn-generate-master" aria-label="Generate Card">
+          <div class="btn-gen-content">
+            <div class="sparkle-icon-box">
+              <img alt="sparkles" width="18" height="18" src="./assets/figma/sparkles.svg" />
+            </div>
+            <span>Generate Card</span>
           </div>
-          <span>Generate Card</span>
+
+          <!-- Loading Animation Layer (Dynamic Rising Star Shower & Center Glow) -->
+          <div class="btn-gen-loading-layer" aria-hidden="true">
+            <div class="btn-gen-center-glow"></div>
+            <canvas class="btn-stars-canvas"></canvas>
+          </div>
+
+          <!-- Success Checkmark Layer -->
+          <div class="btn-gen-success-layer" aria-hidden="true">
+            <svg class="btn-gen-tick-svg" viewBox="0 0 28 22" fill="none">
+              <path class="btn-gen-tick-path" d="M 3 11 L 10 18 L 25 3" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
         </button>
 
       </section>
@@ -1117,6 +2023,13 @@
 
     <!-- Hidden Render Container for Card Node -->
     <div id="render-node-container"><div id="card-node" class="card-node"></div></div>
+
+
+
+    <!-- Lottie Web Animation -->
+    <script src="./scripts/lottie.min.js"></script>
+    <!-- App module -->
+    <script type="module" src="./scripts/app.js"></script>
 
 </body>
 </html>
