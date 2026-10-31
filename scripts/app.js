@@ -10,9 +10,8 @@ import { initJournal, bindTradeModal, bindAnalysisModal } from './journal.js';
 import { loadCustomThemes } from '../cards/themes/index.js';
 import { loadPNGTemplates } from '../cards/png-loader.js';
 import { initWallet } from './wallet.js';
-import { loadBackgrounds, getNextBackground, getNextBackgroundByEmotion, hasMoreBackgrounds, getBackgroundCount, getAllBackgrounds } from '../cards/bg-loader.js';
+import { loadBackgrounds, getNextBackgroundByEmotion, hasMoreBackgrounds, getEligibleBackgrounds } from '../cards/bg-loader.js';
 import { composeSimpleCard } from '../cards/png-engine.js';
-import { EMOTIONS, getEmotionById } from '../cards/emotions.js';
 import { loadTokenCatalog, searchTokenCatalog } from '../cards/token-catalog.js';
 import { compressImageFile } from '../utils/image.js';
 import { storeIconData } from '../assets/lottie/store-icon.js';
@@ -158,6 +157,13 @@ let _tokenLogoSource = 'none'; // 'catalog', 'upload', or 'none'
 // Current background state (for change-bg feature)
 let _currentBgSrc = null;
 let _currentBgId = null;
+
+function getBackgroundContext(data = null) {
+    // The calculator is the authoritative source; never infer P/L from an emotion or a card name.
+    const result = data || calculateROI(State.initVal, State.targetVal, State.inv);
+    if (!result?.isValid || !Number.isFinite(result.profit)) return { emotion: _selectedEmotion, outcome: null };
+    return { emotion: _selectedEmotion, outcome: result.profit >= 0 ? 'profit' : 'loss' };
+}
 
 // Token logo upload handler
 const tokenLogoArea   = document.getElementById('token-logo-area');
@@ -353,6 +359,11 @@ const reactionController = initReactionController({
     getSelectedEmotion: () => _selectedEmotion,
     setSelectedEmotion: (val) => { _selectedEmotion = val; },
     onEmotionChange: () => {
+        // Never keep displaying a background that the newly selected emotion cannot use.
+        if (_currentBgId && !getEligibleBackgrounds(getBackgroundContext()).some(bg => bg.id === _currentBgId)) {
+            _currentBgId = null;
+            _currentBgSrc = null;
+        }
         _populateSidebar();
     }
 });
@@ -1191,12 +1202,7 @@ if (generateBtn) {
         setGenerateBtnLoading();
 
         try {
-            // Maintain loading animation while generation is actively running
-            // (min 950ms so user can appreciate the floating rising stars before checkmark)
-            const [success] = await Promise.all([
-                _doGenerate(data),
-                new Promise(resolve => setTimeout(resolve, 950))
-            ]);
+            const success = await _doGenerate(data);
 
             if (success) {
                 // Smoothly transition to Success Checkmark
@@ -1268,7 +1274,7 @@ if (changeBgBtn) {
         if (!window.lastData) return;
 
         // Check if more backgrounds are available
-        if (!hasMoreBackgrounds(_currentBgId)) {
+        if (!hasMoreBackgrounds(_currentBgId, getBackgroundContext(window.lastData))) {
             _showToast('No more backgrounds available. Upload your own or ask the admin to add more.', 'info', 4000);
             return;
         }
@@ -1280,9 +1286,7 @@ if (changeBgBtn) {
 
         try {
             // Get next background — stay within same emotion
-            const bg = _selectedEmotion
-                ? getNextBackgroundByEmotion(_selectedEmotion)
-                : getNextBackground();
+            const bg = getNextBackgroundByEmotion(_selectedEmotion, getBackgroundContext(window.lastData).outcome);
             if (bg) {
                 _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
                 _currentBgId = bg.id;
@@ -1303,19 +1307,7 @@ initChangeBgLottie();
 
 function _populateSidebar() {
     if (!bgSidebarGrid) return;
-    const allBgs = getAllBackgrounds();
-    // Filter by current emotion if set
-    const filtered = _selectedEmotion
-        ? allBgs.filter(bg => {
-            if (!bg.emotion) return false;
-            if (bg.emotion === _selectedEmotion) return true;
-            if ((_selectedEmotion === 'happy' || _selectedEmotion === 'smile') && (bg.emotion === 'smile' || bg.emotion === 'happy' || bg.emotion === 'calm')) return true;
-            if (_selectedEmotion === 'shock' && (bg.emotion === 'shock' || bg.emotion === 'stress' || bg.emotion === 'confused')) return true;
-            if ((_selectedEmotion === 'relieved' || _selectedEmotion === 'angel') && (bg.emotion === 'relieved' || bg.emotion === 'angel')) return true;
-            if ((_selectedEmotion === 'cry' || _selectedEmotion === 'crying') && (bg.emotion === 'cry' || bg.emotion === 'crying')) return true;
-            return false;
-        })
-        : allBgs;
+    const filtered = getEligibleBackgrounds(getBackgroundContext());
 
     bgSidebarGrid.innerHTML = '';
     if (filtered.length === 0) {
@@ -1330,11 +1322,7 @@ function _populateSidebar() {
         thumb.className = 'bg-thumb' + (bg.id === _currentBgId ? ' active' : '');
         if (bg.id === _currentBgId) activeThumb = thumb;
 
-        // Find emotion emoji
-        const emObj = EMOTIONS.find(e => e.id === bg.emotion) || getEmotionById(bg.emotion);
-        const badge = emObj ? `<span class="bg-thumb-badge">${emObj.emoji}</span>` : '';
-
-        thumb.innerHTML = `<img src="${bg.dataUrl || bg.imageUrl}" alt="bg" loading="lazy">${badge}`;
+        thumb.innerHTML = `<img src="${bg.dataUrl || bg.imageUrl}" alt="bg" loading="lazy">`;
 
         thumb.addEventListener('click', async () => {
             if (isGenerating || !window.lastData) return;
@@ -1586,6 +1574,8 @@ async function generateRender(data, _unused) {
         spinner.style.display = 'block';
         pnlOrbLoader?.start();
         img.classList.remove('loaded');
+        // Let the browser paint the first loader frame before image composition/canvas work.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         // 1. Wait for assets AND html2canvas
         const [, h2cReady] = await Promise.all([
             cardAssetsReady,
@@ -1595,9 +1585,7 @@ async function generateRender(data, _unused) {
 
         // 2. Get background image if not already set
         if (!_currentBgSrc) {
-            const bg = _selectedEmotion
-                ? getNextBackgroundByEmotion(_selectedEmotion)
-                : getNextBackground();
+            const bg = getNextBackgroundByEmotion(_selectedEmotion, getBackgroundContext(data).outcome);
             if (bg) {
                 _currentBgSrc = bg.dataUrl || bg.imageUrl || null;
                 _currentBgId = bg.id;

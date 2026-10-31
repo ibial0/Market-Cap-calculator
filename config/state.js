@@ -5,7 +5,7 @@ export const State = {
     initMul: 1000,
     targetVal: 0,
     targetMul: 1000,
-    inv: 10,
+    inv: 0,
     
     tokenName: Storage.get('tokenName', ''),
     userName: Storage.get('userName', ''),

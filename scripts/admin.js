@@ -133,10 +133,12 @@ const bgFileInput   = document.getElementById('admin-bg-file');
 const bgFileLabel   = document.getElementById('bg-file-label');
 const bgFileName    = document.getElementById('bg-file-name');
 const adminEmPicker = document.getElementById('admin-emotion-picker');
+const adminPnlPicker = document.getElementById('admin-pnl-type-picker');
 const adminEmFilter = document.getElementById('admin-emotion-filter');
 const adminBgGrid   = document.getElementById('admin-bg-gallery');
 
 let _adminSelectedEmotion = null;
+let _adminSelectedPnlType = null;
 let _adminFilterEmotion = 'all';
 
 
@@ -715,6 +717,11 @@ if (bgFileLabel && bgFileInput) {
 // ── Admin Emotion Picker (for upload tagging) ──
 if (adminEmPicker) {
     adminEmPicker.innerHTML = '';
+    const universal = document.createElement('div');
+    universal.dataset.id = '';
+    universal.textContent = 'Universal';
+    universal.style.cssText = `padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #38bdf8;background:rgba(56,189,248,0.12);color:#e2e8f0;display:flex;align-items:center;transition:all 0.2s ease;user-select:none;`;
+    adminEmPicker.appendChild(universal);
     EMOTIONS.forEach(em => {
         const pill = document.createElement('div');
         pill.style.cssText = `
@@ -722,28 +729,30 @@ if (adminEmPicker) {
             cursor:pointer;border:1.5px solid #334155;background:#0f172a;color:#94a3b8;
             display:flex;align-items:center;gap:5px;transition:all 0.2s ease;user-select:none;
         `;
-        pill.innerHTML = `<span style="font-size:15px;">${em.emoji}</span><span>${em.label}</span>`;
+        pill.textContent = em.label;
         pill.dataset.id = em.id;
 
         pill.addEventListener('click', () => {
-            if (_adminSelectedEmotion === em.id) {
-                _adminSelectedEmotion = null;
-                pill.style.borderColor = '#334155';
-                pill.style.background = '#0f172a';
-                pill.style.color = '#94a3b8';
-            } else {
-                adminEmPicker.querySelectorAll('[data-id]').forEach(p => {
-                    p.style.borderColor = '#334155';
-                    p.style.background = '#0f172a';
-                    p.style.color = '#94a3b8';
-                });
-                _adminSelectedEmotion = em.id;
-                pill.style.borderColor = '#38bdf8';
-                pill.style.background = 'rgba(56,189,248,0.12)';
-                pill.style.color = '#e2e8f0';
-            }
+            adminEmPicker.querySelectorAll('[data-id]').forEach(p => { p.style.borderColor = '#334155'; p.style.background = '#0f172a'; p.style.color = '#94a3b8'; });
+            _adminSelectedEmotion = em.id;
+            pill.style.borderColor = '#38bdf8'; pill.style.background = 'rgba(56,189,248,0.12)'; pill.style.color = '#e2e8f0';
         });
         adminEmPicker.appendChild(pill);
+    });
+    universal.addEventListener('click', () => {
+        _adminSelectedEmotion = null;
+        adminEmPicker.querySelectorAll('[data-id]').forEach(p => { p.style.borderColor = '#334155'; p.style.background = '#0f172a'; p.style.color = '#94a3b8'; });
+        universal.style.borderColor = '#38bdf8'; universal.style.background = 'rgba(56,189,248,0.12)'; universal.style.color = '#e2e8f0';
+    });
+}
+
+if (adminPnlPicker) {
+    ['profit', 'loss'].forEach(type => {
+        const pill = document.createElement('button');
+        pill.type = 'button'; pill.dataset.type = type; pill.textContent = type[0].toUpperCase() + type.slice(1);
+        pill.style.cssText = 'padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #334155;background:#0f172a;color:#94a3b8;transition:all .2s ease;';
+        pill.addEventListener('click', () => { _adminSelectedPnlType = type; adminPnlPicker.querySelectorAll('[data-type]').forEach(p => { p.style.borderColor = '#334155'; p.style.background = '#0f172a'; p.style.color = '#94a3b8'; }); pill.style.borderColor = '#38bdf8'; pill.style.background = 'rgba(56,189,248,.12)'; pill.style.color = '#e2e8f0'; });
+        adminPnlPicker.appendChild(pill);
     });
 }
 
@@ -760,7 +769,7 @@ if (adminEmFilter) {
             cursor:pointer;border:1px solid #475569;background:#1e293b;color:#94a3b8;
             transition:all 0.2s ease;
         `;
-        pill.textContent = `${em.emoji} ${em.label}`;
+        pill.textContent = em.label;
         adminEmFilter.appendChild(pill);
     });
 
@@ -790,8 +799,8 @@ if (bgUploadBtn && bgFileInput) {
             alert('Please select an image file first.');
             return;
         }
-        if (!_adminSelectedEmotion) {
-            alert('Please select an emotion category first.');
+        if (!_adminSelectedPnlType) {
+            alert('Please select Profit or Loss first.');
             return;
         }
 
@@ -809,6 +818,7 @@ if (bgUploadBtn && bgFileInput) {
             await addDoc(collection(db, 'card_backgrounds'), {
                 imageUrl: compressedDataUrl,
                 emotion: _adminSelectedEmotion,
+                pnlType: _adminSelectedPnlType,
                 isActive: true,
                 createdAt: serverTimestamp(),
             });
@@ -820,6 +830,7 @@ if (bgUploadBtn && bgFileInput) {
                 bgFileLabel.style.color = '#94a3b8';
             }
             _adminSelectedEmotion = null;
+            _adminSelectedPnlType = null;
             if (adminEmPicker) {
                 adminEmPicker.querySelectorAll('[data-id]').forEach(p => {
                     p.style.borderColor = '#334155';
@@ -901,12 +912,13 @@ async function loadBgSection() {
 
             const emObj = EMOTIONS.find(e => e.id === bg.emotion);
             const emBadge = emObj
-                ? `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#7dd3fc;font-weight:600;">${emObj.emoji} ${emObj.label}</span>`
-                : `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(148,163,184,0.12);color:#94a3b8;font-weight:600;">No tag</span>`;
+                ? `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#7dd3fc;font-weight:600;">${emObj.label}</span>`
+                : `<span style="font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(148,163,184,0.12);color:#94a3b8;font-weight:600;">Universal / legacy</span>`;
 
-            const emOptions = EMOTIONS.map(e =>
-                `<option value="${e.id}" ${e.id === bg.emotion ? 'selected' : ''}>${e.emoji} ${e.label}</option>`
+            const emOptions = `<option value="" ${!bg.emotion ? 'selected' : ''}>Universal (no emotion)</option>` + EMOTIONS.map(e =>
+                `<option value="${e.id}" ${e.id === bg.emotion ? 'selected' : ''}>${e.label}</option>`
             ).join('');
+            const pnlOptions = `<option value="" disabled ${!bg.pnlType ? 'selected' : ''}>Legacy / unclassified — assign a type</option><option value="profit" ${bg.pnlType === 'profit' ? 'selected' : ''}>Profit</option><option value="loss" ${bg.pnlType === 'loss' ? 'selected' : ''}>Loss</option>`;
 
             card.innerHTML = `
                 <div style="height:150px;background:url('${bg.imageUrl}') center/cover;border-bottom:1px solid #334155;position:relative;">
@@ -918,6 +930,10 @@ async function loadBgSection() {
                         background:#0f172a;color:#94a3b8;border:1px solid #334155;cursor:pointer;
                         margin-bottom:8px;
                     ">${emOptions}</select>
+                    <select class="bg-pnl-select" data-id="${bg.id}" style="
+                        width:100%;padding:5px 8px;border-radius:8px;font-size:11px;font-weight:600;
+                        background:#0f172a;color:#94a3b8;border:1px solid #334155;cursor:pointer;margin-bottom:8px;
+                    ">${pnlOptions}</select>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <span style="font-size:12px;color:#94a3b8;font-family:monospace;">${bg.id.substring(0,8)}...</span>
                         <button class="btn-danger bg-delete-btn" data-id="${bg.id}" style="padding:6px 12px;font-size:12px;">Delete</button>
@@ -931,7 +947,7 @@ async function loadBgSection() {
                 const newEmotion = select.value;
                 select.disabled = true;
                 try {
-                    await setDoc(doc(db, 'card_backgrounds', bgId), { emotion: newEmotion }, { merge: true });
+                    await setDoc(doc(db, 'card_backgrounds', bgId), { emotion: newEmotion || null }, { merge: true });
                     select.style.borderColor = '#00e676';
                     setTimeout(() => { select.style.borderColor = '#334155'; }, 1000);
                 } catch (err) {
@@ -939,6 +955,17 @@ async function loadBgSection() {
                 } finally {
                     select.disabled = false;
                 }
+            });
+
+            card.querySelector('.bg-pnl-select').addEventListener('change', async (e) => {
+                const select = e.target;
+                select.disabled = true;
+                try {
+                    await setDoc(doc(db, 'card_backgrounds', select.dataset.id), { pnlType: select.value || null }, { merge: true });
+                    select.style.borderColor = '#00e676';
+                    setTimeout(() => { select.style.borderColor = '#334155'; }, 1000);
+                } catch (err) { alert('Failed to update Profit/Loss type: ' + err.message); }
+                finally { select.disabled = false; }
             });
 
             card.querySelector('.bg-delete-btn').addEventListener('click', async (e) => {

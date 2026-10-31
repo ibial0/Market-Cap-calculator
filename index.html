@@ -54,7 +54,8 @@
         padding: 64px 32px 40px 32px;
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        /* Keep independent columns anchored while multi-entry controls change height. */
+        align-items: flex-start;
         gap: 24px;
         box-sizing: border-box;
       }
@@ -1505,7 +1506,8 @@
         display: flex; flex-direction: column;
         padding: 14px 12px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        align-self: center;
+        /* A filtered collection must begin at the same top edge as the full collection. */
+        align-self: flex-start;
       }
       .bg-gallery-header {
         display: flex; justify-content: space-between; align-items: center;
@@ -1825,7 +1827,7 @@
               <div id="init-single">
                 <div class="field-input-box">
                   <span class="currency-symbol">$</span>
-                  <input type="text" id="initial-mc" value="0" placeholder="0" class="field-input-clean" />
+                  <input type="text" id="initial-mc" value="" placeholder="" class="field-input-clean" />
                   <div class="unit-toggle-group" id="init-toggles">
                     <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
                     <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
@@ -1855,7 +1857,7 @@
               <div id="target-single">
                 <div class="field-input-box">
                   <span class="currency-symbol">$</span>
-                  <input type="text" id="target-mc" value="0" placeholder="0" class="field-input-clean" />
+                  <input type="text" id="target-mc" value="" placeholder="" class="field-input-clean" />
                   <div class="unit-toggle-group" id="target-toggles">
                     <button type="button" class="unit-pill-btn mul-btn active" data-val="1000">K</button>
                     <button type="button" class="unit-pill-btn mul-btn" data-val="1000000">M</button>
@@ -1891,7 +1893,7 @@
               </div>
               <div class="field-input-box">
                 <span class="currency-symbol">$</span>
-                <input type="text" id="investment" value="10" placeholder="10" class="field-input-clean" style="color: #ffffff;" />
+                <input type="text" id="investment" value="" placeholder="" class="field-input-clean" style="color: #ffffff;" />
               </div>
             </div>
 

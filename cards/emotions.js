@@ -5,13 +5,10 @@
 // ═══════════════════════════════════════════════════════════
 
 export const EMOTIONS = [
-    { id: 'happy',    emoji: '😊', label: 'Happy',    type: 'profit',  desc: 'Positive vibes & joy' },
-    { id: 'shock',    emoji: '😲', label: 'Shock',    type: 'loss',    desc: 'Shocked & astonished' },
-    { id: 'greed',    emoji: '🤑', label: 'Greed',    type: 'profit',  desc: 'Greedy & money eyes' },
-    { id: 'cry',      emoji: '😢', label: 'Cry',      type: 'loss',    desc: 'Crying & tears' },
-    { id: 'angry',    emoji: '😡', label: 'Angry',    type: 'loss',    desc: 'Furious & steamy' },
-    { id: 'worried',  emoji: '😰', label: 'Worried',  type: 'neutral', desc: 'Anxious & cold sweat' },
-    { id: 'relieved', emoji: '😇', label: 'Relieved', type: 'profit',  desc: 'Blessed & angelic' },
+    { id: 'happy', label: 'Happy' }, { id: 'shock', label: 'Shock' },
+    { id: 'greed', label: 'Greed' }, { id: 'cry', label: 'Cry' },
+    { id: 'angry', label: 'Angry' }, { id: 'worried', label: 'Worried' },
+    { id: 'relieved', label: 'Relieved' },
 ];
 
 /** Get emotion by ID (maps legacy IDs like smile/calm -> happy, stress/confused -> shock, angel -> relieved, crying -> cry) */
